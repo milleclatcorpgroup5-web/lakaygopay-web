@@ -1,30 +1,32 @@
-# LakayGoPay Mobile
+# LakayGoPay Web — prototype déployable
 
-Premye baz aplikasyon mobil LakayGoPay ak Expo / React Native.
+Ce dépôt contient une interface web responsive en HTML, CSS et JavaScript, prête pour un premier déploiement Cloudflare Pages.
 
-## Sa ki ladan l
-- Estrikti Expo Router.
-- Premye ekran mobil demonstrasyon.
-- Konfigirasyon EAS Build.
-- GitHub Actions workflow ki lanse yon build preview Android + iOS lè gen push sou `main`.
+## Déploiement Cloudflare Pages
+- Framework preset : **None**
+- Build command : **laisser vide**
+- Build output directory : **public**
+- Root directory : **laisser vide** (racine du dépôt)
 
-## Enpòtan anvan premye build la
-1. Konekte pwojè a ak kont Expo ki posede pwojè `lakaygopay` la.
-2. Mete vrè Expo Project ID a nan `app.json` (ranplase `${EXPO_PROJECT_ID}` ak ID a).
-3. Nan GitHub repository la, ale nan **Settings → Secrets and variables → Actions** epi kreye:
-   - `EXPO_TOKEN`: token Expo kont pwopriyetè pwojè a.
-   - `EXPO_PROJECT_ID`: Project ID Expo a.
-4. Verifye `bundleIdentifier` iOS ak `package` Android yo disponib pou aplikasyon an.
+Le site sert `public/index.html`.
 
-## Kòman automatisation an mache
-Chak push sou branch `main`, oswa yon demaraj manyèl nan tab Actions, lanse `eas build --platform all --profile preview`.
+## Contenu actuel
+- Tableau de bord responsive
+- Navigation : vue d'ensemble, envoyer, recevoir/QR, activité, espace marchand, paramètres
+- Interface en français, créole haïtien et anglais
+- Parcours de transfert simulé avec montant plafonné à 500 000 HTG dans l'interface
+- Historique de démonstration en mémoire de navigateur
 
-## Sekirite / limit
-Sa a se yon baz aplikasyon pou devlopman, li pa yon sèvis peman ki pare pou pwodiksyon.
-Pa gen depo, retrè, transfè, entegrasyon MonCash/NatCash, oswa lajan reyèl ladan l.
-Tout fonksyon peman reyèl dwe rete dezaktive jiskaske kondisyon regilasyon, patnè finansye, sekirite ak konfòmite yo verifye.
+## Limites importantes
+Ceci est un **prototype d'interface**, pas une application financière prête pour la production.
+- Aucun compte réel, aucune authentification sécurisée, aucune base de données.
+- Les transactions sont fictives et disparaissent au rechargement.
+- Le QR est décoratif et ne permet pas d'encaisser.
+- Aucun dépôt, retrait, paiement ou transfert réel n'est exécuté.
+- Ne jamais ajouter de clés secrètes dans le navigateur.
+- Avant tout pilote avec de vrais utilisateurs ou fonds : backend sécurisé, authentification, autorisations côté serveur, journal comptable append-only, idempotence, audit, conformité/KYC/AML et partenaire de paiement agréé.
 
-## Kòmand lokal
-- `npm install`
-- `npx expo start`
-- `npx expo-doctor`
+## Structure
+- `public/index.html` : interface
+- `public/styles.css` : styles responsive
+- `public/app.js` : interactions de démonstration
