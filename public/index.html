@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#082f49">
+  <meta name="description" content="LakayGoPay — portefeuille et paiements simples pour les entreprises haïtiennes.">
+  <title>LakayGoPay — Paiements simples</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#" aria-label="LakayGoPay accueil">
+        <span class="brand-mark">L</span><span>Lakay<span class="brand-light">GoPay</span></span>
+      </a>
+      <div class="profile-mini"><div class="avatar">BG</div><div><strong>Bastien Demo</strong><small>Compte personnel</small></div></div>
+      <nav class="nav">
+        <button class="nav-item active" data-view="overview">▦ <span data-i18n="overview">Vue d’ensemble</span></button>
+        <button class="nav-item" data-view="send">↗ <span data-i18n="send">Envoyer</span></button>
+        <button class="nav-item" data-view="receive">▣ <span data-i18n="receive">Recevoir / QR</span></button>
+        <button class="nav-item" data-view="activity">◷ <span data-i18n="activity">Activité</span></button>
+        <button class="nav-item" data-view="merchant">▤ <span data-i18n="merchant">Espace marchand</span></button>
+        <button class="nav-item" data-view="settings">⚙ <span data-i18n="settings">Paramètres</span></button>
+      </nav>
+      <div class="sidebar-bottom"><span class="status-dot"></span><span data-i18n="demo">Mode démonstration</span></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="Menu">☰</button>
+        <div><div class="eyebrow" data-i18n="welcome">BON RETOUR</div><h1 id="pageTitle">Vue d’ensemble</h1></div>
+        <div class="top-actions"><select id="language" aria-label="Langue"><option value="fr">FR</option><option value="ht">HT</option><option value="en">EN</option></select><button class="icon-btn" title="Notifications">♧</button><div class="avatar small">BG</div></div>
+      </header>
+
+      <section class="notice"><strong>Prototype de démonstration.</strong> Les opérations affichées sont fictives. Aucun dépôt, retrait ou transfert d’argent réel n’est effectué.</section>
+
+      <section class="view active" id="view-overview">
+        <div class="hero-card">
+          <div><span class="muted-white" data-i18n="available">Solde disponible</span><div class="balance"><span id="balance">0,00</span> <small>HTG</small></div><span class="muted-white tiny">Compte de démonstration</span></div>
+          <div class="hero-actions"><button class="btn btn-white" data-go="send" data-i18n="sendMoney">Envoyer de l’argent</button><button class="btn btn-outline" data-go="receive" data-i18n="receiveMoney">Recevoir</button></div>
+          <div class="hero-decoration">L</div>
+        </div>
+        <div class="quick-grid">
+          <button class="quick-card" data-go="send"><span class="quick-icon">↗</span><strong data-i18n="send">Envoyer</strong><small data-i18n="sendDesc">Transfert de démonstration</small></button>
+          <button class="quick-card" data-go="receive"><span class="quick-icon">▣</span><strong data-i18n="receive">Recevoir / QR</strong><small data-i18n="receiveDesc">Afficher mon QR fictif</small></button>
+          <button class="quick-card" data-go="merchant"><span class="quick-icon">▤</span><strong data-i18n="collect">Encaisser</strong><small data-i18n="collectDesc">Espace marchand</small></button>
+        </div>
+        <div class="section-head"><div><div class="eyebrow">APERÇU</div><h2 data-i18n="recent">Transactions récentes</h2></div><button class="text-btn" data-go="activity" data-i18n="seeAll">Tout voir →</button></div>
+        <div class="table-card"><div class="transaction-list" id="recentList"><div class="empty">Aucune transaction de démonstration pour le moment.</div></div></div>
+      </section>
+
+      <section class="view" id="view-send">
+        <div class="content-card narrow"><div class="eyebrow">TRANSFERT SIMULÉ</div><h2 data-i18n="sendTitle">Envoyer de l’argent</h2><p class="subtext" data-i18n="sendHint">Essayez le parcours avec des données fictives. Aucun argent réel ne sera déplacé.</p>
+          <form id="sendForm"><label data-i18n="recipient">Téléphone ou identifiant du bénéficiaire</label><input id="recipient" placeholder="+509 0000 0000" required minlength="4"><label data-i18n="amount">Montant (HTG)</label><input id="amount" type="number" min="1" max="500000" step="1" placeholder="500" required><label data-i18n="note">Note (facultatif)</label><input id="note" maxlength="80" placeholder="Ex. Paiement de service"><button class="btn btn-primary full" type="submit" data-i18n="simulate">Simuler le transfert</button></form>
+          <p class="form-message" id="sendMessage" role="status"></p>
+        </div>
+      </section>
+
+      <section class="view" id="view-receive">
+        <div class="content-card narrow center"><div class="eyebrow">PAIEMENT QR</div><h2 data-i18n="myQr">Mon code de réception</h2><p class="subtext" data-i18n="qrHint">Code visuel de démonstration — il ne permet pas d’encaisser de vrais paiements.</p><div class="qr-box" aria-label="QR code fictif"><div class="qr-grid" id="qrGrid"></div></div><strong>LAKAYGOPAY-DEMO-0001</strong><button class="btn btn-primary" id="copyCode" data-i18n="copyCode">Copier mon identifiant</button><p class="form-message" id="copyMessage"></p></div>
+      </section>
+
+      <section class="view" id="view-activity">
+        <div class="section-head"><div><div class="eyebrow">HISTORIQUE</div><h2 data-i18n="allTransactions">Toutes les transactions</h2></div></div>
+        <div class="table-card"><div class="transaction-list" id="allList"><div class="empty">Aucune transaction enregistrée.</div></div></div>
+      </section>
+
+      <section class="view" id="view-merchant">
+        <div class="merchant-banner"><div><div class="eyebrow">LAKAYGOPAY BUSINESS</div><h2 data-i18n="merchantTitle">Votre activité, simplement.</h2><p data-i18n="merchantHint">Un espace marchand pour préparer le suivi de vos encaissements.</p></div><div class="merchant-icon">▤</div></div>
+        <div class="stats-grid"><div class="stat-card"><small data-i18n="todaySales">Ventes du jour</small><strong>0,00 HTG</strong><span>Démo</span></div><div class="stat-card"><small data-i18n="payments">Paiements reçus</small><strong>0</strong><span>Démo</span></div><div class="stat-card"><small data-i18n="customers">Clients</small><strong>0</strong><span>Démo</span></div></div>
+        <div class="content-card"><h3 data-i18n="merchantNext">Prochaine étape</h3><p class="subtext" data-i18n="merchantNextText">Connecter une authentification sécurisée et une base de données avant d’activer les comptes marchands réels.</p></div>
+      </section>
+
+      <section class="view" id="view-settings">
+        <div class="content-card narrow"><div class="eyebrow">PRÉFÉRENCES</div><h2 data-i18n="settingsTitle">Paramètres</h2><label data-i18n="displayName">Nom affiché</label><input value="Bastien Demo" disabled><label data-i18n="accountType">Type de compte</label><select disabled><option>Personnel + Marchand (démo)</option></select><div class="settings-row"><span data-i18n="security">Sécurité</span><span class="pill">À configurer</span></div><div class="settings-row"><span data-i18n="realPayments">Paiements réels</span><span class="pill warning">Désactivés</span></div><p class="subtext" data-i18n="settingsHint">Les paramètres de compte seront activés après la mise en place du backend sécurisé.</p></div>
+      </section>
+      <footer>© 2026 LakayGoPay · <span data-i18n="footer">Prototype — pas de fonds réels</span></footer>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
