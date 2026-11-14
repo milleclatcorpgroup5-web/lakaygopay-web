@@ -1,0 +1,14 @@
+{
+  "name": "LakayGoPay",
+  "short_name": "LakayGoPay",
+  "description": "Service paiement simple avec une vie simple.",
+  "lang": "fr-HT",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f7fa",
+  "theme_color": "#082f49",
+  "icons": [
+    {"src": "/assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+  ]
+}
