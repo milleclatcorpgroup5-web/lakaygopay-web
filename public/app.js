@@ -156,8 +156,12 @@ async function loadDashboard(session) {
   currentMerchants = results[2].status === "fulfilled" ? (results[2].value.merchants || []) : [];
   const activity = results[3].status === "fulfilled" ? (results[3].value.activity || []) : [];
   currentWithdrawals = results[5].status === "fulfilled" ? (results[5].value.withdrawals || []) : [];
-  currentMerchantPayments = results[6].status === "fulfilled" ? (results[6].value.payments || []) : [];
-  currentMerchantPayments.forEach(function (payment) {
+  const paymentRecords = results[6].status === "fulfilled" ? (results[6].value.payments || []) : [];
+  const ownedMerchantIds = new Set(currentMerchants.map(function (merchant) { return merchant.id; }));
+  currentMerchantPayments = paymentRecords.filter(function (payment) {
+    return ownedMerchantIds.has(payment.merchant_id);
+  });
+  paymentRecords.forEach(function (payment) {
     activity.push(Object.assign({ kind: "qr_payment", status: "paid" }, payment));
   });
   pinConfigured = results[4].status === "fulfilled" && Boolean(results[4].value.pin_configured);
@@ -406,6 +410,11 @@ async function lookupPaymentRequest(rawToken) {
     details.hidden = false;
     const expired = request.status !== "pending" ||
       (request.expires_at && Date.parse(request.expires_at) <= Date.now());
+    if (request.merchant_status && request.merchant_status !== "active") {
+      $("#qrPayForm").hidden = true;
+      qrMessage("Machann sa a poko aktive. Ou pa kapab peye demann sa a.", "error");
+      return;
+    }
     if (expired) {
       $("#qrPayForm").hidden = true;
       qrMessage(request.status === "expired" ? "Demann QR sa a ekspire." : "Demann QR sa a pa disponib pou peman.", "error");
