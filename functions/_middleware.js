@@ -11,11 +11,18 @@ export async function onRequest(context) {
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
   }
 
+  // The experimental payment bridge belongs only to the main customer/merchant
+  // application. Never inject it into the isolated admin portal or other pages.
+  const pathname = new URL(context.request.url).pathname;
+  if (pathname !== "/" && pathname !== "/index.html") {
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  }
+
   const html = await response.text();
   const scriptTag = '<script type="module" src="/lakaygopay-bridge.js"></script>';
   const updated = html.includes("lakaygopay-bridge.js")
     ? html
-    : html.replace(/<\/body>/i, `${scriptTag}\n</body>`);
+    : html.replace(/<\/body>/i, scriptTag + "\n</body>");
   headers.delete("content-length");
   headers.delete("content-encoding");
   headers.delete("etag");
