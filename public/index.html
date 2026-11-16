@@ -1,190 +1,196 @@
 <!doctype html>
-<html lang="fr">
+<html lang="ht">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#082f49">
-  <meta name="description" content="LakayGoPay — une expérience de paiement simple pour les personnes et les entreprises en Haïti.">
+  <meta name="description" content="LakayGoPay — bous dijital entèn pou kliyan ak machann an Ayiti.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>LakayGoPay — Service paiement simple avec une vie simple</title>
+  <title>LakayGoPay — Peman senp, lavi senp</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <div class="app-frame">
-    <div class="mobile-scrim" id="mobileScrim"></div>
-    <aside class="sidebar" id="sidebar" aria-label="Navigation principale">
-      <a class="brand" href="#overview" aria-label="LakayGoPay accueil">
-        <span class="brand-mark">L</span><span class="brand-name">Lakay<span>GoPay</span></span>
-      </a>
-      <div class="workspace-label" data-i18n="workspace">ESPACE PERSONNEL</div>
-      <div class="profile-mini">
-        <div class="avatar">BG</div>
-        <div class="profile-meta"><strong id="sidebarName">Bastien Demo</strong><small>Pa konekte</small></div>
-        <span class="demo-dot" title="Koneksyon obligatwa"></span>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="LakayGoPay">
+      <span class="brand-mark">L</span>
+      <span>Lakay<span class="brand-accent">GoPay</span></span>
+    </a>
+    <div class="topbar-right">
+      <span class="secure-pill"><i></i> Koneksyon an sekirite</span>
+      <button id="logoutButton" class="button button-quiet" type="button" hidden>Dekonekte</button>
+    </div>
+  </header>
+
+  <main id="authView" class="auth-layout">
+    <section class="hero-copy">
+      <p class="eyebrow">BOUS DIJITAL LAKAY OU</p>
+      <h1>Yon sèl kont.<br><span>Twa lajan.</span></h1>
+      <p class="hero-text">Jere bous HTG, USD ak EUR ou. Voye lajan anndan LakayGoPay avèk pwoteksyon PIN 4 chif.</p>
+      <div class="hero-note"><strong>Transparans an premye</strong><p>Bous ak transfè entèn yo sèvi ak rejis finansye LakayGoPay. Peman MonCash, NatCash, bank ak retrè reyèl poko aktive.</p></div>
+    </section>
+
+    <section class="auth-card">
+      <div class="auth-card-head">
+        <p class="eyebrow">KONT LAKAYGOPAY</p>
+        <h2>Byenveni</h2>
+        <p>Konekte oswa kreye kont ou.</p>
       </div>
-      <nav class="nav-list">
-        <div class="nav-group-label" data-i18n="mainMenu">MENU PRINCIPAL</div>
-        <button class="nav-item active" data-view="overview"><span class="nav-icon">⌂</span><span data-i18n="overview">Vue d’ensemble</span></button>
-        <button class="nav-item" data-view="wallet"><span class="nav-icon">▣</span><span data-i18n="myWallet">Mon portefeuille</span></button>
-        <button class="nav-item" data-view="transfer"><span class="nav-icon">↗</span><span data-i18n="transfer">Transfert</span></button>
-        <button class="nav-item" data-view="pay"><span class="nav-icon">▦</span><span data-i18n="pay">Payer par QR</span></button>
-        <button class="nav-item" data-view="receive"><span class="nav-icon">⌗</span><span data-i18n="receive">Recevoir</span></button>
-        <button class="nav-item" data-view="activity"><span class="nav-icon">◷</span><span data-i18n="activity">Historique</span></button>
-        <div class="nav-group-label spaced" data-i18n="manage">GESTION</div>
-        <button class="nav-item" data-view="beneficiaries"><span class="nav-icon">♧</span><span data-i18n="beneficiaries">Bénéficiaires</span></button>
-        <button class="nav-item" data-view="merchant"><span class="nav-icon">▤</span><span data-i18n="merchant">Espace marchand</span><span class="nav-tag">NEW</span></button>
-        <button class="nav-item" data-view="notifications"><span class="nav-icon">♧</span><span data-i18n="notifications">Notifications</span><span class="notification-count" id="navUnread">2</span></button>
-        <div class="nav-group-label spaced" data-i18n="account">COMPTE</div>
-        <button class="nav-item" data-view="security"><span class="nav-icon">◇</span><span data-i18n="security">Sécurité</span></button>
-        <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span><span data-i18n="settings">Paramètres</span></button>
-        <button class="nav-item" data-view="help"><span class="nav-icon">?</span><span data-i18n="help">Aide & assistance</span></button>
-      </nav>
-      <div class="sidebar-bottom">
-        <div class="secure-note"><span class="secure-icon">◇</span><div><strong data-i18n="securityFirst">La sécurité d’abord</strong><small>Kont ak verifikasyon an sekirite</small></div></div>
-        <div class="sidebar-footer">© 2026 LakayGoPay</div>
+      <div class="auth-tabs" role="tablist" aria-label="Kalite kont">
+        <button type="button" class="auth-tab active" data-auth-mode="login">Konekte</button>
+        <button type="button" class="auth-tab" data-auth-mode="personal">Kliyan</button>
+        <button type="button" class="auth-tab" data-auth-mode="merchant">Machann</button>
       </div>
-    </aside>
 
-    <main class="main-area">
-      <header class="topbar">
-        <div class="topbar-left">
-          <button class="icon-button menu-button" id="menuBtn" aria-label="Ouvrir le menu">☰</button>
-          <div><div class="eyebrow" data-i18n="welcomeBack">BON RETOUR</div><h1 id="pageTitle">Vue d’ensemble</h1></div>
+      <form id="loginForm" class="form-stack">
+        <label>Imèl
+          <input id="loginEmail" type="email" autocomplete="username" required>
+        </label>
+        <label>Modpas
+          <input id="loginPassword" type="password" autocomplete="current-password" minlength="8" required>
+        </label>
+        <button class="button button-primary full" type="submit">Konekte sou kont mwen</button>
+        <button class="link-button" type="button" data-auth-mode="recover">Mwen bliye modpas mwen</button>
+      </form>
+
+      <form id="personalForm" class="form-stack" hidden>
+        <div class="field-row">
+          <label>Prenon<input id="personalFirst" maxlength="60" autocomplete="given-name" required></label>
+          <label>Siyati<input id="personalLast" maxlength="60" autocomplete="family-name" required></label>
         </div>
-        <div class="topbar-actions">
-          <div class="connection-pill"><span class="connection-dot"></span><span>Aperçu public · non connecté</span></div>
-          <label class="language-wrap"><span class="sr-only" data-i18n="language">Langue</span><select id="language" aria-label="Langue"><option value="fr">FR</option><option value="ht">HT</option><option value="en">EN</option></select></label>
-          <button class="icon-button notification-button" id="notificationShortcut" aria-label="Notifications">♧<i></i></button>
-          <button class="top-profile" id="profileShortcut"><span class="avatar small">BG</span><span class="top-profile-meta"><strong id="topName">Bastien Demo</strong><small>Aperçu piblik</small></span><span class="chevron">⌄</span></button>
+        <label>Dat nesans
+          <input id="personalDob" type="date" autocomplete="bday" required>
+        </label>
+        <p class="field-hint">Ou dwe gen omwen 18 an pou kreye yon kont pèsonèl.</p>
+        <label>Nimewo telefòn<input id="personalPhone" type="tel" autocomplete="tel" placeholder="+509 ..." required></label>
+        <label>Imèl<input id="personalEmail" type="email" autocomplete="email" required></label>
+        <label>Modpas (omwen 8 karaktè)<input id="personalPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+        <button class="button button-primary full" type="submit">Kreye kont kliyan</button>
+      </form>
+
+      <form id="merchantForm" class="form-stack" hidden>
+        <label>Non biznis la<input id="merchantName" maxlength="120" autocomplete="organization" required></label>
+        <label>Telefòn biznis la<input id="merchantPhone" type="tel" autocomplete="tel" placeholder="+509 ..." required></label>
+        <label>Imèl biznis la<input id="merchantEmail" type="email" autocomplete="email" required></label>
+        <label>Modpas (omwen 8 karaktè)<input id="merchantPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+        <button class="button button-primary full" type="submit">Kreye kont machann</button>
+        <p class="field-hint">Kont machann lan ap tann verifikasyon avan li ka resevwa peman komèsyal.</p>
+      </form>
+
+      <form id="recoverForm" class="form-stack" hidden>
+        <label>Imèl kont ou<input id="recoverEmail" type="email" autocomplete="email" required></label>
+        <button class="button button-primary full" type="submit">Voye lyen rekiperasyon</button>
+        <button class="link-button" type="button" data-auth-mode="login">Retounen koneksyon</button>
+      </form>
+
+      <form id="newPasswordForm" class="form-stack" hidden>
+        <label>Nouvo modpas<input id="newPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+        <button class="button button-primary full" type="submit">Sove nouvo modpas</button>
+      </form>
+      <div id="authNotice" class="notice" role="status" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <main id="appView" class="app-layout" hidden>
+    <section class="welcome-row">
+      <div>
+        <p class="eyebrow">ESPAS FINANSYE OU</p>
+        <h1>Bonjou, <span id="welcomeName">Itilizatè</span></h1>
+        <p id="accountSummary" class="muted">Kont ou konekte.</p>
+      </div>
+      <span id="accountTypeBadge" class="status-pill">Kont verifye</span>
+    </section>
+    <div id="appNotice" class="notice" role="status" aria-live="polite"></div>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <div><p class="eyebrow">BAGAY OU GENYEN</p><h2>Bous mwen yo</h2></div>
+        <span class="subtle-tag">HTG · USD · EUR</span>
+      </div>
+      <div id="walletGrid" class="wallet-grid">
+        <div class="loading-card">Ap chaje bous ou yo…</div>
+      </div>
+      <p class="field-hint">Chak lajan kenbe pwòp balans li. LakayGoPay pa fè konvèsyon otomatik ant HTG, USD ak EUR.</p>
+    </section>
+
+    <div class="main-grid">
+      <section class="surface-card">
+        <div class="section-heading">
+          <div><p class="eyebrow">Voye anndan LakayGoPay</p><h2>Fè yon transfè</h2></div>
+          <span class="icon-badge">↗</span>
         </div>
-      </header>
+        <form id="transferForm" class="form-stack">
+          <label>Bous moun k ap voye a
+            <select id="senderWallet" required></select>
+          </label>
+          <label>ID bous moun k ap resevwa a
+            <input id="recipientWallet" type="text" inputmode="text" autocomplete="off" placeholder="UUID bous destinatè a" required>
+          </label>
+          <p class="field-hint">Mande moun k ap resevwa a pataje ID bous li ki nan kat bous li a. Toude bous yo dwe nan menm lajan.</p>
+          <label>Montan
+            <input id="transferAmount" type="number" inputmode="decimal" min="0.01" max="9999999999999999" step="0.01" placeholder="0.00" required>
+          </label>
+          <label>Nòt (opsyonèl)<input id="transferNote" maxlength="140" placeholder="Pou kisa transfè a ye?"></label>
+          <label>PIN tranzaksyon 4 chif
+            <input id="transferPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" placeholder="••••" required>
+          </label>
+          <button class="button button-primary full" type="submit">Verifye epi voye</button>
+          <p class="field-hint">PIN lan verifye sou sèvè anvan chak transfè. Pa pataje PIN ou ak pèsonn.</p>
+        </form>
+      </section>
 
-      <div class="prototype-banner"><span class="banner-symbol">!</span><div><strong>Aperçu public — connectez-vous pour ouvrir votre compte</strong><p>Cette page publique ne montre aucun compte connecté. Créez un compte personnel ou marchand, ou connectez-vous. Aucun paiement externe n’est activé.</p></div><button class="banner-close" id="dismissBanner" aria-label="Fermer">×</button></div>
-
-      <!-- OVERVIEW -->
-      <section class="view active" id="view-overview">
-        <div class="welcome-row"><div><p class="eyebrow" data-i18n="yourMoneySpace">VOTRE ESPACE FINANCIER</p><h2><span data-i18n="hello">Bonjour</span>, <span id="welcomeName">Bastien</span> <span class="wave">✦</span></h2><p class="subtext">Konekte oswa kreye kont ou pou antre nan espas finansye ou.</p></div><div class="date-chip" id="todayDate"></div></div>
-        <div class="overview-grid">
-          <article class="balance-card">
-            <div class="balance-card-top"><span data-i18n="totalBalance">Solde total du portefeuille</span><button class="balance-eye" id="toggleBalance" aria-label="Masquer le solde">◉</button></div>
-            <div class="balance-amount"><strong id="overviewBalance">0,00</strong><span>HTG</span></div>
-            <div class="balance-foot"><span class="balance-status"><i></i><span>Konekte pou wè balans backend</span></span><span class="balance-account">•••• 0001</span></div>
-            <div class="balance-actions"><button class="button button-light" data-go="transfer"><span>↗</span><span data-i18n="sendMoney">Envoyer</span></button><button class="button button-glass" data-go="receive"><span>⌗</span><span data-i18n="receiveMoney">Recevoir</span></button><button class="button button-glass" data-go="wallet"><span>＋</span><span data-i18n="details">Détails</span></button></div>
-            <div class="balance-watermark">L</div>
-          </article>
-          <article class="quick-panel">
-            <div class="panel-heading"><div><p class="eyebrow" data-i18n="shortcuts">RACCOURCIS</p><h3 data-i18n="quickActions">Actions rapides</h3></div><span class="panel-heading-icon">✦</span></div>
-            <div class="shortcut-grid">
-              <button class="shortcut" data-go="transfer"><span class="shortcut-icon blue">↗</span><strong data-i18n="send">Envoyer</strong><small data-i18n="sendDesc">Faire un transfert</small></button>
-              <button class="shortcut" data-go="pay"><span class="shortcut-icon violet">▦</span><strong data-i18n="scanQr">Scanner QR</strong><small data-i18n="scanDesc">Payer un marchand</small></button>
-              <button class="shortcut" data-go="receive"><span class="shortcut-icon green">⌗</span><strong data-i18n="collect">Encaisser</strong><small data-i18n="receiveDesc">Créer une demande</small></button>
-              <button class="shortcut" data-go="beneficiaries"><span class="shortcut-icon orange">♧</span><strong data-i18n="contacts">Contacts</strong><small data-i18n="contactsDesc">Gérer les favoris</small></button>
-            </div>
-          </article>
+      <section class="surface-card">
+        <div class="section-heading">
+          <div><p class="eyebrow">PWOTEKSYON KONT</p><h2>Sekirite ak PIN</h2></div>
+          <span class="icon-badge">◇</span>
         </div>
-        <div class="metric-grid">
-          <article class="metric-card"><div class="metric-top"><span>Antre nan kont</span><span class="metric-icon green">↙</span></div><strong id="incomingMetric">0 HTG</strong><small data-i18n="periodToday">Aujourd’hui</small></article>
-          <article class="metric-card"><div class="metric-top"><span>Depans kont</span><span class="metric-icon red">↗</span></div><strong id="outgoingMetric">0 HTG</strong><small data-i18n="periodToday">Aujourd’hui</small></article>
-          <article class="metric-card"><div class="metric-top"><span data-i18n="transactions">Transactions</span><span class="metric-icon blue">◷</span></div><strong id="transactionMetric">0</strong><small data-i18n="sinceStart">Depuis le début</small></article>
-          <article class="metric-card"><div class="metric-top"><span data-i18n="beneficiaries">Bénéficiaires</span><span class="metric-icon violet">♧</span></div><strong id="beneficiaryMetric">0</strong><small data-i18n="savedContacts">Contacts enregistrés</small></article>
-        </div>
-        <div class="content-grid">
-          <article class="surface-card recent-card">
-            <div class="section-heading"><div><p class="eyebrow" data-i18n="overviewActivity">VOTRE ACTIVITÉ</p><h3 data-i18n="recentTransactions">Transactions récentes</h3></div><button class="link-button" data-go="activity" data-i18n="viewAll">Tout voir →</button></div>
-            <div id="recentTransactions" class="transaction-list"><div class="empty-state" data-i18n="emptyTransactions">Aucune transaction pour le moment.</div></div>
-          </article>
-          <article class="surface-card status-card">
-            <div class="section-heading"><div><p class="eyebrow" data-i18n="accountStatus">ÉTAT DU COMPTE</p><h3 data-i18n="readiness">Préparation du compte</h3></div><span class="status-label">Koneksyon obligatwa</span></div>
-            <div class="readiness-score"><div class="readiness-ring"><strong>25%</strong></div><div><strong data-i18n="setupProgress">Configuration initiale</strong><small data-i18n="backendPending">Backend et vérification à connecter</small></div></div>
-            <div class="progress-track"><span style="width:25%"></span></div>
-            <div class="check-row done"><span>✓</span><div><strong data-i18n="interfaceReady">Interface prête</strong><small>Paj piblik pare pou eksplorasyon</small></div></div>
-            <div class="check-row pending"><span>○</span><div><strong data-i18n="secureAuth">Authentification sécurisée</strong><small data-i18n="notConnected">Pas encore connectée</small></div></div>
-            <div class="check-row pending"><span>○</span><div><strong data-i18n="financialCore">Moteur financier</strong><small data-i18n="notConnected">Pas encore connecté</small></div></div>
-          </article>
-        </div>
-        <div class="trust-strip"><span class="trust-icon">◇</span><div><strong data-i18n="trustHeadline">La confiance commence par la transparence.</strong><p data-i18n="trustText">LakayGoPay est en phase de préparation. Les fonctionnalités financières resteront désactivées tant que la sécurité, le backend et les partenaires réglementés ne seront pas validés.</p></div><button class="link-button" data-go="security" data-i18n="learnSecurity">Voir la sécurité →</button></div>
+        <div id="pinState" class="security-state">Ap verifye estati PIN lan…</div>
+        <form id="pinSetupForm" class="form-stack" hidden>
+          <label>Kreye PIN 4 chif<input id="newPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required></label>
+          <label>Konfime PIN lan<input id="confirmPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required></label>
+          <button class="button button-secondary full" type="submit">Anrejistre PIN sekirite</button>
+        </form>
+        <p class="field-hint">Apre 3 move tantativ, sistèm lan bloke PIN lan pandan yon peryòd sekirite.</p>
       </section>
+    </div>
 
-      <!-- WALLET -->
-      <section class="view" id="view-wallet">
-        <div class="page-intro"><div><p class="eyebrow" data-i18n="walletOverview">PORTEFEUILLE</p><h2 data-i18n="myWallet">Mon portefeuille</h2><p class="subtext">Konekte pou wè bous ak balans kont ou.</p></div><span class="status-label">Konekte pou antre</span></div>
-        <div class="wallet-feature-card"><div><span data-i18n="mainWallet">Portefeuille principal</span><h2><span id="walletBalance">0,00</span> <small>HTG</small></h2><p><i></i><span>Balans backend ap parèt apre koneksyon</span></p></div><div class="wallet-card-chip">▦</div></div>
-        <div class="wallet-options"><article class="surface-card currency-card"><div class="currency-head"><span class="currency-flag">🇭🇹</span><div><strong>Gourde haïtienne</strong><small>HTG · Devise principale prévue</small></div><span class="currency-active">Principal</span></div><h3>— <small>HTG</small></h3><p>Balans la parèt apre koneksyon kont lan.</p></article><article class="surface-card currency-card disabled-card"><div class="currency-head"><span class="currency-flag">$</span><div><strong>Dollar américain</strong><small>USD · Option future</small></div><span class="currency-soon" data-i18n="comingSoon">À venir</span></div><h3>— <small>USD</small></h3><p data-i18n="currencyLater">Conversion et multi-devises non activées.</p></article></div>
-        <div class="surface-card padded-card"><div class="section-heading"><div><p class="eyebrow" data-i18n="walletActions">OPTIONS</p><h3 data-i18n="plannedOperations">Opérations prévues</h3></div></div><div class="operation-grid"><div class="operation-item"><span class="operation-icon">＋</span><strong data-i18n="deposit">Dépôt</strong><small data-i18n="providerRequired">Partenaire requis</small><button disabled data-i18n="notAvailable">Non disponible</button></div><div class="operation-item"><span class="operation-icon">↗</span><strong data-i18n="withdraw">Retrait</strong><small data-i18n="providerRequired">Partenaire requis</small><button disabled data-i18n="notAvailable">Non disponible</button></div><div class="operation-item"><span class="operation-icon">⇄</span><strong data-i18n="transfer">Transfert</strong><small data-i18n="demoOnly">Simulation seulement</small><button class="text-action" data-go="transfer" data-i18n="tryDemo">Essayer la démo</button></div></div></div>
-      </section>
+    <section class="surface-card profile-card">
+      <div class="section-heading">
+        <div><p class="eyebrow">ENFÒMASYON PÈSONÈL</p><h2>Pwofil mwen</h2></div>
+        <span id="profileStatus" class="subtle-tag">Chaje…</span>
+      </div>
+      <form id="profileForm" class="profile-form">
+        <label>Non konplè<input id="profileFullName" maxlength="120" required></label>
+        <label>Imèl kont<input id="profileEmail" type="email" readonly></label>
+        <label>Telefòn<input id="profilePhone" readonly></label>
+        <button class="button button-secondary" type="submit">Mete pwofil la ajou</button>
+      </form>
+    </section>
 
-      <!-- TRANSFER -->
-      <section class="view" id="view-transfer">
-        <div class="page-intro"><div><p class="eyebrow" data-i18n="sendFunds">ENVOI DE FONDS</p><h2 data-i18n="sendMoneyTitle">Envoyer de l’argent</h2><p class="subtext" data-i18n="transferSubtitle">Testez le parcours de transfert avec des données fictives.</p></div><span class="status-label">SIMULATION</span></div>
-        <div class="form-layout"><form class="surface-card form-card" id="transferForm" novalidate><div class="form-step-title"><span>01</span><div><strong data-i18n="recipientDetails">Informations du bénéficiaire</strong><small data-i18n="recipientHint">Choisissez un contact ou entrez son identifiant.</small></div></div><label for="transferRecipient" data-i18n="recipientPhone">Téléphone ou identifiant</label><input id="transferRecipient" autocomplete="off" placeholder="+509 0000 0000" minlength="4" maxlength="40" required><div class="suggestion-row" id="beneficiarySuggestions"></div><div class="form-step-title second-step"><span>02</span><div><strong data-i18n="transferDetails">Détails du transfert</strong><small data-i18n="amountHint">Montant en gourdes haïtiennes.</small></div></div><label for="transferAmount" data-i18n="amountHtg">Montant (HTG)</label><div class="amount-input-wrap"><input id="transferAmount" type="number" inputmode="decimal" min="1" max="500000" step="1" placeholder="0.00" required><span>HTG</span></div><label for="transferNote" data-i18n="transferNote">Motif (facultatif)</label><input id="transferNote" maxlength="100" placeholder="Ex. Paiement de service"><div class="form-info"><span>ⓘ</span><p data-i18n="transferDemoNotice">La validation créera uniquement une ligne de démonstration sur cet appareil. Le solde et l’argent réel ne bougeront pas.</p></div><button class="button button-primary full-button" type="submit"><span data-i18n="reviewTransfer">Vérifier la simulation</span><b>→</b></button><p class="form-error" id="transferError" role="alert"></p></form>
-          <aside class="surface-card summary-card"><p class="eyebrow" data-i18n="summary">RÉCAPITULATIF</p><h3 data-i18n="transferSummary">Votre transfert</h3><div class="summary-placeholder"><div class="summary-symbol">↗</div><strong data-i18n="readyToSend">Prêt à commencer ?</strong><p data-i18n="summaryHint">Les détails du transfert apparaîtront ici avant la simulation.</p></div><div class="summary-line"><span data-i18n="transferFee">Frais de transfert</span><strong>—</strong></div><div class="summary-line"><span data-i18n="total">Total</span><strong>— HTG</strong></div><div class="summary-note" data-i18n="feeFuture">Les frais seront définis avec le partenaire de paiement.</div></aside></div>
-      </section>
+    <section id="merchantSection" class="surface-card" hidden>
+      <div class="section-heading">
+        <div><p class="eyebrow">ESPAS BIZNIS</p><h2>Kont machann</h2></div>
+        <span id="merchantStatus" class="status-pill pending">Ap tann</span>
+      </div>
+      <div id="merchantDetails" class="field-hint">Verifikasyon enfòmasyon biznis la anvan peman komèsyal yo aktive.</div>
+    </section>
 
-      <!-- PAY -->
-      <section class="view" id="view-pay">
-        <div class="page-intro"><div><p class="eyebrow" data-i18n="qrPayments">PAIEMENT QR</p><h2 data-i18n="scanPay">Scanner et payer</h2><p class="subtext" data-i18n="scanSubtitle">La lecture QR est en mode aperçu. Aucun paiement ne sera envoyé.</p></div><span class="status-label">APERÇU</span></div>
-        <div class="pay-grid"><article class="surface-card scanner-card"><div class="scanner-header"><div><h3 data-i18n="scanMerchantQr">Scanner le QR du marchand</h3><p data-i18n="cameraPermission">Autorisez l’appareil photo pour tester la lecture si votre navigateur le permet.</p></div><span class="scanner-mark">▦</span></div><div class="scanner-stage" id="scannerStage"><div class="scanner-placeholder"><div class="scan-frame"><i></i><i></i><i></i><i></i><span>▦</span></div><strong data-i18n="cameraOff">Caméra désactivée</strong><small data-i18n="cameraOffHint">Démarrez la caméra ou saisissez un code de test.</small></div><video id="cameraVideo" playsinline muted hidden></video></div><div class="scanner-controls"><button class="button button-primary" id="startScanner" type="button" data-i18n="startCamera">Activer la caméra</button><button class="button button-secondary" id="stopScanner" type="button" disabled data-i18n="stopCamera">Arrêter</button></div><p class="form-error" id="scannerMessage" role="status"></p></article><article class="surface-card manual-code-card"><p class="eyebrow" data-i18n="manualEntry">SAISIE MANUELLE</p><h3 data-i18n="enterPaymentCode">Entrer un code de paiement</h3><p class="subtext" data-i18n="manualHint">Pour la démonstration, utilisez le code ci-dessous.</p><form id="paymentCodeForm"><label for="paymentCode" data-i18n="paymentCode">Code marchand</label><input id="paymentCode" placeholder="Ex. LGP-DEMO-0001" required><button class="button button-primary full-button" data-i18n="checkCode" type="submit">Vérifier le code</button></form><div class="demo-code-box"><small data-i18n="sampleCode">CODE EXEMPLE</small><strong>LGP-DEMO-0001</strong><button id="copyPaymentCode" class="link-button" type="button" data-i18n="copy">Copier</button></div></article></div>
-      </section>
+    <section class="surface-card">
+      <div class="section-heading">
+        <div><p class="eyebrow">DÈNYE MOUVMAN</p><h2>Istwa tranzaksyon</h2></div>
+        <button id="refreshButton" class="button button-quiet" type="button">Rafrechi</button>
+      </div>
+      <div id="activityList" class="activity-list"><div class="loading-card">Ap chaje istwa a…</div></div>
+    </section>
 
-      <!-- RECEIVE -->
-      <section class="view" id="view-receive">
-        <div class="page-intro"><div><p class="eyebrow" data-i18n="receivePayments">RECEVOIR UN PAIEMENT</p><h2 data-i18n="receiveTitle">Créer une demande de paiement</h2><p class="subtext" data-i18n="receiveSubtitle">Préparez une demande fictive à partager avec un client.</p></div><span class="status-label">DÉMO</span></div>
-        <div class="receive-layout"><article class="surface-card form-card"><h3 data-i18n="requestDetails">Détails de la demande</h3><form id="requestForm"><label for="requestAmount" data-i18n="amountHtg">Montant (HTG)</label><div class="amount-input-wrap"><input id="requestAmount" type="number" inputmode="decimal" min="1" max="500000" placeholder="0.00" required><span>HTG</span></div><label for="requestDescription" data-i18n="description">Description</label><input id="requestDescription" maxlength="80" placeholder="Ex. Achat en boutique"><label for="requestExpiry" data-i18n="expiration">Expiration</label><select id="requestExpiry"><option value="15">15 minutes</option><option value="60">1 heure</option><option value="1440">24 heures</option></select><button class="button button-primary full-button" type="submit" data-i18n="createRequest">Créer la demande démo</button></form><p class="form-error" id="requestError" role="status"></p></article><article class="surface-card receive-preview"><p class="eyebrow" data-i18n="shareRequest">PARTAGER LA DEMANDE</p><h3 data-i18n="paymentQr">Code QR de paiement</h3><div class="qr-illustration" aria-label="Motif QR décoratif de démonstration"><div class="qr-corner tl"></div><div class="qr-corner tr"></div><div class="qr-corner bl"></div><div class="qr-noise" id="qrNoise"></div><div class="qr-center">L</div></div><strong class="qr-demo-label">LAKAYGOPAY · DEMO</strong><p class="subtext" id="requestPreviewText" data-i18n="qrWillAppear">Les détails de votre demande apparaîtront ici.</p><button class="button button-secondary full-button" id="copyRequest" type="button" disabled data-i18n="copyRequest">Copier la demande</button><small class="qr-warning" data-i18n="qrWarning">Ce motif n’est pas un QR bancaire fonctionnel.</small></article></div>
-      </section>
+    <footer class="app-footer">
+      <p><strong>LakayGoPay</strong> · Sèvis peman senp ak yon lavi senp.</p>
+      <p>Bous ak transfè entèn yo se fonksyon rejis dijital. Depo, retrè, MonCash, NatCash ak peman bank rete dezaktive jiskaske tout otorizasyon ak patnè finansye nesesè yo valide.</p>
+    </footer>
+  </main>
 
-      <!-- ACTIVITY -->
-      <section class="view" id="view-activity">
-        <div class="page-intro"><div><p class="eyebrow" data-i18n="transactionHistory">JOURNAL D’ACTIVITÉ</p><h2 data-i18n="allTransactions">Toutes les transactions</h2><p class="subtext" data-i18n="activitySubtitle">Recherchez et exportez l’historique de démonstration local.</p></div><button class="button button-secondary" id="exportCsv">⇩ <span data-i18n="exportCsv">Exporter CSV</span></button></div>
-        <div class="surface-card activity-card"><div class="activity-toolbar"><div class="search-field"><span>⌕</span><input id="activitySearch" placeholder="Rechercher par nom, ID…" data-i18n-placeholder="searchPlaceholder"></div><select id="activityType" aria-label="Filtrer par type"><option value="all" data-i18n="allTypes">Tous les types</option><option value="send" data-i18n="outgoingType">Envois</option><option value="request" data-i18n="requestsType">Demandes</option><option value="scan" data-i18n="paymentsType">Paiements QR</option></select><select id="activityStatus" aria-label="Filtrer par statut"><option value="all" data-i18n="allStatuses">Tous les statuts</option><option value="demo" data-i18n="demoStatus">Démo créée</option></select></div><div class="activity-table-head"><span data-i18n="transactionColumn">TRANSACTION</span><span data-i18n="typeColumn">TYPE</span><span data-i18n="dateColumn">DATE</span><span data-i18n="amountColumn">MONTANT</span><span data-i18n="statusColumn">STATUT</span></div><div id="activityRows" class="activity-rows"><div class="empty-state" data-i18n="emptyTransactions">Aucune transaction pour le moment.</div></div><div class="activity-footer"><span id="activityCount">0 transaction</span><button class="link-button" id="clearDemoHistory" data-i18n="clearHistory">Effacer l’historique local</button></div></div>
-      </section>
-
-      <!-- BENEFICIARIES -->
-      <section class="view" id="view-beneficiaries">
-        <div class="page-intro"><div><p class="eyebrow" data-i18n="savedContacts">CONTACTS ENREGISTRÉS</p><h2 data-i18n="beneficiaries">Bénéficiaires</h2><p class="subtext" data-i18n="beneficiariesSubtitle">Gardez vos contacts favoris sur cet appareil de démonstration.</p></div></div>
-        <div class="beneficiary-layout"><article class="surface-card form-card"><h3 data-i18n="addBeneficiary">Ajouter un bénéficiaire</h3><form id="beneficiaryForm"><label for="beneficiaryName" data-i18n="fullName">Nom complet</label><input id="beneficiaryName" maxlength="50" placeholder="Ex. Marie Pierre" required><label for="beneficiaryPhone" data-i18n="phoneOrId">Téléphone ou identifiant</label><input id="beneficiaryPhone" maxlength="40" placeholder="+509 0000 0000" required><button class="button button-primary full-button" type="submit" data-i18n="saveContact">Enregistrer le contact</button></form><p class="form-error" id="beneficiaryError" role="status"></p></article><article class="surface-card contacts-card"><div class="section-heading"><h3 data-i18n="myContacts">Mes contacts</h3><span id="contactCount" class="count-chip">0</span></div><div id="beneficiaryList"><div class="empty-state" data-i18n="noContacts">Aucun bénéficiaire enregistré.</div></div></article></div>
-      </section>
-
-      <!-- MERCHANT -->
-      <section class="view" id="view-merchant">
-        <div class="merchant-hero"><div><p class="eyebrow" data-i18n="businessSpace">LAKAYGOPAY BUSINESS</p><h2 data-i18n="merchantHeadline">Votre commerce avance avec vous.</h2><p data-i18n="merchantSubhead">Un espace prévu pour suivre vos demandes et vos ventes.</p><button class="button button-light" data-go="receive" data-i18n="createPaymentRequest">Créer une demande</button></div><div class="merchant-hero-art">▤</div></div>
-        <div class="merchant-metrics"><article class="metric-card"><span data-i18n="salesToday">Ventes aujourd’hui</span><strong>0,00 HTG</strong><small data-i18n="demoData">Données de démo</small></article><article class="metric-card"><span data-i18n="paymentsReceived">Paiements reçus</span><strong>0</strong><small data-i18n="demoData">Données de démo</small></article><article class="metric-card"><span data-i18n="paymentRequests">Demandes créées</span><strong id="requestMetric">0</strong><small data-i18n="localDevice">Sur cet appareil</small></article></div>
-        <div class="merchant-content-grid"><article class="surface-card padded-card"><div class="section-heading"><div><p class="eyebrow" data-i18n="merchantTools">OUTILS MARCHAND</p><h3 data-i18n="manageBusiness">Gérer mon activité</h3></div></div><div class="merchant-tool-list"><button data-go="receive"><span class="tool-icon">⌗</span><span><strong data-i18n="paymentLink">Demande de paiement</strong><small data-i18n="paymentLinkDesc">Préparer un lien ou QR de démonstration</small></span><b>→</b></button><button data-go="activity"><span class="tool-icon">◷</span><span><strong data-i18n="salesHistory">Historique des ventes</strong><small data-i18n="salesHistoryDesc">Consulter les opérations de test</small></span><b>→</b></button><button data-go="settings"><span class="tool-icon">⚙</span><span><strong data-i18n="businessProfile">Profil de l’entreprise</strong><small data-i18n="businessProfileDesc">Informations à configurer plus tard</small></span><b>→</b></button></div></article><article class="surface-card padded-card"><p class="eyebrow" data-i18n="merchantChecklist">AVANT LE LANCEMENT</p><h3 data-i18n="merchantSetup">Configuration marchand</h3><div class="check-row done"><span>✓</span><div><strong data-i18n="demoSpaceReady">Espace de présentation</strong><small data-i18n="demoSpaceReadyText">Interface disponible</small></div></div><div class="check-row pending"><span>○</span><div><strong data-i18n="identityCheck">Vérification d’identité</strong><small data-i18n="needsBackend">Nécessite le backend</small></div></div><div class="check-row pending"><span>○</span><div><strong data-i18n="paymentPartner">Partenaire de paiement</strong><small data-i18n="partnerRequired">À sélectionner et intégrer</small></div></div></article></div>
-      </section>
-
-      <!-- NOTIFICATIONS -->
-      <section class="view" id="view-notifications">
-        <div class="page-intro"><div><p class="eyebrow" data-i18n="updates">MISES À JOUR</p><h2 data-i18n="notifications">Notifications</h2><p class="subtext" data-i18n="notificationSubtitle">Informations liées à votre expérience de démonstration.</p></div><button class="button button-secondary" id="markAllRead" data-i18n="markAllRead">Tout marquer comme lu</button></div>
-        <div class="surface-card notifications-list" id="notificationsList"></div>
-      </section>
-
-      <!-- SECURITY -->
-      <section class="view" id="view-security">
-        <div class="page-intro"><div><p class="eyebrow" data-i18n="securityCenter">CENTRE DE SÉCURITÉ</p><h2 data-i18n="protectAccount">Protéger votre compte</h2><p class="subtext" data-i18n="securitySubtitle">Voici les protections à mettre en place avant toute utilisation réelle.</p></div><span class="status-label warning-label" data-i18n="setupRequired">À CONFIGURER</span></div>
-        <div class="security-alert"><span>◇</span><div><strong data-i18n="securityAlertTitle">La sécurité financière n’est pas encore activée.</strong><p data-i18n="securityAlertText">Cette interface ne possède pas encore d’authentification réelle ni de contrôle serveur. N’y saisissez aucun mot de passe bancaire ou donnée sensible.</p></div></div>
-        <div class="security-grid"><article class="surface-card security-item"><span class="security-item-icon">▣</span><div><strong data-i18n="secureLogin">Connexion sécurisée</strong><p data-i18n="secureLoginDesc">Authentification Supabase à connecter avec vérification côté serveur.</p><span class="security-state">Non configurée</span></div></article><article class="surface-card security-item"><span class="security-item-icon">⌑</span><div><strong data-i18n="twoFactor">Authentification à deux facteurs</strong><p data-i18n="twoFactorDesc">OTP/MFA à activer pour protéger les accès sensibles.</p><span class="security-state">Non activée</span></div></article><article class="surface-card security-item"><span class="security-item-icon">⇄</span><div><strong data-i18n="transactionProtection">Protection des transactions</strong><p data-i18n="transactionProtectionDesc">Ledger append-only, idempotence et validation serveur obligatoires.</p><span class="security-state">À construire</span></div></article><article class="surface-card security-item"><span class="security-item-icon">♙</span><div><strong data-i18n="adminApproval">Validation à deux personnes</strong><p data-i18n="adminApprovalDesc">Les retraits importants doivent être approuvés par deux administrateurs distincts.</p><span class="security-state">À construire</span></div></article><article class="surface-card security-item"><span class="security-item-icon">▤</span><div><strong data-i18n="auditTrail">Journal d’audit</strong><p data-i18n="auditTrailDesc">Chaque action sensible doit être horodatée et conservée.</p><span class="security-state">À construire</span></div></article><article class="surface-card security-item"><span class="security-item-icon">◎</span><div><strong data-i18n="privacy">Confidentialité des données</strong><p data-i18n="privacyDesc">Règles d’accès, chiffrement, sauvegardes et politique de conservation.</p><span class="security-state">À configurer</span></div></article></div>
-      </section>
-
-      <!-- SETTINGS -->
-      <section class="view" id="view-settings">
-        <div class="page-intro"><div><p class="eyebrow" data-i18n="preferences">PRÉFÉRENCES</p><h2 data-i18n="settings">Paramètres</h2><p class="subtext" data-i18n="settingsSubtitle">Personnalisez cette interface sur votre appareil.</p></div></div>
-        <div class="settings-layout"><article class="surface-card settings-card"><h3 data-i18n="personalInformation">Informations personnelles</h3><form id="profileForm"><label for="profileName" data-i18n="displayName">Nom affiché</label><input id="profileName" maxlength="50" value="Bastien Demo"><label for="profileEmail" data-i18n="emailOptional">Adresse e-mail (facultatif)</label><input id="profileEmail" type="email" placeholder="nom@exemple.com"><button class="button button-primary" type="submit" data-i18n="saveChanges">Enregistrer</button></form><p class="form-error" id="profileMessage" role="status"></p></article><article class="surface-card settings-card"><h3 data-i18n="appPreferences">Préférences de l’application</h3><label for="settingsLanguage" data-i18n="language">Langue</label><select id="settingsLanguage"><option value="fr">Français</option><option value="ht">Kreyòl ayisyen</option><option value="en">English</option></select><label for="settingsCurrency" data-i18n="defaultCurrency">Devise par défaut</label><select id="settingsCurrency" disabled><option>HTG — Gourde haïtienne</option></select><div class="settings-toggle-row"><div><strong data-i18n="showDemoNotices">Afficher les avertissements démo</strong><small data-i18n="showDemoNoticesDesc">Conserver les rappels visibles</small></div><input id="noticeToggle" type="checkbox" checked></div><button class="button button-secondary" id="resetLocalData" type="button" data-i18n="resetDemo">Réinitialiser les données de démonstration</button></article></div>
-      </section>
-
-      <!-- HELP -->
-      <section class="view" id="view-help">
-        <div class="page-intro"><div><p class="eyebrow" data-i18n="supportCenter">CENTRE D’ASSISTANCE</p><h2 data-i18n="help">Aide & assistance</h2><p class="subtext" data-i18n="helpSubtitle">Quelques réponses sur cette version de LakayGoPay.</p></div></div>
-        <div class="help-grid"><article class="surface-card help-card"><span class="help-icon">?</span><h3 data-i18n="faqTitle">Questions fréquentes</h3><details><summary data-i18n="faq1">Est-ce que je peux envoyer de l’argent réel ?</summary><p data-i18n="faq1a">Non. Cette version est un prototype. Aucun mouvement d’argent réel n’est possible.</p></details><details><summary data-i18n="faq2">Mon solde est-il réel ?</summary><p data-i18n="faq2a">Non. Le solde est uniquement illustratif et n’est relié à aucun compte bancaire ou portefeuille.</p></details><details><summary data-i18n="faq3">MonCash et NatCash seront-ils pris en charge ?</summary><p data-i18n="faq3a">Ils pourront être étudiés comme partenaires ou moyens de paiement après accord, intégration technique et vérifications réglementaires.</p></details><details><summary data-i18n="faq4">Quand les paiements seront-ils activés ?</summary><p data-i18n="faq4a">Après la mise en place du backend, des contrôles financiers, des tests de sécurité et des accords avec des partenaires agréés.</p></details></article><article class="surface-card help-contact"><span class="help-icon">✉</span><h3 data-i18n="needHelp">Besoin d’aide ?</h3><p data-i18n="helpContactText">Pour le moment, cette page présente le parcours d’assistance prévu. Les coordonnées officielles seront ajoutées lorsque le support sera opérationnel.</p><div class="support-status"><i></i><span data-i18n="supportNotConnected">Support en ligne : non configuré</span></div></article></div>
-      </section>
-
-      <footer class="app-footer"><span>© 2026 LakayGoPay</span><span data-i18n="footerTagline">Service paiement simple avec une vie simple.</span><span class="footer-prototype">Aperçu public · HTG</span></footer>
-    </main>
-  </div>
-
-  <div class="modal-backdrop" id="confirmModal" aria-hidden="true"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><button class="modal-close" id="closeModal" aria-label="Fermer">×</button><div class="modal-icon">↗</div><p class="eyebrow" data-i18n="simulationReview">VÉRIFICATION DE DÉMO</p><h2 id="modalTitle" data-i18n="confirmTransfer">Confirmer la simulation ?</h2><div id="modalDetails" class="modal-details"></div><div class="modal-warning" data-i18n="modalWarning">Aucun argent réel ne sera envoyé. Cette action ajoute uniquement un exemple à l’historique local.</div><div class="modal-actions"><button class="button button-secondary" id="cancelTransfer" data-i18n="cancel">Annuler</button><button class="button button-primary" id="confirmTransferBtn" data-i18n="confirmDemo">Confirmer la démo</button></div></section></div>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="/app.js" defer></script>
+  <script type="module" src="/app.js"></script>
 </body>
 </html>
