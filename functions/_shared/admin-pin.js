@@ -18,6 +18,18 @@ function toHex(bytes) {
 function fromHex(value) {
   return Uint8Array.from(value.match(/.{2}/g) || [], (part) => parseInt(part, 16));
 }
+function decodeJwtPayload(token) {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    const normalized = part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "=");
+    const binary = atob(normalized);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return null;
+  }
+}
 function constantTimeEqual(a, b) {
   if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
   let diff = 0;
@@ -37,7 +49,7 @@ async function readAdminPin(env, userId) {
   const { url, secretKey } = config(env);
   const response = await fetch(
     url + "/rest/v1/admin_security?user_id=eq." + encodeURIComponent(userId) +
-      "&select=user_id,pin_hash,pin_salt,pin_iterations,failed_attempts,locked_until&limit=1",
+      "&select=user_id,pin_hash,pin_salt,pin_iterations,failed_attempts,locked_until,last_verified_at,last_verified_session_id&limit=1",
     { headers: { apikey: secretKey, authorization: "Bearer " + secretKey, accept: "application/json" } }
   );
   if (!response.ok) throw new Error("ADMIN_PIN_DATABASE_UNAVAILABLE");
@@ -100,10 +112,43 @@ export async function setupAdminPin(request, env) {
     return error("ADMIN_PIN_SETUP_FAILED", 503);
   }
 }
+
+export async function requireAdminPinSession(request, env) {
+  const access = await requireAdmin(request, env);
+  if (access.error) return access;
+  try {
+    const claims = decodeJwtPayload(access.accessToken);
+    const sessionId = claims?.session_id;
+    if (
+      claims?.sub !== access.user.id ||
+      typeof sessionId !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId)
+    ) return { error: error("ADMIN_PIN_REQUIRED", 403) };
+
+    const record = await readAdminPin(env, access.user.id);
+    const verifiedAt = Date.parse(record?.last_verified_at || "");
+    const sameSession = record?.last_verified_session_id === sessionId;
+    const fresh = Number.isFinite(verifiedAt) && Date.now() - verifiedAt <= 10 * 60 * 1000;
+    if (!record?.pin_hash || !sameSession || !fresh) {
+      return { error: error("ADMIN_PIN_REQUIRED", 403) };
+    }
+    return access;
+  } catch {
+    return { error: error("ADMIN_PIN_SECURITY_UNAVAILABLE", 503) };
+  }
+}
+
 export async function verifyAdminPin(request, env) {
   const access = await requireAdmin(request, env);
   if (access.error) return access.error;
   try {
+    const claims = decodeJwtPayload(access.accessToken);
+    const sessionId = claims?.session_id;
+    if (
+      claims?.sub !== access.user.id ||
+      typeof sessionId !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId)
+    ) return error("ADMIN_PIN_SESSION_INVALID", 401);
     const body = await readJson(request, 1000);
     const pin = typeof body?.pin === "string" ? body.pin : "";
     if (!PIN_PATTERN.test(pin)) return error("ADMIN_PIN_MUST_BE_6_DIGITS", 400);
@@ -123,7 +168,8 @@ export async function verifyAdminPin(request, env) {
     const valid = constantTimeEqual(candidate, record.pin_hash);
     const attempt = await callRpc(env, "record_admin_pin_attempt", {
       p_user_id: access.user.id,
-      p_success: valid
+      p_success: valid,
+      p_session_id: sessionId
     });
     if (
       !Array.isArray(attempt) || attempt.length !== 1 ||
