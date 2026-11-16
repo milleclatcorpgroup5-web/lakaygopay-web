@@ -12,7 +12,18 @@ const style = document.createElement("style");
 style.textContent = `
 #lgp-launch{position:fixed;z-index:99990;right:16px;bottom:16px;border:0;border-radius:999px;padding:13px 18px;background:#073b58;color:#fff;font:700 13px system-ui;box-shadow:0 10px 30px #06283b55;cursor:pointer}
 #lgp-panel{position:fixed;z-index:99991;right:16px;bottom:72px;width:min(520px,calc(100vw - 24px));max-height:min(82vh,850px);overflow:auto;background:#f7fafc;color:#183447;border:1px solid #cfdae2;border-radius:18px;box-shadow:0 18px 55px #061e2f55;font:13px system-ui}
-#lgp-panel[hidden]{display:none}#lgp-panel *{box-sizing:border-box}#lgp-panel header{position:sticky;top:0;z-index:2;background:#073b58;color:#fff;padding:15px 17px;display:flex;justify-content:space-between;align-items:center;gap:12px}#lgp-panel header strong{font-size:15px}#lgp-panel button{border:0;border-radius:9px;padding:9px 12px;background:#087fa5;color:white;font:650 12px system-ui;cursor:pointer}#lgp-panel button.secondary{background:#e4edf2;color:#163c52}#lgp-panel button.danger{background:#a83e48}#lgp-panel button:disabled{opacity:.5;cursor:wait}#lgp-body{padding:13px;display:grid;gap:12px}#lgp-panel .card{background:white;border:1px solid #e0e8ee;border-radius:12px;padding:12px;display:grid;gap:9px}#lgp-panel .card h3{font-size:13px;margin:0;color:#073b58}#lgp-panel p{margin:0;line-height:1.5;color:#607586;font-size:11px}#lgp-panel label{display:grid;gap:4px;font-size:11px;color:#566d7d}#lgp-panel input,#lgp-panel select{width:100%;min-width:0;border:1px solid #d5e0e7;border-radius:8px;padding:9px 10px;background:#fff;color:#183447;font:12px system-ui}#lgp-panel .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}#lgp-panel .actions{display:flex;flex-wrap:wrap;gap:7px}#lgp-panel .muted{font-size:10px;color:#778996}#lgp-panel .status{padding:9px 10px;border-radius:8px;background:#e8f4f7;color:#0a5871;font-size:11px;white-space:pre-wrap;word-break:break-word}#lgp-panel .status.error{background:#fff0ef;color:#9b3030}#lgp-panel .status.success{background:#e8f6ef;color:#176747}#lgp-log{max-height:145px;overflow:auto;background:#102e40;color:#d5edf3;border-radius:9px;padding:10px;white-space:pre-wrap;word-break:break-word;font:10px/1.5 ui-monospace,monospace}#lgp-qr img{max-width:180px;background:#fff;padding:7px;border:1px solid #e5ebef;border-radius:8px}#lgp-panel .wide{grid-column:1/-1}@media(max-width:520px){#lgp-launch{right:10px;bottom:10px}#lgp-panel{right:6px;bottom:62px;width:calc(100vw - 12px);max-height:85vh}#lgp-panel .row{grid-template-columns:1fr}}
+#lgp-panel[hidden]{display:none}#lgp-panel *{box-sizing:border-box}#lgp-panel header{position:sticky;top:0;z-index:2;background:#073b58;color:#fff;padding:15px 17px;display:flex;justify-content:space-between;align-items:center;gap:12px}#lgp-panel header strong{font-size:15px}#lgp-panel button{border:0;border-radius:9px;padding:9px 12px;background:#087fa5;color:white;font:650 12px system-ui;cursor:pointer}#lgp-panel button.secondary{background:#e4edf2;color:#163c52}#lgp-panel button.danger{background:#a83e48}#lgp-panel button:disabled{opacity:.5;cursor:wait}#lgp-body{padding:13px;display:grid;gap:12px}#lgp-panel .card{background:white;border:1px solid #e0e8ee;border-radius:12px;padding:12px;display:grid;gap:9px}#lgp-panel .card h3{font-size:13px;margin:0;color:#073b58}#lgp-panel p{margin:0;line-height:1.5;color:#607586;font-size:11px}#lgp-panel label{display:grid;gap:4px;font-size:11px;color:#566d7d}#lgp-panel input,#lgp-panel select{width:100%;min-width:0;border:1px solid #d5e0e7;border-radius:8px;padding:9px 10px;background:#fff;color:#183447;font:12px system-ui}#lgp-panel .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}#lgp-panel .actions{display:flex;flex-wrap:wrap;gap:7px}#lgp-panel .muted{font-size:10px;color:#778996}#lgp-panel .status{padding:9px 10px;border-radius:8px;background:#e8f4f7;color:#0a5871;font-size:11px;white-space:pre-wrap;word-break:break-word}#lgp-panel .status.error{background:#fff0ef;color:#9b3030}#lgp-panel .status.success{background:#e8f6ef;color:#176747}#lgp-log{max-height:145px;overflow:auto;background:#102e40;color:#d5edf3;border-radius:9px;padding:10px;white-space:pre-wrap;word-break:break-word;font:10px/1.5 ui-monospace,monospace}#lgp-qr img{max-width:180px;background:#fff;padding:7px;border:1px solid #e5ebef;border-radius:8px}#lgp-panel .wide{grid-column:1/-1}
+#lgp-pin-card{margin-top:16px;padding:18px;border:1px solid #d8e4ea;border-radius:14px;background:#fff;display:grid;gap:12px}
+#lgp-pin-card h3{margin:0;color:#073b58;font-size:18px}
+#lgp-pin-card p{margin:0;color:#607586;line-height:1.5;font-size:13px}
+#lgp-pin-card label{display:grid;gap:6px;font-size:13px;color:#345}
+#lgp-pin-card input{width:100%;max-width:260px;padding:12px;border:1px solid #cbd9e1;border-radius:9px;font-size:20px;letter-spacing:8px}
+#lgp-pin-card button{justify-self:start;border:0;border-radius:9px;padding:11px 16px;background:#087fa5;color:#fff;font-weight:700}
+#lgp-pin-card button.secondary{background:#e4edf2;color:#163c52}
+#lgp-pin-status{padding:10px;border-radius:8px;background:#eef4f7;color:#345;font-size:13px;white-space:pre-wrap}
+#lgp-pin-status.error{background:#fff0ef;color:#9b3030}
+#lgp-pin-status.success{background:#e8f6ef;color:#176747}
+@media(max-width:520px){#lgp-launch{right:10px;bottom:10px}#lgp-panel{right:6px;bottom:62px;width:calc(100vw - 12px);max-height:85vh}#lgp-panel .row{grid-template-columns:1fr}}
 `;
 document.head.append(style);
 
@@ -113,6 +124,33 @@ panel.innerHTML = `
   </div>`;
 document.body.append(panel);
 
+// Ajoute les vrais contrôles PIN dans l'écran Sécurité existant.
+const securityView = $("#view-security");
+if (securityView && !$("#lgp-pin-card")) {
+  const pinCard = document.createElement("article");
+  pinCard.id = "lgp-pin-card";
+  pinCard.innerHTML = `
+    <h3>PIN sekirite LakayGoPay</h3>
+    <p>PIN sa a gen 4 chif. Li sèvi pou otorize operasyon sansib. Pa pataje li ak ajan oswa lòt moun.</p>
+    <div id="lgp-pin-status">Ap verifye estati PIN ou…</div>
+    <div id="lgp-pin-auth-required" hidden>
+      <p>Ou dwe konekte nan kont LakayGoPay ou anvan ou konfigire oswa verifye PIN.</p>
+      <button type="button" class="secondary" id="lgp-pin-open-login">Konekte</button>
+    </div>
+    <form id="lgp-pin-setup-form" hidden>
+      <label for="lgp-pin-new">Kreye PIN 4 chif</label>
+      <input id="lgp-pin-new" type="password" inputmode="numeric" autocomplete="new-password" pattern="[0-9]{4}" minlength="4" maxlength="4" required aria-label="Nouvo PIN 4 chif">
+      <button type="submit">Anrejistre PIN</button>
+    </form>
+    <form id="lgp-pin-verify-form" hidden>
+      <label for="lgp-pin-check">Antre PIN 4 chif ou</label>
+      <input id="lgp-pin-check" type="password" inputmode="numeric" autocomplete="current-password" pattern="[0-9]{4}" minlength="4" maxlength="4" required aria-label="Verifye PIN 4 chif">
+      <button type="submit">Verifye PIN</button>
+    </form>
+  `;
+  securityView.append(pinCard);
+}
+
 const logEl = $("#lgp-log");
 const resultEl = $("#lgp-result");
 let supabase = null;
@@ -193,8 +231,46 @@ async function loadAccount() {
   result("Done backend yo chaje avèk siksè.", "success");
   return summary;
 }
+async function refreshPinStatus() {
+  const statusNode = $("#lgp-pin-status");
+  const setupForm = $("#lgp-pin-setup-form");
+  const verifyForm = $("#lgp-pin-verify-form");
+  const authRequired = $("#lgp-pin-auth-required");
+  if (!statusNode || !setupForm || !verifyForm || !authRequired) return;
+  const session = supabase ? await currentSession().catch(() => null) : null;
+  authRequired.hidden = Boolean(session);
+  setupForm.hidden = true;
+  verifyForm.hidden = true;
+  if (!session) {
+    statusNode.className = "";
+    statusNode.textContent = "Konekte pou nou ka verifye si PIN ou deja konfigire.";
+    return;
+  }
+  statusNode.className = "";
+  statusNode.textContent = "Ap verifye estati PIN ou…";
+  try {
+    const data = await api("/api/pin/status");
+    if (data.pin_configured) {
+      setupForm.hidden = true;
+      verifyForm.hidden = false;
+      statusNode.className = "success";
+      statusNode.textContent = data.locked_until && Date.parse(data.locked_until) > Date.now()
+        ? `PIN lan bloke tanporèman jouk ${new Date(data.locked_until).toLocaleString()}.`
+        : "PIN sekirite a deja konfigire. Antre li pou teste verifikasyon an.";
+    } else {
+      setupForm.hidden = false;
+      verifyForm.hidden = true;
+      statusNode.textContent = "Ou poko gen PIN sekirite. Kreye youn pou kontinye.";
+    }
+  } catch (error) {
+    statusNode.className = "error";
+    statusNode.textContent = `Pa kapab verifye estati PIN lan: ${error.message}`;
+  }
+}
+
 function setAuthenticated(session) {
   const loggedIn = Boolean(session?.user);
+  refreshPinStatus();
   $("#lgp-auth-card").hidden = loggedIn;
   for (const id of ["lgp-account-card", "lgp-mfa-card", "lgp-wallet-card", "lgp-merchant-card", "lgp-transfer-card", "lgp-pay-card", "lgp-withdraw-card"]) $("#" + id).hidden = !loggedIn;
   $("#lgp-admin-card").hidden = true;
@@ -249,6 +325,70 @@ if (!config.configured) {
     result(`Pa kapab chaje koneksyon Supabase: ${error.message}`, "error");
     log("Koneksyon auth echwe.", error.message);
   }
+}
+
+const pinCard = $("#lgp-pin-card");
+if (pinCard) {
+  $("#lgp-pin-open-login").addEventListener("click", () => {
+    panel.hidden = false;
+    $("#lgp-email")?.focus();
+  });
+  $("#lgp-pin-setup-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const input = $("#lgp-pin-new");
+    const pin = input.value;
+    if (!/^\\d{4}$/.test(pin)) {
+      $("#lgp-pin-status").className = "error";
+      $("#lgp-pin-status").textContent = "PIN lan dwe gen egzakteman 4 chif.";
+      return;
+    }
+    const submit = event.submitter;
+    if (submit) submit.disabled = true;
+    try {
+      const data = await api("/api/pin/setup", { method: "POST", body: { pin } });
+      input.value = "";
+      $("#lgp-pin-status").className = "success";
+      $("#lgp-pin-status").textContent = data.pin_configured ? "PIN sekirite a anrejistre avèk siksè." : "Nou pa kapab konfime anrejistreman PIN lan.";
+      await refreshPinStatus();
+    } catch (error) {
+      $("#lgp-pin-status").className = "error";
+      $("#lgp-pin-status").textContent = error.message === "PIN_ALREADY_SET"
+        ? "PIN deja konfigire sou kont sa a. Sèvi ak fòm verifikasyon an."
+        : `Erè pandan kreyasyon PIN: ${error.message}`;
+      await refreshPinStatus();
+    } finally {
+      if (submit) submit.disabled = false;
+    }
+  });
+  $("#lgp-pin-verify-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const input = $("#lgp-pin-check");
+    const pin = input.value;
+    if (!/^\\d{4}$/.test(pin)) {
+      $("#lgp-pin-status").className = "error";
+      $("#lgp-pin-status").textContent = "PIN lan dwe gen egzakteman 4 chif.";
+      return;
+    }
+    const submit = event.submitter;
+    if (submit) submit.disabled = true;
+    try {
+      const data = await api("/api/pin/verify", { method: "POST", body: { pin } });
+      input.value = "";
+      $("#lgp-pin-status").className = "success";
+      $("#lgp-pin-status").textContent = data.pin_verified ? "PIN lan verifye avèk siksè." : "Verifikasyon PIN lan pa reyisi.";
+    } catch (error) {
+      input.value = "";
+      $("#lgp-pin-status").className = "error";
+      $("#lgp-pin-status").textContent = error.message === "PIN_INVALID"
+        ? "PIN lan pa kòrèk. Verifye li epi eseye ankò."
+        : error.message === "PIN_TEMPORARILY_LOCKED"
+          ? "PIN lan bloke tanporèman apre twòp move tantativ."
+          : `Erè verifikasyon PIN: ${error.message}`;
+      await refreshPinStatus();
+    } finally {
+      if (submit) submit.disabled = false;
+    }
+  });
 }
 
 panel.addEventListener("click", async (event) => {
