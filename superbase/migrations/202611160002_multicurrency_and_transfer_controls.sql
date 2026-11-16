@@ -101,9 +101,8 @@ for each row execute function public.create_merchant_multi_currency_wallets();
 insert into public.wallets (owner_user_id, currency, status)
 select owners.owner_user_id, currencies.currency, 'active'
 from (
-  select distinct owner_user_id
-  from public.wallets
-  where owner_user_id is not null
+  select id as owner_user_id
+  from auth.users
 ) as owners
 cross join (values ('HTG'::char(3)), ('USD'::char(3)), ('EUR'::char(3))) as currencies(currency)
 on conflict do nothing;
