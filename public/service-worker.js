@@ -1,5 +1,5 @@
-const CACHE_NAME = "lakaygopay-shell-v4";
-const APP_SHELL = ["/", "/index.html", "/styles.css", "/app.js", "/manifest.webmanifest", "/assets/icon.svg"];
+const CACHE_NAME = "lakaygopay-shell-v5";
+const APP_SHELL = ["/", "/index.html", "/styles.css?v=588a1df0", "/app.js?v=588a1df0", "/manifest.webmanifest", "/assets/icon.svg"];
 self.addEventListener("install", function (event) {
   event.waitUntil(caches.open(CACHE_NAME).then(function (cache) {
     return cache.addAll(APP_SHELL);
