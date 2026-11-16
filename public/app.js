@@ -282,13 +282,15 @@ function renderActivity(rows) {
 }
 function renderPinState(result) {
   const node = $("#pinState");
-  $("#pinSetupForm").hidden = pinConfigured;
+  const cannotVerify = result.status === "rejected";
+  $("#pinSetupForm").hidden = pinConfigured || cannotVerify;
+  $("#transferForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   if (pinConfigured) {
     node.textContent = "PIN sekirite a deja konfigire. Ou dwe antre PIN lan pou chak transfè.";
     return;
   }
-  if (result.status === "rejected") {
-    node.textContent = "Nou pa kapab verifye estati PIN lan kounye a. Eseye rafrechi paj la.";
+  if (cannotVerify) {
+    node.textContent = "Nou pa kapab verifye estati PIN lan kounye a. Transfè yo rete bloke; rafrechi paj la.";
     return;
   }
   node.textContent = "Ou poko kreye PIN sekirite ou. Fè sa anvan ou voye lajan.";
