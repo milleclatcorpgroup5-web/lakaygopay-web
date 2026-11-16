@@ -23,6 +23,24 @@ async function requireUser(request, env) {
   if (!response.ok) return { error: json({ error: "INVALID_OR_EXPIRED_SESSION" }, 401) };
   const user = await response.json();
   if (!user?.id) return { error: json({ error: "INVALID_SESSION" }, 401) };
+
+  // Enforce the server-controlled profile status on every authenticated API call.
+  const profileResponse = await fetch(
+    `${url}/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}&select=account_status&limit=1`,
+    {
+      headers: {
+        apikey: secretKey,
+        authorization: `Bearer ${secretKey}`,
+        accept: "application/json"
+      }
+    }
+  );
+  if (!profileResponse.ok) return { error: json({ error: "ACCOUNT_STATUS_UNAVAILABLE" }, 503) };
+  const profileRows = await profileResponse.json();
+  const accountStatus = profileRows?.[0]?.account_status;
+  if (accountStatus !== "active") {
+    return { error: json({ error: accountStatus === "suspended" ? "ACCOUNT_SUSPENDED" : "ACCOUNT_NOT_ACTIVE" }, 403) };
+  }
   return { user, accessToken: match[1] };
 }
 
