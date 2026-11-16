@@ -22,8 +22,8 @@
       <div class="workspace-label" data-i18n="workspace">ESPACE PERSONNEL</div>
       <div class="profile-mini">
         <div class="avatar">BG</div>
-        <div class="profile-meta"><strong id="sidebarName">Bastien Demo</strong><small data-i18n="demoAccount">Compte de démonstration</small></div>
-        <span class="demo-dot" title="Mode démonstration"></span>
+        <div class="profile-meta"><strong id="sidebarName">Bastien Demo</strong><small>Pa konekte</small></div>
+        <span class="demo-dot" title="Koneksyon obligatwa"></span>
       </div>
       <nav class="nav-list">
         <div class="nav-group-label" data-i18n="mainMenu">MENU PRINCIPAL</div>
@@ -43,7 +43,7 @@
         <button class="nav-item" data-view="help"><span class="nav-icon">?</span><span data-i18n="help">Aide & assistance</span></button>
       </nav>
       <div class="sidebar-bottom">
-        <div class="secure-note"><span class="secure-icon">◇</span><div><strong data-i18n="securityFirst">La sécurité d’abord</strong><small data-i18n="securityCaption">Prototype sans argent réel</small></div></div>
+        <div class="secure-note"><span class="secure-icon">◇</span><div><strong data-i18n="securityFirst">La sécurité d’abord</strong><small>Kont ak verifikasyon an sekirite</small></div></div>
         <div class="sidebar-footer">© 2026 LakayGoPay</div>
       </div>
     </aside>
@@ -58,7 +58,7 @@
           <div class="connection-pill"><span class="connection-dot"></span><span>Aperçu public · non connecté</span></div>
           <label class="language-wrap"><span class="sr-only" data-i18n="language">Langue</span><select id="language" aria-label="Langue"><option value="fr">FR</option><option value="ht">HT</option><option value="en">EN</option></select></label>
           <button class="icon-button notification-button" id="notificationShortcut" aria-label="Notifications">♧<i></i></button>
-          <button class="top-profile" id="profileShortcut"><span class="avatar small">BG</span><span class="top-profile-meta"><strong id="topName">Bastien Demo</strong><small data-i18n="personalAccount">Compte personnel</small></span><span class="chevron">⌄</span></button>
+          <button class="top-profile" id="profileShortcut"><span class="avatar small">BG</span><span class="top-profile-meta"><strong id="topName">Bastien Demo</strong><small>Aperçu piblik</small></span><span class="chevron">⌄</span></button>
         </div>
       </header>
 
@@ -66,12 +66,12 @@
 
       <!-- OVERVIEW -->
       <section class="view active" id="view-overview">
-        <div class="welcome-row"><div><p class="eyebrow" data-i18n="yourMoneySpace">VOTRE ESPACE FINANCIER</p><h2><span data-i18n="hello">Bonjour</span>, <span id="welcomeName">Bastien</span> <span class="wave">✦</span></h2><p class="subtext" data-i18n="welcomeSubtitle">Gérez vos opérations de démonstration depuis un seul endroit.</p></div><div class="date-chip" id="todayDate"></div></div>
+        <div class="welcome-row"><div><p class="eyebrow" data-i18n="yourMoneySpace">VOTRE ESPACE FINANCIER</p><h2><span data-i18n="hello">Bonjour</span>, <span id="welcomeName">Bastien</span> <span class="wave">✦</span></h2><p class="subtext">Konekte oswa kreye kont ou pou antre nan espas finansye ou.</p></div><div class="date-chip" id="todayDate"></div></div>
         <div class="overview-grid">
           <article class="balance-card">
             <div class="balance-card-top"><span data-i18n="totalBalance">Solde total du portefeuille</span><button class="balance-eye" id="toggleBalance" aria-label="Masquer le solde">◉</button></div>
             <div class="balance-amount"><strong id="overviewBalance">0,00</strong><span>HTG</span></div>
-            <div class="balance-foot"><span class="balance-status"><i></i><span data-i18n="demoBalance">Solde de démonstration</span></span><span class="balance-account">•••• 0001</span></div>
+            <div class="balance-foot"><span class="balance-status"><i></i><span>Konekte pou wè balans backend</span></span><span class="balance-account">•••• 0001</span></div>
             <div class="balance-actions"><button class="button button-light" data-go="transfer"><span>↗</span><span data-i18n="sendMoney">Envoyer</span></button><button class="button button-glass" data-go="receive"><span>⌗</span><span data-i18n="receiveMoney">Recevoir</span></button><button class="button button-glass" data-go="wallet"><span>＋</span><span data-i18n="details">Détails</span></button></div>
             <div class="balance-watermark">L</div>
           </article>
@@ -86,8 +86,8 @@
           </article>
         </div>
         <div class="metric-grid">
-          <article class="metric-card"><div class="metric-top"><span data-i18n="incoming">Entrées simulées</span><span class="metric-icon green">↙</span></div><strong id="incomingMetric">0 HTG</strong><small data-i18n="periodToday">Aujourd’hui</small></article>
-          <article class="metric-card"><div class="metric-top"><span data-i18n="outgoing">Sorties simulées</span><span class="metric-icon red">↗</span></div><strong id="outgoingMetric">0 HTG</strong><small data-i18n="periodToday">Aujourd’hui</small></article>
+          <article class="metric-card"><div class="metric-top"><span>Antre nan kont</span><span class="metric-icon green">↙</span></div><strong id="incomingMetric">0 HTG</strong><small data-i18n="periodToday">Aujourd’hui</small></article>
+          <article class="metric-card"><div class="metric-top"><span>Depans kont</span><span class="metric-icon red">↗</span></div><strong id="outgoingMetric">0 HTG</strong><small data-i18n="periodToday">Aujourd’hui</small></article>
           <article class="metric-card"><div class="metric-top"><span data-i18n="transactions">Transactions</span><span class="metric-icon blue">◷</span></div><strong id="transactionMetric">0</strong><small data-i18n="sinceStart">Depuis le début</small></article>
           <article class="metric-card"><div class="metric-top"><span data-i18n="beneficiaries">Bénéficiaires</span><span class="metric-icon violet">♧</span></div><strong id="beneficiaryMetric">0</strong><small data-i18n="savedContacts">Contacts enregistrés</small></article>
         </div>
@@ -97,10 +97,10 @@
             <div id="recentTransactions" class="transaction-list"><div class="empty-state" data-i18n="emptyTransactions">Aucune transaction pour le moment.</div></div>
           </article>
           <article class="surface-card status-card">
-            <div class="section-heading"><div><p class="eyebrow" data-i18n="accountStatus">ÉTAT DU COMPTE</p><h3 data-i18n="readiness">Préparation du compte</h3></div><span class="status-label">Prototype</span></div>
+            <div class="section-heading"><div><p class="eyebrow" data-i18n="accountStatus">ÉTAT DU COMPTE</p><h3 data-i18n="readiness">Préparation du compte</h3></div><span class="status-label">Koneksyon obligatwa</span></div>
             <div class="readiness-score"><div class="readiness-ring"><strong>25%</strong></div><div><strong data-i18n="setupProgress">Configuration initiale</strong><small data-i18n="backendPending">Backend et vérification à connecter</small></div></div>
             <div class="progress-track"><span style="width:25%"></span></div>
-            <div class="check-row done"><span>✓</span><div><strong data-i18n="interfaceReady">Interface prête</strong><small data-i18n="interfaceReadyText">Navigation et écrans de démonstration</small></div></div>
+            <div class="check-row done"><span>✓</span><div><strong data-i18n="interfaceReady">Interface prête</strong><small>Paj piblik pare pou eksplorasyon</small></div></div>
             <div class="check-row pending"><span>○</span><div><strong data-i18n="secureAuth">Authentification sécurisée</strong><small data-i18n="notConnected">Pas encore connectée</small></div></div>
             <div class="check-row pending"><span>○</span><div><strong data-i18n="financialCore">Moteur financier</strong><small data-i18n="notConnected">Pas encore connecté</small></div></div>
           </article>
@@ -110,9 +110,9 @@
 
       <!-- WALLET -->
       <section class="view" id="view-wallet">
-        <div class="page-intro"><div><p class="eyebrow" data-i18n="walletOverview">PORTEFEUILLE</p><h2 data-i18n="myWallet">Mon portefeuille</h2><p class="subtext" data-i18n="walletSubtitle">Consultez vos soldes de démonstration et les options prévues.</p></div><span class="status-label">DEMO</span></div>
-        <div class="wallet-feature-card"><div><span data-i18n="mainWallet">Portefeuille principal</span><h2><span id="walletBalance">0,00</span> <small>HTG</small></h2><p><i></i><span data-i18n="demoBalance">Solde de démonstration</span></p></div><div class="wallet-card-chip">▦</div></div>
-        <div class="wallet-options"><article class="surface-card currency-card"><div class="currency-head"><span class="currency-flag">🇭🇹</span><div><strong>Gourde haïtienne</strong><small>HTG · Devise principale prévue</small></div><span class="currency-active">Principal</span></div><h3>0,00 <small>HTG</small></h3><p data-i18n="currencyDemo">Solde illustratif uniquement.</p></article><article class="surface-card currency-card disabled-card"><div class="currency-head"><span class="currency-flag">$</span><div><strong>Dollar américain</strong><small>USD · Option future</small></div><span class="currency-soon" data-i18n="comingSoon">À venir</span></div><h3>— <small>USD</small></h3><p data-i18n="currencyLater">Conversion et multi-devises non activées.</p></article></div>
+        <div class="page-intro"><div><p class="eyebrow" data-i18n="walletOverview">PORTEFEUILLE</p><h2 data-i18n="myWallet">Mon portefeuille</h2><p class="subtext">Konekte pou wè bous ak balans kont ou.</p></div><span class="status-label">Konekte pou antre</span></div>
+        <div class="wallet-feature-card"><div><span data-i18n="mainWallet">Portefeuille principal</span><h2><span id="walletBalance">0,00</span> <small>HTG</small></h2><p><i></i><span>Balans backend ap parèt apre koneksyon</span></p></div><div class="wallet-card-chip">▦</div></div>
+        <div class="wallet-options"><article class="surface-card currency-card"><div class="currency-head"><span class="currency-flag">🇭🇹</span><div><strong>Gourde haïtienne</strong><small>HTG · Devise principale prévue</small></div><span class="currency-active">Principal</span></div><h3>— <small>HTG</small></h3><p>Balans la parèt apre koneksyon kont lan.</p></article><article class="surface-card currency-card disabled-card"><div class="currency-head"><span class="currency-flag">$</span><div><strong>Dollar américain</strong><small>USD · Option future</small></div><span class="currency-soon" data-i18n="comingSoon">À venir</span></div><h3>— <small>USD</small></h3><p data-i18n="currencyLater">Conversion et multi-devises non activées.</p></article></div>
         <div class="surface-card padded-card"><div class="section-heading"><div><p class="eyebrow" data-i18n="walletActions">OPTIONS</p><h3 data-i18n="plannedOperations">Opérations prévues</h3></div></div><div class="operation-grid"><div class="operation-item"><span class="operation-icon">＋</span><strong data-i18n="deposit">Dépôt</strong><small data-i18n="providerRequired">Partenaire requis</small><button disabled data-i18n="notAvailable">Non disponible</button></div><div class="operation-item"><span class="operation-icon">↗</span><strong data-i18n="withdraw">Retrait</strong><small data-i18n="providerRequired">Partenaire requis</small><button disabled data-i18n="notAvailable">Non disponible</button></div><div class="operation-item"><span class="operation-icon">⇄</span><strong data-i18n="transfer">Transfert</strong><small data-i18n="demoOnly">Simulation seulement</small><button class="text-action" data-go="transfer" data-i18n="tryDemo">Essayer la démo</button></div></div></div>
       </section>
 
@@ -179,7 +179,7 @@
         <div class="help-grid"><article class="surface-card help-card"><span class="help-icon">?</span><h3 data-i18n="faqTitle">Questions fréquentes</h3><details><summary data-i18n="faq1">Est-ce que je peux envoyer de l’argent réel ?</summary><p data-i18n="faq1a">Non. Cette version est un prototype. Aucun mouvement d’argent réel n’est possible.</p></details><details><summary data-i18n="faq2">Mon solde est-il réel ?</summary><p data-i18n="faq2a">Non. Le solde est uniquement illustratif et n’est relié à aucun compte bancaire ou portefeuille.</p></details><details><summary data-i18n="faq3">MonCash et NatCash seront-ils pris en charge ?</summary><p data-i18n="faq3a">Ils pourront être étudiés comme partenaires ou moyens de paiement après accord, intégration technique et vérifications réglementaires.</p></details><details><summary data-i18n="faq4">Quand les paiements seront-ils activés ?</summary><p data-i18n="faq4a">Après la mise en place du backend, des contrôles financiers, des tests de sécurité et des accords avec des partenaires agréés.</p></details></article><article class="surface-card help-contact"><span class="help-icon">✉</span><h3 data-i18n="needHelp">Besoin d’aide ?</h3><p data-i18n="helpContactText">Pour le moment, cette page présente le parcours d’assistance prévu. Les coordonnées officielles seront ajoutées lorsque le support sera opérationnel.</p><div class="support-status"><i></i><span data-i18n="supportNotConnected">Support en ligne : non configuré</span></div></article></div>
       </section>
 
-      <footer class="app-footer"><span>© 2026 LakayGoPay</span><span data-i18n="footerTagline">Service paiement simple avec une vie simple.</span><span class="footer-prototype">Prototype · HTG</span></footer>
+      <footer class="app-footer"><span>© 2026 LakayGoPay</span><span data-i18n="footerTagline">Service paiement simple avec une vie simple.</span><span class="footer-prototype">Aperçu public · HTG</span></footer>
     </main>
   </div>
 
