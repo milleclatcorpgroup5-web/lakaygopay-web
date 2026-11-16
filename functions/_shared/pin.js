@@ -78,11 +78,25 @@ export async function assertTransactionPin(env, userId, pin) {
   const candidate = toHex(new Uint8Array(bits));
   const valid = constantTimeEqual(candidate, record.pin_hash);
 
-  // The database maintains the failed-attempt counter and timed lock.
-  await callRpc(env, "record_pin_attempt", {
+  // The database serializes attempts and returns the authoritative lock state.
+  // Fail closed if the RPC response is missing or malformed.
+  const attemptResult = await callRpc(env, "record_pin_attempt", {
     p_user_id: userId,
     p_success: valid,
   });
+  if (
+    !Array.isArray(attemptResult) ||
+    attemptResult.length !== 1 ||
+    typeof attemptResult[0]?.is_locked !== "boolean"
+  ) {
+    fail("PIN_SECURITY_UNAVAILABLE", 503);
+  }
+
+  // A concurrent request may have activated the lock after the initial read.
+  // Always honor the database's post-update lock state, even for a correct PIN.
+  if (attemptResult[0].is_locked) {
+    fail("PIN_TEMPORARILY_LOCKED", 423);
+  }
 
   if (!valid) fail("PIN_INVALID", 401);
   return true;
