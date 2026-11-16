@@ -23,6 +23,21 @@ style.textContent = `
 #lgp-pin-status{padding:10px;border-radius:8px;background:#eef4f7;color:#345;font-size:13px;white-space:pre-wrap}
 #lgp-pin-status.error{background:#fff0ef;color:#9b3030}
 #lgp-pin-status.success{background:#e8f6ef;color:#176747}
+#lgp-panel .auth-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#lgp-panel .auth-tabs button{background:#e6eef3;color:#214258}
+#lgp-panel .auth-tabs button.active{background:#073b58;color:#fff}
+#lgp-panel .auth-pane{display:grid;gap:10px}
+#lgp-panel .auth-pane[hidden]{display:none}
+#lgp-panel .auth-pane>label,#lgp-panel .form-two label{display:grid;gap:5px}
+#lgp-panel .form-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#lgp-panel .form-hint{font-size:11px;color:#6a7e8c;line-height:1.45}
+#lgp-panel .text-button{background:transparent;color:#087fa5;padding:4px;text-align:left}
+#lgp-panel details{border:1px dashed #b9cbd5;border-radius:12px;padding:10px}
+#lgp-panel details>summary{cursor:pointer;color:#345;font-weight:700;padding:4px}
+#lgp-panel textarea{width:100%;border:1px solid #d5e0e7;border-radius:8px;padding:9px;color:#183447;font:12px system-ui}
+#lgp-panel .admin-agent-section{margin:10px 0}
+#lgp-agent-review-list .agent-review-row{padding:9px 0;border-bottom:1px solid #dce5ea;display:grid;gap:6px}
+#lgp-agent-review-list .agent-review-actions{display:flex;gap:6px;flex-wrap:wrap}
 @media(max-width:520px){#lgp-launch{right:10px;bottom:10px}#lgp-panel{right:6px;bottom:62px;width:calc(100vw - 12px);max-height:85vh}#lgp-panel .row{grid-template-columns:1fr}}
 `;
 document.head.append(style);
@@ -41,24 +56,69 @@ panel.innerHTML = `
   <div id="lgp-body">
     <div id="lgp-config-status" class="status">Chèk konfigirasyon…</div>
     <div id="lgp-auth-card" class="card">
-      <h3>Konekte oswa kreye kont</h3>
-      <label>Non konplè (pou nouvo kont)<input id="lgp-full-name" autocomplete="name" maxlength="100"></label>
-      <label>Imèl<input id="lgp-email" type="email" autocomplete="email" required></label>
-      <label>Modpas<input id="lgp-password" type="password" autocomplete="current-password" minlength="8"></label>
-      <div class="actions"><button data-action="signup">Kreye kont</button><button class="secondary" data-action="login">Konekte</button><button class="secondary" data-action="send-otp">Voye kòd imèl</button></div>
-      <label>Kòd OTP imèl<input id="lgp-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="8"></label>
-      <div class="actions"><button data-action="verify-otp">Verifye kòd</button><button class="secondary" data-action="recover">Reprann kont</button></div>
-      <label>Telefòn ak kòd peyi<input id="lgp-phone" type="tel" autocomplete="tel" placeholder="+509XXXXXXXX"></label>
-      <label>Kòd OTP SMS<input id="lgp-sms-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="8"></label>
-      <div class="actions"><button data-action="send-sms-otp">Voye OTP SMS</button><button class="secondary" data-action="verify-sms-otp">Verifye OTP SMS</button></div>
-      <label>Nouvo modpas (apre lyen rekiperasyon)<input id="lgp-new-password" type="password" minlength="8" autocomplete="new-password"></label>
-      <button class="secondary" data-action="update-password">Mete nouvo modpas</button>
-      <p>OTP pa imèl sèvi pou tès la. OTP pa SMS bezwen yon founisè SMS ki aktive nan Supabase epi li ka koute lajan.</p>
+      <h3>Kont LakayGoPay</h3>
+      <p>Chwazi sèvis ou bezwen an. Nou montre sèlman chan ki nesesè yo.</p>
+      <div class="auth-tabs">
+        <button type="button" data-auth-mode="login" class="active">Konekte</button>
+        <button type="button" data-auth-mode="personal">Kont pèsonèl</button>
+        <button type="button" data-auth-mode="merchant">Kont machann</button>
+        <button type="button" data-auth-mode="agent">Vin ajan</button>
+      </div>
+
+      <form id="lgp-login-pane" class="auth-pane">
+        <label>Imèl kont ou<input id="lgp-email" type="email" autocomplete="username" required></label>
+        <label>Modpas / kòd sekrè<input id="lgp-password" type="password" autocomplete="current-password" minlength="8" required></label>
+        <button type="submit">Konekte</button>
+        <button type="button" class="secondary text-button" data-action="recover">Mwen bliye modpas mwen</button>
+      </form>
+
+      <form id="lgp-personal-pane" class="auth-pane" hidden>
+        <div class="form-two">
+          <label>Non<input id="lgp-personal-first" autocomplete="given-name" maxlength="60" required></label>
+          <label>Prenon<input id="lgp-personal-last" autocomplete="family-name" maxlength="60" required></label>
+        </div>
+        <label>Dat nesans<input id="lgp-personal-dob" type="date" autocomplete="bday" required></label>
+        <small class="form-hint">Ou dwe gen omwen 18 an pou kreye yon kont pèsonèl.</small>
+        <label>Imèl<input id="lgp-personal-email" type="email" autocomplete="email" required></label>
+        <label>Nimewo telefòn<input id="lgp-personal-phone" type="tel" autocomplete="tel" placeholder="+509 ..." required></label>
+        <label>Modpas / kòd sekrè<input id="lgp-personal-password" type="password" autocomplete="new-password" minlength="8" required></label>
+        <button type="submit">Kreye kont pèsonèl</button>
+      </form>
+
+      <form id="lgp-merchant-pane" class="auth-pane" hidden>
+        <label>Non biznis la<input id="lgp-merchant-name" autocomplete="organization" maxlength="120" required></label>
+        <label>Telefòn biznis la<input id="lgp-merchant-phone" type="tel" autocomplete="tel" placeholder="+509 ..." required></label>
+        <label>Imèl biznis la<input id="lgp-merchant-email" type="email" autocomplete="email" required></label>
+        <label>Modpas / kòd sekrè<input id="lgp-merchant-password" type="password" autocomplete="new-password" minlength="8" required></label>
+        <button type="submit">Kreye kont machann</button>
+        <small class="form-hint">Kont machann lan ak bous biznis la ap rete an atant jiskaske admin verifye dosye a.</small>
+      </form>
+
+      <div id="lgp-agent-intro" class="auth-pane" hidden>
+        <p>Ajan LakayGoPay pa kreye kont ajan poukont yo. Konekte ak kont pèsonèl ou, soumèt demann lan, epi admin ap verifye epi bay otorizasyon.</p>
+        <button type="button" data-action="agent-login">Konekte pou aplike</button>
+      </div>
+      <p id="lgp-auth-message" class="form-hint" role="status"></p>
     </div>
     <div id="lgp-account-card" class="card" hidden>
-      <h3>Kont aktif</h3><div id="lgp-user-label" class="status"></div>
-      <div class="actions"><button data-action="load-account">Verifye pwofil ak bous</button><button data-action="admin-check" class="secondary">Verifye dwa admin</button><button data-action="logout" class="danger">Dekonekte</button></div>
-      <div id="lgp-admin-status" class="status">Dwa admin poko verifye.</div>
+      <h3>Kont ou konekte</h3><div id="lgp-user-label" class="status"></div>
+      <div class="actions"><button data-action="agent-apply-open">Vin ajan LakayGoPay</button><button data-action="admin-check" class="secondary">Admin</button><button data-action="logout" class="danger">Dekonekte</button></div>
+      <div id="lgp-admin-status" class="status">Koneksyon verifye.</div>
+    </div>
+    <div id="lgp-agent-card" class="card" hidden>
+      <h3>Demann pou vin ajan LakayGoPay</h3>
+      <p>Soumèt enfòmasyon yo. Kont ajan an pap aktif jiskaske yon administratè apwouve demann lan.</p>
+      <form id="lgp-agent-form">
+        <label>Nimewo telefòn ajan an<input id="lgp-agent-phone" type="tel" placeholder="+509 ..." required></label>
+        <div class="form-two">
+          <label>Depatman<input id="lgp-agent-department" maxlength="80" placeholder="Ouest" required></label>
+          <label>Komin<input id="lgp-agent-commune" maxlength="100" placeholder="Léogâne" required></label>
+        </div>
+        <label>Adrès biznis (opsyonèl)<input id="lgp-agent-address" maxlength="200"></label>
+        <label>Poukisa ou vle vin ajan? (opsyonèl)<textarea id="lgp-agent-motivation" maxlength="1000" rows="3"></textarea></label>
+        <button type="submit">Soumèt demann pou verifikasyon</button>
+      </form>
+      <div id="lgp-agent-status" class="status">Pa gen demann ki soumèt.</div>
     </div>
     <div id="lgp-mfa-card" class="card" hidden>
       <h3>MFA TOTP (obligatwa pou aksyon admin)</h3>
@@ -68,6 +128,8 @@ panel.innerHTML = `
       <label>Kòd MFA<input id="lgp-mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="8"></label>
       <button data-action="verify-mfa">Verifye MFA</button>
     </div>
+    <details id="lgp-advanced-tools">
+      <summary>Outil devlopman ak tès avanse</summary>
     <div id="lgp-wallet-card" class="card" hidden>
       <h3>Bous ak done ki soti nan backend</h3><div id="lgp-wallet-list" class="status">Pa gen done chaje.</div>
       <p class="muted">Pou teste transfè ki reyisi, bous moun k ap voye a dwe gen lajan tès ki antre nan ledger la. Pa kreye balans nan navigatè a.</p>
@@ -105,8 +167,14 @@ panel.innerHTML = `
       <button data-action="withdraw">Soumèt demann retrè</button>
       <p>Demann lan rezève kantite lajan an. Apwobasyon pa voye lajan; entegrasyon founisè a poko aktive.</p>
     </div>
+    </details>
     <div id="lgp-admin-card" class="card" hidden>
       <h3>Zòn administrasyon</h3>
+      <section class="card admin-agent-section">
+        <h4>Demann ajan pou revize</h4>
+        <button class="secondary" data-action="agent-list">Chaje demann ajan yo</button>
+        <div id="lgp-agent-review-list" class="status">Pa gen lis chaje.</div>
+      </section>
       <label>Bous pou kredi tès (HTG)<input id="lgp-test-wallet-id" placeholder="UUID bous itilizatè a"></label>
       <label>Montan kredi tès<input id="lgp-test-credit-amount" type="number" min="0.01" step="0.01" value="500"></label>
       <button data-action="test-credit">Kredi tès (TEST sèlman)</button>
