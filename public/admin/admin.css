@@ -103,3 +103,12 @@ button,input{font:inherit}
 .fx-compliance-note a{font-size:10px;color:#f4cd8c;font-weight:800;text-decoration:none}
 .fx-compliance-note a:hover{text-decoration:underline}
 @media(max-width:600px){.fx-fee-banner{align-items:flex-start;flex-direction:column}.fx-fee-banner strong{font-size:21px}.fx-fee-chip{white-space:normal}.fx-compliance-note{padding:14px}}
+
+
+/* Two-step Admin sign-in with an additional six-digit secret PIN. */
+.admin-pin-wrap{min-height:calc(100vh - 76px);display:grid;place-items:center;padding:34px 18px}
+.admin-pin-card{width:min(100%,460px);padding:30px;background:linear-gradient(160deg,rgba(17,47,67,.97),rgba(9,31,47,.97));border:1px solid rgba(159,205,226,.2);border-radius:22px;box-shadow:0 28px 80px rgba(0,0,0,.25)}
+.admin-pin-card h1{font-size:clamp(25px,4vw,34px);letter-spacing:-.8px;margin:0 0 10px}
+.admin-pin-card>.muted{font-size:13px;line-height:1.65;margin:0 0 22px}
+.admin-pin-card .card-symbol{margin-bottom:19px}
+@media(max-width:520px){.admin-pin-wrap{min-height:calc(100vh - 66px);padding:20px 14px}.admin-pin-card{padding:22px 18px}}
