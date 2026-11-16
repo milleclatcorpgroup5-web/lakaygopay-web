@@ -163,6 +163,8 @@ async function loadOverview(session) {
   const date = new Date(data.generated_at || Date.now());
   $("#generatedAt").textContent = "Dènye mizajou: " + date.toLocaleString("fr-HT");
   setNotice("#dashboardNotice", "Aksè admin konfime sou sèvè a. PIN Admin verifye.", "success");
+  await updateMfaStatus().catch(() => {});
+  await loadAdminRecords("users");
 }
 async function completePinVerification(session, pin) {
   await adminRequest("/api/admin/pin/verify", session, { pin });
@@ -195,6 +197,241 @@ async function refreshCurrent() {
     throw error;
   }
 }
+
+function decodeJwtPayload(token) {
+  try {
+    const part = String(token || "").split(".")[1];
+    if (!part) return null;
+    const normalized = part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "=");
+    const binary = atob(normalized);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return null;
+  }
+}
+async function currentSession() {
+  const result = await supabase.auth.getSession();
+  if (result.error) throw result.error;
+  return result.data.session;
+}
+async function updateMfaStatus() {
+  const session = await currentSession();
+  const claims = decodeJwtPayload(session?.access_token);
+  const aal2 = claims?.aal === "aal2";
+  $("#adminMfaBadge").textContent = aal2 ? "MFA verifye · AAL2" : "MFA obligatwa";
+  $("#adminMfaBadge").className = aal2 ? "read-only-tag mfa-active" : "read-only-tag";
+  $("#adminMfaStatus").textContent = aal2
+    ? "Sesyon sa a gen dezyèm faktè authenticator verifye. Aksyon admin ki sansib kapab pase kontwòl backend la."
+    : "Pou apwouve machann, revize retrè, revize ajan oswa kouri odit ledger, aktive epi verifye yon aplikasyon authenticator.";
+  $("#adminMfaEnrollButton").textContent = aal2 ? "MFA deja verifye" : "Kreye / aktive MFA";
+  $("#adminMfaEnrollButton").disabled = aal2;
+  return aal2;
+}
+async function enrollAdminMfa() {
+  const factorsResult = await supabase.auth.mfa.listFactors();
+  if (factorsResult.error) throw factorsResult.error;
+  const existing = (factorsResult.data?.totp || []).find((factor) => factor.status === "verified");
+  if (existing) {
+    $("#adminMfaStatus").textContent = "Yon faktè authenticator deja aktive. Antre kòd 6 chif li a epi peze Verifye MFA.";
+    $("#adminMfaCode").focus();
+    return;
+  }
+  const pending = (factorsResult.data?.totp || []).find((factor) => factor.status === "unverified");
+  if (pending) {
+    $("#adminMfaStatus").textContent = "Gen yon faktè authenticator ki poko verifye. Antre kòd li bay la epi peze Verifye MFA.";
+    $("#adminMfaQrWrap").hidden = false;
+    $("#adminMfaCode").focus();
+    return;
+  }
+  const { data, error } = await supabase.auth.mfa.enroll({
+    factorType: "totp",
+    friendlyName: "LakayGoPay Admin Authenticator"
+  });
+  if (error) throw error;
+  $("#adminMfaQr").src = data.totp.qr_code;
+  $("#adminMfaSecret").textContent = "Kle manyèl (kenbe l prive): " + data.totp.secret;
+  $("#adminMfaQrWrap").hidden = false;
+  $("#adminMfaStatus").textContent = "Eskane QR sa a nan Google Authenticator, Aegis oswa yon aplikasyon TOTP. Apre sa, antre kòd 6 chif la pou verifye.";
+  $("#adminMfaCode").focus();
+}
+async function verifyAdminMfa() {
+  const code = $("#adminMfaCode").value.trim();
+  if (!/^\d{6}$/.test(code)) throw new Error("MFA_CODE_MUST_BE_6_DIGITS");
+  const factorsResult = await supabase.auth.mfa.listFactors();
+  if (factorsResult.error) throw factorsResult.error;
+  const factor = (factorsResult.data?.totp || []).find((item) => item.status === "verified") ||
+    (factorsResult.data?.totp || []).find((item) => item.status === "unverified");
+  if (!factor) throw new Error("MFA_FACTOR_NOT_ENROLLED");
+  const challenge = await supabase.auth.mfa.challenge({ factorId: factor.id });
+  if (challenge.error) throw challenge.error;
+  const verified = await supabase.auth.mfa.verify({
+    factorId: factor.id,
+    challengeId: challenge.data.id,
+    code
+  });
+  if (verified.error) throw verified.error;
+  $("#adminMfaCode").value = "";
+  await supabase.auth.refreshSession();
+  const ready = await updateMfaStatus();
+  if (!ready) throw new Error("MFA_VERIFICATION_INCOMPLETE");
+  setNotice("#adminActionNotice", "MFA verifye. Aksyon admin yo toujou pase verifikasyon sou sèvè a.", "success");
+}
+const RECORD_COLUMNS = {
+  users: [
+    ["full_name","Non"],["account_status","Estati"],["preferred_language","Lang"],["created_at","Kreye"]
+  ],
+  merchants: [
+    ["business_name","Biznis"],["business_type","Kalite"],["category","Kategori"],["status","Estati"],["created_at","Kreye"]
+  ],
+  wallets: [
+    ["currency","Lajan"],["balance","Balans"],["owner_user_id","ID pwopriyetè"],["merchant_id","ID machann"]
+  ],
+  ledger: [
+    ["transaction_type","Kalite"],["reference_code","Referans"],["status","Estati"],["entries","Ekriti debit/kredi"],["created_at","Dat"]
+  ],
+  withdrawals: [
+    ["amount","Montan"],["currency","Lajan"],["destination_type","Destinasyon"],["status","Estati"],["requested_by","Mande pa"],["created_at","Dat"]
+  ],
+  agents: [
+    ["department","Depatman"],["commune","Komin"],["status","Estati"],["applicant_user_id","ID aplikan"],["created_at","Dat"]
+  ],
+  audit: [
+    ["action","Aksyon"],["resource_type","Resous"],["resource_id","ID resous"],["outcome","Rezilta"],["actor_user_id","Admin"],["created_at","Dat"]
+  ]
+};
+function recordValue(type, row, key) {
+  if (key === "entries") {
+    const entries = Array.isArray(row.ledger_entries) ? row.ledger_entries : [];
+    if (!entries.length) return "Pa gen detay";
+    return entries.map((entry) =>
+      entry.direction + " " + Number(entry.amount).toLocaleString("fr-HT") + " " + entry.currency
+    ).join(" · ");
+  }
+  if (key === "balance" || key === "amount") {
+    const currency = row.currency || "";
+    return Number(row[key] || 0).toLocaleString("fr-HT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+      (currency ? " " + currency : "");
+  }
+  if (key === "created_at") return row[key] ? new Date(row[key]).toLocaleString("fr-HT") : "—";
+  return row[key] == null || row[key] === "" ? "—" : String(row[key]);
+}
+function openAdminAction(type, row) {
+  $("#adminMerchantReviewForm").hidden = type !== "merchants";
+  $("#adminWithdrawalReviewForm").hidden = type !== "withdrawals";
+  $("#adminAgentReviewForm").hidden = type !== "agents";
+  if (type === "merchants") {
+    $("#adminMerchantId").value = row.id || "";
+    $("#adminMerchantStatus").value = row.status === "pending" ? "under_review" : "active";
+    $("#adminMerchantComment").value = "";
+  } else if (type === "withdrawals") {
+    $("#adminWithdrawalId").value = row.id || "";
+    $("#adminWithdrawalDecision").value = "approved";
+    $("#adminWithdrawalComment").value = "";
+  } else if (type === "agents") {
+    $("#adminAgentApplicationId").value = row.id || "";
+    $("#adminAgentDecision").value = "approved";
+    $("#adminAgentNote").value = "";
+  }
+  $("#adminActionsPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function renderAdminRecords(type, rows) {
+  const head = $("#adminRecordsHead");
+  const body = $("#adminRecordsBody");
+  head.replaceChildren();
+  body.replaceChildren();
+  const columns = RECORD_COLUMNS[type] || [];
+  const headerRow = document.createElement("tr");
+  columns.forEach(([, label]) => {
+    const th = document.createElement("th");
+    th.textContent = label;
+    headerRow.append(th);
+  });
+  if (["merchants","withdrawals","agents"].includes(type)) {
+    const th = document.createElement("th");
+    th.textContent = "Aksyon";
+    headerRow.append(th);
+  }
+  head.append(headerRow);
+  if (!rows.length) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = columns.length + (["merchants","withdrawals","agents"].includes(type) ? 1 : 0);
+    td.textContent = "Pa gen dosye nan kategori sa a.";
+    tr.append(td);
+    body.append(tr);
+    return;
+  }
+  rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    columns.forEach(([key]) => {
+      const td = document.createElement("td");
+      td.textContent = recordValue(type, row, key);
+      tr.append(td);
+    });
+    if (["merchants","withdrawals","agents"].includes(type)) {
+      const td = document.createElement("td");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "button button-quiet admin-row-action";
+      button.textContent = "Revize";
+      button.addEventListener("click", () => openAdminAction(type, row));
+      td.append(button);
+      tr.append(td);
+    }
+    body.append(tr);
+  });
+}
+async function loadAdminRecords(type) {
+  const session = await currentSession();
+  setNotice("#adminRecordsNotice", "Ap chaje dosye " + type + " yo…", "");
+  try {
+    const data = await adminRequest("/api/admin/records?type=" + encodeURIComponent(type), session);
+    renderAdminRecords(type, data.records || []);
+    setNotice("#adminRecordsNotice",
+      (data.count || 0).toLocaleString("fr-HT") + " dosye · Dènye mizajou: " +
+      new Date(data.generated_at || Date.now()).toLocaleString("fr-HT"), "success");
+    document.querySelectorAll("[data-record-type]").forEach((button) => {
+      button.classList.toggle("active", button.dataset.recordType === type);
+    });
+  } catch (error) {
+    setNotice("#adminRecordsNotice", explainError(error.code || error.message), "error");
+    if (error.code === "ADMIN_PIN_REQUIRED") {
+      adminPinVerifiedUserId = null;
+      await showPinGate(session);
+    }
+  }
+}
+async function requireMfaForAdminAction() {
+  const session = await currentSession();
+  const claims = decodeJwtPayload(session?.access_token);
+  if (claims?.aal !== "aal2") {
+    setNotice("#adminActionNotice", "Aksyon sa a mande verifikasyon MFA TOTP. Aktive/verifye authenticator anlè a anvan.", "error");
+    $("#adminMfaPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    return null;
+  }
+  return session;
+}
+async function submitAdminAction(path, body, successMessage, reloadType) {
+  const session = await requireMfaForAdminAction();
+  if (!session) return;
+  try {
+    await adminRequest(path, session, body);
+    setNotice("#adminActionNotice", successMessage, "success");
+    if (reloadType) await loadAdminRecords(reloadType);
+    await refreshCurrent();
+  } catch (error) {
+    setNotice("#adminActionNotice", explainError(error.code || error.message), "error");
+    if (error.code === "MFA_REQUIRED") {
+      setNotice("#adminMfaStatus", "Sesyon MFA a ekspire. Verifye kòd authenticator la ankò.", "error");
+    }
+    if (error.code === "ADMIN_PIN_REQUIRED") {
+      adminPinVerifiedUserId = null;
+      await showPinGate(session);
+    }
+  }
+}
+
 async function boot() {
   const configResponse = await fetch("/api/config", { headers: { accept: "application/json" }, cache: "no-store" });
   const config = await configResponse.json().catch(() => ({}));
@@ -284,6 +521,78 @@ async function boot() {
       $("#adminPinConfirm").value = "";
     } finally {
       button.disabled = false;
+    }
+  });
+
+
+  $("#adminMfaEnrollButton").addEventListener("click", async () => {
+    const button = $("#adminMfaEnrollButton");
+    button.disabled = true;
+    try {
+      await enrollAdminMfa();
+    } catch (error) {
+      setNotice("#adminMfaStatus", error.message || "MFA pa kapab kòmanse.", "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  $("#adminMfaVerifyButton").addEventListener("click", async () => {
+    const button = $("#adminMfaVerifyButton");
+    button.disabled = true;
+    try {
+      await verifyAdminMfa();
+    } catch (error) {
+      setNotice("#adminMfaStatus", error.message || "Kòd MFA a pa valide.", "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  document.querySelectorAll("[data-record-type]").forEach((button) => {
+    button.addEventListener("click", () => loadAdminRecords(button.dataset.recordType));
+  });
+  $("#adminRecordsRefresh").addEventListener("click", () => {
+    const active = document.querySelector("[data-record-type].active");
+    loadAdminRecords(active?.dataset.recordType || "users");
+  });
+
+  $("#adminMerchantReviewForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await submitAdminAction("/api/admin/merchants/review", {
+      merchant_id: $("#adminMerchantId").value.trim(),
+      status: $("#adminMerchantStatus").value,
+      comment: $("#adminMerchantComment").value.trim()
+    }, "Desizyon sou machann lan anrejistre.", "merchants");
+  });
+  $("#adminWithdrawalReviewForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await submitAdminAction("/api/admin/withdrawals/decision", {
+      withdrawal_id: $("#adminWithdrawalId").value.trim(),
+      decision: $("#adminWithdrawalDecision").value,
+      comment: $("#adminWithdrawalComment").value.trim()
+    }, "Desizyon sou demann retrè a anrejistre. Dezyèm apwobasyon ka toujou nesesè.", "withdrawals");
+  });
+  $("#adminAgentReviewForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await submitAdminAction("/api/admin/agents/review", {
+      application_id: $("#adminAgentApplicationId").value.trim(),
+      decision: $("#adminAgentDecision").value,
+      admin_note: $("#adminAgentNote").value.trim()
+    }, "Desizyon sou aplikasyon ajan an anrejistre.", "agents");
+  });
+  $("#adminLedgerAuditButton").addEventListener("click", async () => {
+    const session = await requireMfaForAdminAction();
+    if (!session) return;
+    try {
+      const data = await adminRequest("/api/admin/ledger/audit", session);
+      $("#adminLedgerAuditResult").textContent = JSON.stringify(data.report || data, null, 2);
+      setNotice("#adminActionNotice", data.report?.ok
+        ? "Odit ledger la fini. Pa gen erè nan kontwòl sa yo."
+        : "Odit ledger la jwenn pwen ki mande revizyon.", data.report?.ok ? "success" : "error");
+    } catch (error) {
+      setNotice("#adminActionNotice", explainError(error.code || error.message), "error");
+      $("#adminLedgerAuditResult").textContent = error.message;
     }
   });
 
