@@ -280,6 +280,7 @@ async function verifyAdminMfa() {
   const ready = await updateMfaStatus();
   if (!ready) throw new Error("MFA_VERIFICATION_INCOMPLETE");
   setNotice("#adminActionNotice", "MFA verifye. Aksyon admin yo toujou pase verifikasyon sou sèvè a.", "success");
+  await loadAdminRecords("users");
 }
 const RECORD_COLUMNS = {
   users: [
@@ -400,6 +401,11 @@ async function loadAdminRecords(type) {
     });
   } catch (error) {
     setNotice("#adminRecordsNotice", explainError(error.code || error.message), "error");
+    if (error.code === "MFA_REQUIRED") {
+      await updateMfaStatus().catch(() => {});
+      setNotice("#adminMfaStatus", "Verifye MFA TOTP pou wè dosye operasyonèl yo oswa fè aksyon admin.", "error");
+      $("#adminMfaPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
     if (error.code === "ADMIN_PIN_REQUIRED") {
       adminPinVerifiedUserId = null;
       await showPinGate(session);
