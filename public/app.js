@@ -299,6 +299,8 @@ function renderPinState(result) {
   $("#pinManagementForm").hidden = pinConfigured || cannotVerify;
   $("#pinSubmitButton").textContent = "Kreye PIN sekirite";
   $("#transferForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
+  $("#withdrawalForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
+  $("#qrPayForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   if (cannotVerify) {
     node.textContent = "Nou pa kapab verifye estati PIN lan kounye a. Transfè yo rete bloke; rafrechi paj la.";
     return;
