@@ -5,7 +5,7 @@ export async function onRequestGet({ request, env }) {
     const auth = await requireUser(request, env);
     if (auth.error) return auth.error;
     const rows = await callUserRest(env, auth.accessToken,
-      "profiles?select=id,full_name,phone,preferred_language,account_status,created_at&limit=1");
+      "profiles?select=id,full_name,first_name,last_name,date_of_birth,account_type,phone,preferred_language,account_status,created_at&limit=1");
     return json({ ok: true, profile: rows?.[0] || null });
   } catch (error) {
     return fail(error);
