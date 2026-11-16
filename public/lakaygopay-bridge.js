@@ -155,6 +155,7 @@ panel.innerHTML = `
       <label>ID bous destinatè<input id="lgp-recipient-wallet" placeholder="UUID bous destinatè"></label>
       <label>Montan (HTG)<input id="lgp-transfer-amount" type="number" min="0.01" step="0.01" value="25"></label>
       <label>Nòt<input id="lgp-transfer-note" maxlength="140"></label>
+      <label>PIN sekirite 4 chif<input id="lgp-transfer-pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required></label>
       <button data-action="transfer">Teste transfè</button>
     </div>
     <div id="lgp-pay-card" class="card" hidden>
@@ -163,6 +164,7 @@ panel.innerHTML = `
       <button class="secondary" data-action="lookup-qr">Verifye demann QR</button>
       <label>Bous k ap peye a<select id="lgp-payer-wallet"></select></label>
       <label>Montan (kite vid si QR la gen montan fiks)<input id="lgp-pay-amount" type="number" min="0.01" step="0.01"></label>
+      <label>PIN sekirite 4 chif<input id="lgp-pay-pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required></label>
       <button data-action="pay-qr">Konfime peman entèn</button><div id="lgp-qr-details" class="status">Pa gen demann chwazi.</div>
     </div>
     <div id="lgp-withdraw-card" class="card" hidden>
@@ -177,7 +179,7 @@ panel.innerHTML = `
     <div id="lgp-admin-card" class="card" hidden>
       <h3>Zòn administrasyon</h3>
       <p>Administrasyon fèt nan yon espas apa. Aksè a mande wòl admin ak MFA.</p>
-      <a href="/admin.html" class="admin-center-link" style="display:inline-block;background:#073b58;color:#fff;text-decoration:none;padding:11px 15px;border-radius:9px;font-weight:700">Louvri Sant Kontwòl Admin →</a>
+      <a href="/admin/" class="admin-center-link" style="display:inline-block;background:#073b58;color:#fff;text-decoration:none;padding:11px 15px;border-radius:9px;font-weight:700">Louvri Sant Kontwòl Admin →</a>
       <section class="card admin-agent-section">
         <h4>Demann ajan pou revize</h4>
         <button class="secondary" data-action="agent-list">Chaje demann ajan yo</button>
@@ -1063,14 +1065,35 @@ panel.addEventListener("click", async (event) => {
       log("QR lookup", data);
     } else if (action === "pay-qr") {
       const amount = getValue("lgp-pay-amount");
-      const body = { qr_token: getValue("lgp-qr-token"), payer_wallet_id: getValue("lgp-payer-wallet") };
+      const body = {
+        qr_token: getValue("lgp-qr-token"),
+        payer_wallet_id: getValue("lgp-payer-wallet"),
+        pin: getValue("lgp-pay-pin")
+      };
       if (amount) body.amount = amount;
-      const data = await api("/api/payment-requests/pay", { method: "POST", body, idempotency: true });
+      let data;
+      try {
+        data = await api("/api/payment-requests/pay", { method: "POST", body, idempotency: true });
+      } finally {
+        $("#lgp-pay-pin").value = "";
+      }
       result("Peman entèn anrejistre nan ledger la.", "success");
       log("Peman QR entèn", data);
       await loadAccount();
     } else if (action === "transfer") {
-      const data = await api("/api/transfers", { method: "POST", body: { sender_wallet_id: getValue("lgp-sender-wallet"), recipient_wallet_id: getValue("lgp-recipient-wallet"), amount: getValue("lgp-transfer-amount"), note: getValue("lgp-transfer-note") }, idempotency: true });
+      const body = {
+        sender_wallet_id: getValue("lgp-sender-wallet"),
+        recipient_wallet_id: getValue("lgp-recipient-wallet"),
+        amount: getValue("lgp-transfer-amount"),
+        note: getValue("lgp-transfer-note"),
+        pin: getValue("lgp-transfer-pin")
+      };
+      let data;
+      try {
+        data = await api("/api/transfers", { method: "POST", body, idempotency: true });
+      } finally {
+        $("#lgp-transfer-pin").value = "";
+      }
       result("Transfè entèn anrejistre.", "success");
       log("Transfè entèn", data);
       await loadAccount();
@@ -1122,5 +1145,12 @@ panel.addEventListener("click", async (event) => {
 const queryToken = new URL(location.href).searchParams.get("lgp_qr");
 if (queryToken) {
   panel.hidden = false;
-  setTimeout(() => { const tokenInput = $("#lgp-qr-token"); if (tokenInput) tokenInput.value = queryToken; }, 0);
+  const toolsDetails = $("#lgp-advanced-tools");
+  if (toolsDetails) toolsDetails.open = true;
+  const payCard = $("#lgp-pay-card");
+  if (payCard) payCard.hidden = !Boolean(supabase);
+  setTimeout(() => {
+    const tokenInput = $("#lgp-qr-token");
+    if (tokenInput) tokenInput.value = queryToken;
+  }, 0);
 }
