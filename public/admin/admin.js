@@ -226,6 +226,7 @@ async function updateMfaStatus() {
     : "Pou apwouve machann, revize retrè, revize ajan oswa kouri odit ledger, aktive epi verifye yon aplikasyon authenticator.";
   $("#adminMfaEnrollButton").textContent = aal2 ? "MFA deja verifye" : "Kreye / aktive MFA";
   $("#adminMfaEnrollButton").disabled = aal2;
+  $("#adminLedgerAuditButton").disabled = !aal2;
   return aal2;
 }
 async function enrollAdminMfa() {
