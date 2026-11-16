@@ -42,6 +42,8 @@ style.textContent = `
 `;
 document.head.append(style);
 
+renderPublicPreview();
+
 const launch = document.createElement("button");
 launch.id = "lgp-launch";
 launch.type = "button";
@@ -67,21 +69,21 @@ panel.innerHTML = `
 
       <form id="lgp-login-pane" class="auth-pane">
         <label>Imèl kont ou<input id="lgp-email" type="email" autocomplete="username" required></label>
-        <label>Modpas / kòd sekrè<input id="lgp-password" type="password" autocomplete="current-password" minlength="8" required></label>
+        <label>Modpas kont (8 karaktè minimòm)<input id="lgp-password" type="password" autocomplete="current-password" minlength="8" required></label>
         <button type="submit">Konekte</button>
         <button type="button" class="secondary text-button" data-action="recover">Mwen bliye modpas mwen</button>
       </form>
 
       <form id="lgp-personal-pane" class="auth-pane" hidden>
         <div class="form-two">
-          <label>Non<input id="lgp-personal-first" autocomplete="given-name" maxlength="60" required></label>
-          <label>Prenon<input id="lgp-personal-last" autocomplete="family-name" maxlength="60" required></label>
+          <label>Prenon (premye non)<input id="lgp-personal-first" autocomplete="given-name" maxlength="60" required></label>
+          <label>Nom (siyati)<input id="lgp-personal-last" autocomplete="family-name" maxlength="60" required></label>
         </div>
         <label>Dat nesans<input id="lgp-personal-dob" type="date" autocomplete="bday" required></label>
-        <small class="form-hint">Ou dwe gen omwen 18 an pou kreye yon kont pèsonèl.</small>
+        <small class="form-hint">Ou dwe gen omwen 18 an. PIN tranzaksyon 4 chif la ap kreye apre ou konekte, nan seksyon Sekirite.</small>
         <label>Imèl<input id="lgp-personal-email" type="email" autocomplete="email" required></label>
         <label>Nimewo telefòn<input id="lgp-personal-phone" type="tel" autocomplete="tel" placeholder="+509 ..." required></label>
-        <label>Modpas / kòd sekrè<input id="lgp-personal-password" type="password" autocomplete="new-password" minlength="8" required></label>
+        <label>Modpas kont (8 karaktè minimòm)<input id="lgp-personal-password" type="password" autocomplete="new-password" minlength="8" required></label>
         <button type="submit">Kreye kont pèsonèl</button>
       </form>
 
@@ -89,7 +91,7 @@ panel.innerHTML = `
         <label>Non biznis la<input id="lgp-merchant-name" autocomplete="organization" maxlength="120" required></label>
         <label>Telefòn biznis la<input id="lgp-merchant-phone" type="tel" autocomplete="tel" placeholder="+509 ..." required></label>
         <label>Imèl biznis la<input id="lgp-merchant-email" type="email" autocomplete="email" required></label>
-        <label>Modpas / kòd sekrè<input id="lgp-merchant-password" type="password" autocomplete="new-password" minlength="8" required></label>
+        <label>Modpas kont (8 karaktè minimòm)<input id="lgp-merchant-password" type="password" autocomplete="new-password" minlength="8" required></label>
         <button type="submit">Kreye kont machann</button>
         <small class="form-hint">Kont machann lan ak bous biznis la ap rete an atant jiskaske admin verifye dosye a.</small>
       </form>
@@ -491,6 +493,36 @@ async function loadAgentApplications() {
   } catch (error) {
     node.className = "status error";
     node.textContent = `Pa kapab chaje aplikasyon yo: ${error.message}`;
+  }
+}
+
+function renderPublicPreview() {
+  const setText = (selector, value) => {
+    const node = $(selector);
+    if (node) node.textContent = value;
+  };
+  setText("#topName", "Vizitè");
+  setText("#sidebarName", "Vizitè");
+  setText("#welcomeName", "Vizitè");
+  const miniLabel = $(".profile-meta small");
+  if (miniLabel) { miniLabel.textContent = "Pa konekte"; miniLabel.removeAttribute("data-i18n"); }
+  const topLabel = $(".top-profile-meta small");
+  if (topLabel) { topLabel.textContent = "Aperçu piblik"; topLabel.removeAttribute("data-i18n"); }
+  const badge = $(".connection-pill span:last-child");
+  if (badge) { badge.textContent = "Aperçu piblik · non connecté"; badge.removeAttribute("data-i18n"); }
+  setText("#overviewBalance", "—");
+  setText("#walletBalance", "—");
+  setText("#incomingMetric", "—");
+  setText("#outgoingMetric", "—");
+  setText("#transactionMetric", "—");
+  setText("#beneficiaryMetric", "—");
+  const recent = $("#recentTransactions");
+  if (recent) {
+    recent.replaceChildren();
+    const message = document.createElement("div");
+    message.className = "empty-state";
+    message.textContent = "Konekte oswa kreye kont ou pou wè tranzaksyon ak balans backend ou.";
+    recent.append(message);
   }
 }
 
