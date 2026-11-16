@@ -72,7 +72,16 @@ function translateError(code) {
     CURRENCY_MISMATCH: "Bous moun k ap voye a ak moun k ap resevwa a dwe nan menm lajan.",
     SENDER_WALLET_FORBIDDEN: "Ou pa gen dwa itilize bous sa a pou voye lajan.",
     WALLET_NOT_FOUND: "Nou pa jwenn youn nan bous yo.",
-    MERCHANT_NOT_ACTIVE: "Kont machann sa a poko aktive."
+    MERCHANT_NOT_ACTIVE: "Kont machann sa a poko aktive.",
+    PAYMENT_REQUEST_NOT_FOUND: "Nou pa jwenn demann QR sa a.",
+    PAYMENT_REQUEST_NOT_PAYABLE: "Demann QR sa a deja peye oswa li pa disponib.",
+    PAYMENT_REQUEST_EXPIRED: "Demann QR sa a ekspire.",
+    QR_AMOUNT_MISMATCH: "Montan an pa koresponn ak demann QR la.",
+    MERCHANT_WALLET_NOT_FOUND: "Bous machann lan pa disponib.",
+    SELF_PAYMENT_NOT_ALLOWED: "Ou pa kapab peye pwòp bous ou.",
+    WITHDRAWAL_ENCRYPTION_NOT_CONFIGURED: "Sekirizasyon referans retrè a poko konfigire. Kite referans lan vid.",
+    INVALID_DESTINATION_TYPE: "Kalite destinasyon retrè a pa valab.",
+    INSUFFICIENT_AVAILABLE_FUNDS: "Balans disponib la pa sifi apre rezèvasyon demann yo."
   };
   return map[code] || code || "Yon erè rive. Eseye ankò.";
 }
@@ -1135,7 +1144,7 @@ async function init() {
   const session = await sessionNow();
   await syncSession(session);
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js?v=20261116-06").catch(function () {});
+    navigator.serviceWorker.register("/service-worker.js?v=20261116-07").catch(function () {});
   }
 }
 init().catch(function (error) {
