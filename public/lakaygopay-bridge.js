@@ -176,6 +176,8 @@ panel.innerHTML = `
     </details>
     <div id="lgp-admin-card" class="card" hidden>
       <h3>Zòn administrasyon</h3>
+      <p>Administrasyon fèt nan yon espas apa. Aksè a mande wòl admin ak MFA.</p>
+      <a href="/admin.html" class="admin-center-link" style="display:inline-block;background:#073b58;color:#fff;text-decoration:none;padding:11px 15px;border-radius:9px;font-weight:700">Louvri Sant Kontwòl Admin →</a>
       <section class="card admin-agent-section">
         <h4>Demann ajan pou revize</h4>
         <button class="secondary" data-action="agent-list">Chaje demann ajan yo</button>
@@ -1083,12 +1085,12 @@ panel.addEventListener("click", async (event) => {
     } else if (action === "admin-check") {
       const data = await api("/api/admin/me");
       $("#lgp-admin-status").textContent = JSON.stringify(data, null, 2);
-      $("#lgp-admin-card").hidden = !(data.is_admin && data.aal2);
+      $("#lgp-admin-card").hidden = !data.is_admin;
       if (data.is_admin) {
         $("#lgp-mfa-card").hidden = false;
         if (data.aal2) await loadAgentApplications();
       }
-      result(data.is_admin ? (data.aal2 ? "Dwa admin aktif ak MFA aal2." : "Kont admin sa a dwe verifye MFA TOTP anvan aksyon privilejye.") : "Kont sa a pa gen wòl admin.", data.is_admin && data.aal2 ? "success" : "error");
+      result(data.is_admin ? (data.aal2 ? "Dwa admin verifye. Louvri Sant Kontwòl la pou jere sistèm nan." : "Wòl admin konfime; aktive MFA TOTP anvan aksyon privilejye.") : "Kont sa a pa gen wòl admin.", data.is_admin ? "success" : "error");
       log("Kontwòl dwa admin", data);
     } else if (action === "test-credit") {
       const data = await api("/api/admin/test-credit", { method: "POST", body: { wallet_id: getValue("lgp-test-wallet-id"), amount: getValue("lgp-test-credit-amount") }, idempotency: true });
