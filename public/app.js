@@ -81,7 +81,15 @@ function translateError(code) {
     SELF_PAYMENT_NOT_ALLOWED: "Ou pa kapab peye pwòp bous ou.",
     WITHDRAWAL_ENCRYPTION_NOT_CONFIGURED: "Sekirizasyon referans retrè a poko konfigire. Kite referans lan vid.",
     INVALID_DESTINATION_TYPE: "Kalite destinasyon retrè a pa valab.",
-    INSUFFICIENT_AVAILABLE_FUNDS: "Balans disponib la pa sifi apre rezèvasyon demann yo."
+    INSUFFICIENT_AVAILABLE_FUNDS: "Balans disponib la pa sifi apre rezèvasyon demann yo.",
+    FX_RATES_NOT_CURRENT: "Taux BRH yo poko mete ajou pou jodi a. Estimasyon echanj la rete bloke pou evite montre yon move pri.",
+    FX_RATE_SOURCE_UNAVAILABLE: "Nou pa kapab konekte ak sous taux BRH yo kounye a.",
+    FX_RATE_PARSE_FAILED: "Nou pa kapab li taux BRH yo kòrèkteman. Estimasyon an rete bloke.",
+    FX_PAIR_NOT_SUPPORTED: "Nan premye faz la, konvèsyon fèt ant HTG ak USD oswa HTG ak EUR. USD ak EUR dirèk pa disponib.",
+    FX_SAME_CURRENCY: "Chwazi de lajan ki diferan.",
+    FX_CURRENCY_INVALID: "Chwazi yon lajan ki valab.",
+    FX_AMOUNT_INVALID: "Antre yon montan valab pou kalkil la.",
+    FX_QUOTE_UNAVAILABLE: "Estimasyon echanj la pa disponib kounye a."
   };
   return map[code] || code || "Yon erè rive. Eseye ankò.";
 }
@@ -887,6 +895,53 @@ function wireForms() {
       message("#appNotice", translateError(error.code || error.message), "error");
     } finally {
       $("#transferPin").value = "";
+      button.disabled = false;
+    }
+  });
+
+
+  $("#exchangeQuoteForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const source = $("#exchangeSourceCurrency").value;
+    const destination = $("#exchangeDestinationCurrency").value;
+    const amount = $("#exchangeAmount").value;
+    const button = $("#exchangeQuoteButton");
+    const notice = $("#exchangeQuoteNotice");
+    notice.textContent = "Ap chèche taux BRH/BUH pou jodi a epi kalkile komisyon an…";
+    notice.className = "notice";
+    $("#exchangeQuoteResult").hidden = true;
+    button.disabled = true;
+    try {
+      const result = await api("/api/exchange/quote", {
+        method: "POST",
+        body: {
+          source_currency: source,
+          destination_currency: destination,
+          amount
+        }
+      });
+      const quote = result.quote;
+      $("#exchangeReceiveAmount").textContent =
+        formatMoney(quote.destination_amount_estimate, quote.destination_currency) + " " + quote.destination_currency;
+      $("#exchangeSourceAmount").textContent =
+        formatMoney(quote.source_amount, quote.source_currency) + " " + quote.source_currency;
+      $("#exchangeFeeAmount").textContent =
+        formatMoney(quote.commission_amount, quote.commission_currency) + " " + quote.commission_currency;
+      const foreign = quote.destination_currency === "HTG" ? quote.source_currency : quote.destination_currency;
+      const direction = quote.exchange_rate_direction === "buy" ? "Acha bank" : "Vant bank";
+      $("#exchangeRateUsed").textContent =
+        "1 " + foreign + " = " + Number(quote.exchange_rate).toLocaleString("fr-HT", { minimumFractionDigits: 4, maximumFractionDigits: 4 }) +
+        " HTG · " + direction;
+      $("#exchangeRateDate").textContent = quote.as_of;
+      $("#exchangeQuoteDisclaimer").textContent =
+        "Sous: " + quote.rate_source + ". Estimasyon sa a valab 60 segonn sèlman. Frè a se yon pwopozisyon 0.50%; li pa retire lajan ni poste antre nan ledger la. Pa gen konvèsyon reyèl ki aktive.";
+      $("#exchangeQuoteResult").hidden = false;
+      notice.textContent = "Estimasyon pare. Li pa yon konfimasyon echanj ni yon tranzaksyon.";
+      notice.className = "notice success";
+    } catch (error) {
+      notice.textContent = translateError(error.code || error.message);
+      notice.className = "notice error";
+    } finally {
       button.disabled = false;
     }
   });
