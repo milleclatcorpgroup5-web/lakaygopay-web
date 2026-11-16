@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ht">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#071b2a">
+  <title>LakayGoPay — Sant Kontwòl Admin</title>
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/admin/admin.css?v=20261116-01">
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <header class="topbar">
+    <a class="brand" href="/admin/" aria-label="LakayGoPay Admin">
+      <span class="brand-mark">L</span>
+      <span><strong>LakayGoPay</strong><small>SANT KONTWÒL</small></span>
+    </a>
+    <div class="top-actions">
+      <span class="secure-label"><i></i> Aksè prive</span>
+      <button id="refreshButton" class="button button-quiet" type="button" hidden>Rafrechi</button>
+      <button id="logoutButton" class="button button-quiet" type="button" hidden>Dekonekte</button>
+    </div>
+  </header>
+
+  <main id="loginView" class="login-wrap">
+    <section class="login-intro">
+      <p class="eyebrow">ADMINISTRASYON · LAKAYGOPAY</p>
+      <h1>Yon sèl sant.<br><span>Tout kontwòl.</span></h1>
+      <p class="intro-copy">Zòn prive pou ekip administrasyon LakayGoPay. Li separe ak aplikasyon kliyan ak machann yo.</p>
+      <div class="security-note">
+        <span class="shield">✓</span>
+        <div><strong>Verifikasyon wòl sou sèvè</strong><p>Se sèlman kont ki gen wòl administratè otorize ki kapab antre. Adrès paj la poukont li pa bay okenn dwa aksè.</p></div>
+      </div>
+      <div class="internal-note">
+        <span class="live-dot"></span>
+        <div><strong>Rejim aktyèl: Ledger entèn sèlman</strong><p>Pa gen depo, retrè reyèl, MonCash, NatCash oswa peman kat ki aktive.</p></div>
+      </div>
+    </section>
+
+    <section class="login-card">
+      <div class="card-symbol">L</div>
+      <p class="eyebrow">ZÒN ADMINISTRATÈ</p>
+      <h2>Konekte nan kontwòl la</h2>
+      <p class="muted">Sèvi ak kont LakayGoPay ou ekip la deja otorize kòm administratè.</p>
+      <form id="loginForm" class="form-stack">
+        <label>Imèl administratè
+          <input id="emailInput" type="email" autocomplete="username" required>
+        </label>
+        <label>Modpas
+          <input id="passwordInput" type="password" autocomplete="current-password" minlength="8" required>
+        </label>
+        <button id="loginButton" class="button button-primary full" type="submit">Antre nan sant kontwòl la <span>→</span></button>
+      </form>
+      <div id="loginNotice" class="notice" role="status" aria-live="polite"></div>
+      <p class="login-foot">Pa gen bouton enskripsyon administratè. Wòl yo dwe bay separeman atravè bazdone sekirize a.</p>
+    </section>
+  </main>
+
+  <main id="adminView" class="admin-layout" hidden>
+    <section class="welcome-row">
+      <div>
+        <p class="eyebrow">SANT KONTWÒL / REZIME</p>
+        <h1>Bon retou, <span id="adminName">Administratè</span></h1>
+        <p id="adminMeta" class="muted">Wòl admin verifye.</p>
+      </div>
+      <div class="status-pill"><i></i> Aksè otorize</div>
+    </section>
+
+    <div id="dashboardNotice" class="notice" role="status" aria-live="polite"></div>
+
+    <section class="security-banner">
+      <div class="banner-icon">!</div>
+      <div>
+        <strong>Pwoteksyon finansye aktif</strong>
+        <p>LakayGoPay rete sou rejis tranzaksyon entèn. Peman reyèl ak retrè ekstèn rete dezaktive pandan faz tès la.</p>
+      </div>
+      <span class="banner-status">TEST MODE</span>
+    </section>
+
+    <section class="section-head">
+      <div><p class="eyebrow">VIZIBILITE PLATFÒM LAN</p><h2>Apèsi operasyonèl</h2></div>
+      <span id="generatedAt" class="muted small"></span>
+    </section>
+
+    <section class="metric-grid">
+      <article class="metric-card"><div class="metric-top"><span class="metric-icon">U</span><span class="metric-label">Kont itilizatè</span></div><strong id="countUsers">—</strong><small>Kont ki anrejistre</small></article>
+      <article class="metric-card"><div class="metric-top"><span class="metric-icon">M</span><span class="metric-label">Machann</span></div><strong id="countMerchants">—</strong><small>Pwofil komèsyal</small></article>
+      <article class="metric-card"><div class="metric-top"><span class="metric-icon">W</span><span class="metric-label">Bous</span></div><strong id="countWallets">—</strong><small>Bous nan sistèm nan</small></article>
+      <article class="metric-card"><div class="metric-top"><span class="metric-icon">T</span><span class="metric-label">Tranzaksyon</span></div><strong id="countTransactions">—</strong><small>Antre nan ledger la</small></article>
+      <article class="metric-card"><div class="metric-top"><span class="metric-icon">R</span><span class="metric-label">Demann retrè</span></div><strong id="countWithdrawals">—</strong><small>Demann ki anrejistre</small></article>
+      <article class="metric-card"><div class="metric-top"><span class="metric-icon">A</span><span class="metric-label">Jounal audit</span></div><strong id="countAudit">—</strong><small>Evènman ki anrejistre</small></article>
+    </section>
+
+    <section class="section-head modules-heading">
+      <div><p class="eyebrow">MODIL ADMINISTRASYON</p><h2>Zòn siveyans ak kontwòl</h2></div>
+      <span class="read-only-tag">FAZ 1 · LEKTI</span>
+    </section>
+
+    <section class="module-grid">
+      <article class="module-card"><div class="module-symbol">01</div><div><h3>Itilizatè</h3><p>Siveyans kantite kont ak eta sistèm idantite.</p><span class="module-state">Apèsi sèlman</span></div></article>
+      <article class="module-card"><div class="module-symbol">02</div><div><h3>Machann</h3><p>Vizibilite sou pwofil machann ak kantite enskripsyon.</p><span class="module-state">Apèsi sèlman</span></div></article>
+      <article class="module-card"><div class="module-symbol">03</div><div><h3>Bous & Ledger</h3><p>Swivi estrikti bous ak antre finansye yo.</p><span class="module-state">San modifikasyon balans</span></div></article>
+      <article class="module-card"><div class="module-symbol">04</div><div><h3>Retrè</h3><p>Siveyans demann retrè; okenn peman ekstèn pa egzekite.</p><span class="module-state">Aksyon dezaktive</span></div></article>
+      <article class="module-card"><div class="module-symbol">05</div><div><h3>Sekirite & Risk</h3><p>Espas pou kontwòl aksè ak siveyans evènman sekirite.</p><span class="module-state">Kantite evènman sèlman</span></div></article>
+      <article class="module-card"><div class="module-symbol">06</div><div><h3>Jounal audit</h3><p>Vizibilite sou kantite tras administrasyon ki anrejistre.</p><span class="module-state">Apèsi sèlman</span></div></article>
+    </section>
+
+    <section class="system-grid">
+      <article class="surface-card">
+        <p class="eyebrow">ETA SÈVIS</p><h2>Kontwòl platfòm</h2>
+        <div class="system-row"><span>Ledger entèn</span><b class="state-on">● Aktif</b></div>
+        <div class="system-row"><span>Peman reyèl</span><b class="state-off">● Dezaktive</b></div>
+        <div class="system-row"><span>Retrè MonCash / NatCash</span><b class="state-off">● Dezaktive</b></div>
+        <div class="system-row"><span>QR bout-an-bout</span><b class="state-warn">● Poko valide</b></div>
+      </article>
+      <article class="surface-card">
+        <p class="eyebrow">SEKIRITE ADMIN</p><h2>Sesyon aktyèl</h2>
+        <div class="system-row"><span>Kont administratè</span><b id="sessionEmail" class="session-value">—</b></div>
+        <div class="system-row"><span>Wòl verifye</span><b id="sessionRoles" class="session-value">—</b></div>
+        <div class="system-row"><span>Verifikasyon backend</span><b class="state-on">● Obligatwa</b></div>
+        <div class="system-row"><span>Sesyon navigatè</span><b class="state-on">● Separe ak app kliyan</b></div>
+      </article>
+    </section>
+
+    <footer class="admin-footer"><span>LakayGoPay · Sant Kontwòl</span><span>Entèfas administrasyon prive · Rejim tès</span></footer>
+  </main>
+
+  <script type="module" src="/admin/admin.js?v=20261116-01"></script>
+</body>
+</html>
