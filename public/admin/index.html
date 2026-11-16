@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#071b2a">
   <title>LakayGoPay — Sant Kontwòl Admin</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/admin/admin.css?v=20261116-02">
+  <link rel="stylesheet" href="/admin/admin.css?v=20261116-03">
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -110,80 +110,113 @@
 
     <section class="business-plan-section">
       <div class="section-head business-plan-heading">
-        <div><p class="eyebrow">PLAN BIZNIS · REVNI PLATFÒM LAN</p><h2>Komisyon pa aktivite</h2></div>
-        <span class="read-only-tag">PLAN PRELIMINÈ · PA APLIKE</span>
+        <div><p class="eyebrow">PLAN BIZNIS · MODÈL REFERANS MONCASH</p><h2>Tarif ak revni pa aktivite</h2></div>
+        <span class="read-only-tag">MODÈL PWOPÒZE · PA AKTIVE</span>
       </div>
+
+      <p class="business-intro">Men griy tarif ou bay la kòm referans pou konstwi modèl revni LakayGoPay. Frè yo se montan fiks an goud; pousantaj ki anba yo se pousantaj efektif selon montan tranzaksyon an, se pa yon pousantaj fiks.</p>
 
       <div class="business-summary-grid">
         <article class="business-summary-card">
-          <span class="business-summary-label">Règ komisyon</span>
-          <strong>Poko fikse</strong>
-          <small>Pa gen pousantaj ki aktive nan sistèm nan.</small>
+          <span class="business-summary-label">Voye lajan</span>
+          <strong>5 – 130 HTG</strong>
+          <small>20–249 HTG gratis. Tarif selon tranch montan an.</small>
         </article>
         <article class="business-summary-card">
-          <span class="business-summary-label">Koleksyon frè</span>
-          <strong class="state-off">Dezaktive</strong>
-          <small>Pa gen frè platfòm k ap pran sou tranzaksyon tès yo.</small>
+          <span class="business-summary-label">Retire lajan</span>
+          <strong>6 – 1 600 HTG</strong>
+          <small>20–100 000 HTG. Tarif selon tranch montan an.</small>
         </article>
         <article class="business-summary-card">
-          <span class="business-summary-label">Kontablite</span>
-          <strong>Pa aplike</strong>
-          <small>Okenn komisyon pa antre nan ledger kòm revni.</small>
+          <span class="business-summary-label">Depo dirèk / peman kliyan</span>
+          <strong class="state-on">Gratis</strong>
+          <small>Autodépôt, peman machann afilye ak peman fakti pou kliyan.</small>
         </article>
       </div>
 
-      <div class="fee-table-wrap">
-        <table class="fee-table">
-          <thead>
-            <tr>
-              <th>Aktivite</th>
-              <th>Baz kalkil</th>
-              <th>% LakayGoPay</th>
-              <th>Ki moun ki peye?</th>
-              <th>Eta aktyèl</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Transfè ant bous</strong><small>Voye lajan ant itilizatè LakayGoPay</small></td>
-              <td>Montan transfè a</td><td><span class="fee-pending">Poko fikse</span></td><td>Pou deside</td><td><span class="fee-state fee-test">Tès entèn</span></td>
-            </tr>
-            <tr>
-              <td><strong>Peman machann / QR</strong><small>Peman kliyan fè bay machann</small></td>
-              <td>Montan peman an</td><td><span class="fee-pending">Poko fikse</span></td><td>Kliyan oswa machann</td><td><span class="fee-state fee-warn">QR poko valide</span></td>
-            </tr>
-            <tr>
-              <td><strong>Depo / rechaj bous</strong><small>MonCash, NatCash oswa patnè otorize</small></td>
-              <td>Montan depo a</td><td><span class="fee-pending">Poko fikse</span></td><td>Kliyan oswa patnè</td><td><span class="fee-state fee-off">Dezaktive</span></td>
-            </tr>
-            <tr>
-              <td><strong>Retrè ekstèn</strong><small>Voye lajan soti nan bous pou ale deyò</small></td>
-              <td>Montan retrè a</td><td><span class="fee-pending">Poko fikse</span></td><td>Kliyan oswa patnè</td><td><span class="fee-state fee-off">Dezaktive</span></td>
-            </tr>
-            <tr>
-              <td><strong>Peman sèvis / fakti</strong><small>Peman sèvis, bòdwo ak lòt machann</small></td>
-              <td>Montan fakti a</td><td><span class="fee-pending">Poko fikse</span></td><td>Kliyan, machann oswa patnè</td><td><span class="fee-state fee-plan">Pwochen faz</span></td>
-            </tr>
-            <tr>
-              <td><strong>Echanj HTG / USD / EUR</strong><small>Konvèsyon ant lajan diferan</small></td>
-              <td>To echanj oswa frè separe</td><td><span class="fee-pending">Poko fikse</span></td><td>Pou deside</td><td><span class="fee-state fee-off">Pa aktive</span></td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="fee-block">
+        <div class="fee-block-heading">
+          <div><p class="eyebrow">OPERASYON 01</p><h3>Voye lajan · Frè dapre montan</h3></div>
+          <span class="fee-unit">HTG</span>
+        </div>
+        <div class="fee-table-wrap">
+          <table class="fee-table fee-detail-table">
+            <thead><tr><th>Montan voye</th><th>Frè fiks</th><th>% efektif nan limit ki pi ba</th><th>% efektif nan limit ki pi wo</th></tr></thead>
+            <tbody>
+              <tr><td>20 – 249</td><td class="fee-amount">Gratis</td><td>0.00%</td><td>0.00%</td></tr>
+              <tr><td>250 – 499</td><td class="fee-amount">5 G</td><td>2.00%</td><td>1.00%</td></tr>
+              <tr><td>500 – 999</td><td class="fee-amount">10 G</td><td>2.00%</td><td>1.00%</td></tr>
+              <tr><td>1 000 – 1 999</td><td class="fee-amount">25 G</td><td>2.50%</td><td>1.25%</td></tr>
+              <tr><td>2 000 – 3 999</td><td class="fee-amount">35 G</td><td>1.75%</td><td>0.88%</td></tr>
+              <tr><td>4 000 – 7 999</td><td class="fee-amount">50 G</td><td>1.25%</td><td>0.63%</td></tr>
+              <tr><td>8 000 – 11 999</td><td class="fee-amount">60 G</td><td>0.75%</td><td>0.50%</td></tr>
+              <tr><td>12 000 – 19 999</td><td class="fee-amount">70 G</td><td>0.58%</td><td>0.35%</td></tr>
+              <tr><td>20 000 – 39 999</td><td class="fee-amount">75 G</td><td>0.38%</td><td>0.19%</td></tr>
+              <tr><td>40 000 – 59 999</td><td class="fee-amount">100 G</td><td>0.25%</td><td>0.17%</td></tr>
+              <tr><td>60 000 – 74 999</td><td class="fee-amount">120 G</td><td>0.20%</td><td>0.16%</td></tr>
+              <tr><td>75 000 – 100 000</td><td class="fee-amount">130 G</td><td>0.17%</td><td>0.13%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="fee-block">
+        <div class="fee-block-heading">
+          <div><p class="eyebrow">OPERASYON 02</p><h3>Retire lajan · Frè dapre montan</h3></div>
+          <span class="fee-unit">HTG</span>
+        </div>
+        <div class="fee-table-wrap">
+          <table class="fee-table fee-detail-table">
+            <thead><tr><th>Montan retire</th><th>Frè retrè</th><th>% efektif nan limit ki pi ba</th><th>% efektif nan limit ki pi wo</th></tr></thead>
+            <tbody>
+              <tr><td>20 – 99</td><td class="fee-amount">6 G</td><td>30.00%</td><td>6.06%</td></tr>
+              <tr><td>100 – 249</td><td class="fee-amount">12 G</td><td>12.00%</td><td>4.82%</td></tr>
+              <tr><td>250 – 499</td><td class="fee-amount">15 G</td><td>6.00%</td><td>3.01%</td></tr>
+              <tr><td>500 – 999</td><td class="fee-amount">40 G</td><td>8.00%</td><td>4.00%</td></tr>
+              <tr><td>1 000 – 1 999</td><td class="fee-amount">65 G</td><td>6.50%</td><td>3.25%</td></tr>
+              <tr><td>2 000 – 3 999</td><td class="fee-amount">115 G</td><td>5.75%</td><td>2.88%</td></tr>
+              <tr><td>4 000 – 7 999</td><td class="fee-amount">185 G</td><td>4.63%</td><td>2.31%</td></tr>
+              <tr><td>8 000 – 11 999</td><td class="fee-amount">275 G</td><td>3.44%</td><td>2.29%</td></tr>
+              <tr><td>12 000 – 19 999</td><td class="fee-amount">380 G</td><td>3.17%</td><td>1.90%</td></tr>
+              <tr><td>20 000 – 39 999</td><td class="fee-amount">640 G</td><td>3.20%</td><td>1.60%</td></tr>
+              <tr><td>40 000 – 59 999</td><td class="fee-amount">1 050 G</td><td>2.63%</td><td>1.75%</td></tr>
+              <tr><td>60 000 – 74 999</td><td class="fee-amount">1 400 G</td><td>2.33%</td><td>1.87%</td></tr>
+              <tr><td>75 000 – 100 000</td><td class="fee-amount">1 600 G</td><td>2.13%</td><td>1.60%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="fee-block">
+        <div class="fee-block-heading">
+          <div><p class="eyebrow">OPERASYON 03</p><h3>Depo, komès ak peman sèvis</h3></div>
+          <span class="fee-unit">RÈG KLIYAN</span>
+        </div>
+        <div class="fee-table-wrap">
+          <table class="fee-table">
+            <thead><tr><th>Aktivite</th><th>Frè kliyan</th><th>Detay / sa ki rete pou defini</th><th>Estati nan plan an</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Autodépôt</strong><small>Depo sou pwòp kont MonCash kliyan an</small></td><td class="fee-amount">Gratis</td><td>0.00% pou kliyan</td><td><span class="fee-state fee-plan">Referans</span></td></tr>
+              <tr><td><strong>Depo atravè ajan</strong><small>Depo kliyan fè avèk yon ajan</small></td><td><span class="fee-pending">Tarif pa bay</span></td><td>Bezwen griy tarif ajan an selon montan.</td><td><span class="fee-state fee-warn">Pou konplete</span></td></tr>
+              <tr><td><strong>Peman machann afilye</strong><small>Kliyan peye machann ki nan rezo a</small></td><td class="fee-amount">Gratis</td><td>Komisyon machann / frè platfòm separe poko defini.</td><td><span class="fee-state fee-plan">Referans</span></td></tr>
+              <tr><td><strong>Peman fakti</strong><small>Kliyan peye yon bòdwo oswa sèvis</small></td><td class="fee-amount">Gratis</td><td>Nenpòt frè patnè oswa komisyon founisè rete pou defini.</td><td><span class="fee-state fee-plan">Referans</span></td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div class="business-formula">
         <div>
-          <p class="eyebrow">FÒMIL REVNI</p>
-          <h3>Komisyon platfòm = montan aktivite × pousantaj komisyon</h3>
-          <p>Admin dwe defini pousantaj la, moun ki peye frè a, plafon minimòm/maksimòm, lajan an ak dat aplikasyon an pou chak aktivite.</p>
+          <p class="eyebrow">MODÈL REVNI PA SIKILASYON</p>
+          <h3>Voye lajan → retrè pita = de aktivite diferan ki ka chak gen frè pa yo</h3>
+          <p>Menm valè lajan an ka jenere revni nan etap voye a, epi ankò lè yon moun fè yon retrè apa. Sa pa vle di nou mete de frè sou menm operasyon an.</p>
         </div>
         <div class="formula-note">
-          <strong>Règ transparans</strong>
-          <p>Montan frè a dwe parèt klè anvan kliyan an konfime tranzaksyon an. Nenpòt pousantaj ki apwouve dwe pase nan kontwòl aksè ak jounal audit.</p>
+          <strong>Ki jan pousantaj la kalkile?</strong>
+          <p>Pousantaj efektif = frè fiks ÷ montan tranzaksyon × 100. Li chanje selon montan an; se poutèt sa chak tranch montre pousantaj nan limit ba ak limit wo li.</p>
         </div>
       </div>
-      <p class="business-disclaimer">Enpòtan: seksyon sa a se planifikasyon biznis sèlman. Li pa chanje balans, li pa ajoute frè nan tranzaksyon, epi li pa aktive peman oswa retrè reyèl.</p>
+      <p class="business-disclaimer">Nòt: chif ak règ sa yo se modèl referans ou bay la pou plan biznis LakayGoPay; yo pa prezante kòm yon tarif MonCash ki verifye ofisyèlman. Tranch 60 000–74 999 ak 75 000–100 000 yo separe pou evite sipèpozisyon sou 75 000 HTG. Tarif anba 20 HTG, plis pase 100 000 HTG, ak depo ajan poko espesifye. Modèl sa a se planifikasyon sèlman: li pa aktive frè, li pa chanje ledger/balans, epi li pa pèmèt retrè oswa peman reyèl.</p>
     </section>
 
     <section class="system-grid">
@@ -206,6 +239,6 @@
     <footer class="admin-footer"><span>LakayGoPay · Sant Kontwòl</span><span>Entèfas administrasyon prive · Rejim tès</span></footer>
   </main>
 
-  <script type="module" src="/admin/admin.js?v=20261116-02"></script>
+  <script type="module" src="/admin/admin.js?v=20261116-03"></script>
 </body>
 </html>
