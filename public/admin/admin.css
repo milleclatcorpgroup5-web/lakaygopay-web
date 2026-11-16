@@ -81,3 +81,25 @@ button,input{font:inherit}
 .business-summary-card strong{font-size:18px}
 @media(max-width:900px){.free-service-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:600px){.business-plan-section{padding:12px}.fee-block{padding:12px}.source-verification{padding:13px}.free-service-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fee-block-heading{align-items:flex-start}.fee-block-heading h3{font-size:13px}}
+
+
+/* FX business plan — proposed only, no live currency conversion is enabled. */
+.fx-plan-block{border-color:rgba(86,169,255,.23);background:linear-gradient(145deg,rgba(12,42,63,.58),rgba(5,25,40,.54))}
+.fx-source{margin-top:0}
+.fx-source a{display:inline-block;margin:5px 12px 0 0}
+.fx-rate-table{min-width:620px}
+.fx-fee-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 19px;margin-top:16px;border:1px solid rgba(66,215,192,.24);border-radius:13px;background:linear-gradient(110deg,rgba(66,215,192,.10),rgba(86,169,255,.06))}
+.fx-fee-banner strong{display:block;font-size:23px;letter-spacing:-.5px;color:#a4f1e2;margin:4px 0}
+.fx-fee-banner p{font-size:10px;line-height:1.6;color:var(--muted);margin:0;max-width:700px}
+.fx-fee-chip{display:inline-block;white-space:nowrap;padding:9px 12px;border-radius:9px;background:rgba(66,215,192,.12);color:#9ce5d9;font-size:11px;font-weight:900}
+.fx-formula{margin-top:15px}
+.fx-formula-spacer{margin-top:10px!important}
+.fx-revenue-block{margin-top:15px}
+.fx-guardrails{margin-top:15px}
+.fx-guardrails p+p{margin-top:7px}
+.fx-compliance-note{margin-top:15px;padding:17px 18px;border:1px solid rgba(244,189,103,.28);border-radius:13px;background:rgba(103,77,35,.13)}
+.fx-compliance-note strong{font-size:11px;letter-spacing:.7px;color:#f4cd8c}
+.fx-compliance-note p{font-size:10px;line-height:1.7;color:#c0cbd1;margin:8px 0}
+.fx-compliance-note a{font-size:10px;color:#f4cd8c;font-weight:800;text-decoration:none}
+.fx-compliance-note a:hover{text-decoration:underline}
+@media(max-width:600px){.fx-fee-banner{align-items:flex-start;flex-direction:column}.fx-fee-banner strong{font-size:21px}.fx-fee-chip{white-space:normal}.fx-compliance-note{padding:14px}}
