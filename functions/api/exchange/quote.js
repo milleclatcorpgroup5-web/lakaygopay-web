@@ -56,7 +56,9 @@ async function readBrhRates() {
   ]);
 
   const bankDateMatch = bankHtml.match(/Taux affich[eé]s par les banques\s*:\s*([^<\r\n]+)/i);
-  const homeDateMatch = homeHtml.match(/(\d{1,2}\s+[A-Za-zÀ-ÿ]+\s+\d{4})/);
+  const marketIndex = homeHtml.toLowerCase().indexOf("marché des changes");
+  const homeMarketSection = marketIndex >= 0 ? homeHtml.slice(marketIndex, marketIndex + 6500) : "";
+  const homeDateMatch = homeMarketSection.match(/(\d{1,2}\s+[A-Za-zÀ-ÿ]+\s+\d{4})/);
   const bankDate = parseFrenchDate(cleanText(bankDateMatch?.[1]));
   const homeDate = parseFrenchDate(cleanText(homeDateMatch?.[1]));
   const today = localToday();
@@ -77,12 +79,12 @@ async function readBrhRates() {
     }
   }
 
-  const euroMatch = homeHtml.match(/>\s*Euro\s*<\/[a-z0-9]+>[\s\S]{0,900}?Achat\s*:\s*([0-9.]+)[\s\S]{0,250}?Vente\s*:\s*([0-9.]+)/i) ||
-    homeHtml.match(/Euro[\s\S]{0,700}?Achat\s*:\s*([0-9.]+)[\s\S]{0,250}?Vente\s*:\s*([0-9.]+)/i);
+  const euroMatch = homeMarketSection.match(/>\s*Euro\s*<\/[a-z0-9]+>[\s\S]{0,900}?Achat\s*:\s*([0-9.]+)[\s\S]{0,250}?Vente\s*:\s*([0-9.]+)/i) ||
+    homeMarketSection.match(/Euro[\s\S]{0,700}?Achat\s*:\s*([0-9.]+)[\s\S]{0,250}?Vente\s*:\s*([0-9.]+)/i);
   const eurBuy = numeric(euroMatch?.[1]);
   const eurSell = numeric(euroMatch?.[2]);
 
-  const usdRefMatch = homeHtml.match(/([0-9.]+)\s*<\/p>\s*<p>Taux de Référence/i);
+  const usdRefMatch = homeMarketSection.match(/([0-9.]+)\s*<\/p>\s*<p>Taux de Référence/i);
   const usdReference = numeric(usdRefMatch?.[1]);
   if (!usdBuy || !usdSell || !eurBuy || !eurSell || !usdReference) {
     throw new Error("FX_RATE_PARSE_FAILED");
