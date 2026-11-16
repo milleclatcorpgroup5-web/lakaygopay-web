@@ -126,3 +126,22 @@ input[readonly]{background:#f3f7f8;color:#718593}
 .merchant-qr-result a{max-width:100%;overflow-wrap:anywhere;color:#176f83;font-size:11px}
 .merchant-history-title{margin-top:18px}
 @media(max-width:560px){.qr-tools-row .button{flex:1}.qr-scanner-video{max-height:260px}.merchant-qr-panel{padding:13px}.merchant-qr-result img{width:190px;height:190px}}
+
+
+/* FX quote calculator — estimate only, no money movement. */
+.exchange-quote-card{display:grid;gap:13px}
+.exchange-quote-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:end}
+.exchange-quote-form label{display:grid;gap:7px;color:#35566a;font-size:11px;font-weight:750}
+.exchange-quote-form input,.exchange-quote-form select{width:100%;min-width:0;border:1px solid #d6e2e8;border-radius:10px;background:#fff;color:#173b50;padding:12px 13px;font:inherit}
+.exchange-quote-form input:focus,.exchange-quote-form select:focus{outline:2px solid rgba(36,153,168,.18);border-color:#2499a8}
+.exchange-quote-form button{grid-column:1/-1;margin-top:2px}
+.exchange-quote-result{padding:16px;border:1px solid #dce9e9;border-radius:13px;background:linear-gradient(140deg,#f4fbfa,#f6f9fc)}
+.exchange-receive{display:grid;gap:5px;padding-bottom:13px;border-bottom:1px solid #dbe8e9}
+.exchange-receive span,.exchange-detail-grid span{font-size:10px;color:#6d8290}
+.exchange-receive strong{font-size:clamp(25px,4vw,34px);line-height:1.15;color:#107a73;overflow-wrap:anywhere}
+.exchange-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-top:13px}
+.exchange-detail-grid>div{display:grid;gap:4px;min-width:0}
+.exchange-detail-grid strong{font-size:12px;color:#23485d;overflow-wrap:anywhere}
+.exchange-quote-result .field-hint{margin-top:12px;font-size:10px;line-height:1.6}
+@media(max-width:700px){.exchange-quote-form{grid-template-columns:1fr 1fr}.exchange-quote-form label:nth-child(3){grid-column:1/-1}}
+@media(max-width:480px){.exchange-quote-form{grid-template-columns:1fr}.exchange-quote-form label:nth-child(3){grid-column:auto}.exchange-detail-grid{grid-template-columns:1fr 1fr}.exchange-quote-result{padding:13px}}
