@@ -1,5 +1,6 @@
 import { json, requireUser, callRpc, callUserRest, readJson, validUuid, validAmount, idempotencyKey } from "../_shared/superbase.js";
 import { financialFail } from "../_shared/financial-errors.js";
+import { assertTransactionPin } from "../_shared/pin.js";
 
 const destinations = new Set(["moncash", "natcash", "bank", "cash_agent", "other"]);
 
@@ -39,6 +40,7 @@ export async function onRequestPost({ request, env }) {
     const auth = await requireUser(request, env);
     if (auth.error) return auth.error;
     const body = await readJson(request);
+    await assertTransactionPin(env, auth.user.id, body?.pin);
     const key = idempotencyKey(request);
     if (!key) return json({ error: "IDEMPOTENCY_KEY_REQUIRED" }, 400);
     if (!validUuid(body?.wallet_id)) return json({ error: "INVALID_WALLET_ID" }, 400);
