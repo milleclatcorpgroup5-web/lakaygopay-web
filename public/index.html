@@ -10,7 +10,7 @@
   <title>LakayGoPay — Peman senp, lavi senp</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="stylesheet" href="/styles.css?v=20261116-04">
+  <link rel="stylesheet" href="/styles.css?v=20261116-05">
 </head>
 <body>
   <header class="topbar">
@@ -21,6 +21,7 @@
     <div class="topbar-right">
       <span class="secure-pill"><i></i> Koneksyon an sekirite</span>
       <button id="installButton" class="button button-secondary install-button" type="button" hidden>Enstale app</button>
+      <button id="settingsButton" class="button button-quiet" type="button" aria-controls="settingsPanel" aria-expanded="false" hidden>Paramèt</button>
       <button id="logoutButton" class="button button-quiet" type="button" hidden>Dekonekte</button>
     </div>
   </header>
@@ -34,7 +35,7 @@
       <h1>Yon sèl kont.<br><span>Twa lajan.</span></h1>
       <p class="hero-text">Jere bous HTG, USD ak EUR ou. Voye lajan anndan LakayGoPay avèk pwoteksyon PIN 4 chif.</p>
       <div class="hero-note"><strong>Transparans an premye</strong><p>Bous ak transfè entèn yo sèvi ak rejis finansye LakayGoPay. Peman MonCash, NatCash, bank ak retrè reyèl poko aktive.</p></div>
-      <div class="tester-note"><strong>POU MOUN K AP TESTE</strong><ol><li>Kreye yon kont Kliyan oswa Machann.</li><li>Konekte epi kreye PIN sekirite 4 chif ou.</li><li>Pou teste blokaj la, sèvi ak yon kont tès epi antre 3 move PIN youn apre lòt.</li></ol><p>Pa itilize kont pèsonèl ou ni enfòmasyon finansye sansib. Pa gen lajan reyèl, depo, retrè, MonCash oswa NatCash nan vèsyon tès sa a.</p></div>
+      <div class="tester-note"><strong>POU MOUN K AP TESTE</strong><ol><li>Kreye yon kont Kliyan oswa Machann.</li><li>Pandan enskripsyon an, chwazi PIN sekirite 4 chif ou.</li><li>Pou teste blokaj la, sèvi ak yon kont tès epi antre 3 move PIN youn apre lòt.</li></ol><p>Pa itilize kont pèsonèl ou ni enfòmasyon finansye sansib. Pa gen lajan reyèl, depo, retrè, MonCash oswa NatCash nan vèsyon tès sa a.</p></div>
     </section>
 
     <section class="auth-card">
@@ -72,6 +73,9 @@
         <label>Nimewo telefòn<input id="personalPhone" type="tel" autocomplete="tel" placeholder="+509 ..." required></label>
         <label>Imèl<input id="personalEmail" type="email" autocomplete="email" required></label>
         <label>Modpas (omwen 8 karaktè)<input id="personalPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+        <label>PIN sekirite 4 chif<input id="personalPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required></label>
+        <label>Konfime PIN sekirite<input id="personalPinConfirm" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required></label>
+        <p class="field-hint">PIN sa a ap sèvi pou konfime transfè ou yo. Pa pataje li ak pèsonn.</p>
         <button class="button button-primary full" type="submit">Kreye kont kliyan</button>
       </form>
 
@@ -80,6 +84,9 @@
         <label>Telefòn biznis la<input id="merchantPhone" type="tel" autocomplete="tel" placeholder="+509 ..." required></label>
         <label>Imèl biznis la<input id="merchantEmail" type="email" autocomplete="email" required></label>
         <label>Modpas (omwen 8 karaktè)<input id="merchantPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+        <label>PIN sekirite 4 chif<input id="merchantPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required></label>
+        <label>Konfime PIN sekirite<input id="merchantPinConfirm" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required></label>
+        <p class="field-hint">PIN sa a ap sèvi pou konfime tranzaksyon ou yo. Pa pataje li ak pèsonn.</p>
         <button class="button button-primary full" type="submit">Kreye kont machann</button>
         <p class="field-hint">Kont machann lan ap tann verifikasyon avan li ka resevwa peman komèsyal.</p>
       </form>
@@ -120,7 +127,7 @@
       <p class="field-hint">Chak lajan kenbe pwòp balans li. LakayGoPay pa fè konvèsyon otomatik ant HTG, USD ak EUR.</p>
     </section>
 
-    <div class="main-grid">
+    <div class="main-grid transfer-layout">
       <section class="surface-card">
         <div class="section-heading">
           <div><p class="eyebrow">Voye anndan LakayGoPay</p><h2>Fè yon transfè</h2></div>
@@ -146,20 +153,28 @@
         </form>
       </section>
 
-      <section class="surface-card">
-        <div class="section-heading">
-          <div><p class="eyebrow">PWOTEKSYON KONT</p><h2>Sekirite ak PIN</h2></div>
-          <span class="icon-badge">◇</span>
-        </div>
-        <div id="pinState" class="security-state">Ap verifye estati PIN lan…</div>
-        <form id="pinSetupForm" class="form-stack" hidden>
-          <label>Kreye PIN 4 chif<input id="newPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required></label>
-          <label>Konfime PIN lan<input id="confirmPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required></label>
-          <button class="button button-secondary full" type="submit">Anrejistre PIN sekirite</button>
-        </form>
-        <p class="field-hint">Apre 3 move tantativ, sistèm lan bloke PIN lan pandan yon peryòd sekirite.</p>
-      </section>
     </div>
+
+    <section id="settingsPanel" class="surface-card settings-panel" hidden>
+      <div class="section-heading">
+        <div><p class="eyebrow">PARAMÈT KONT</p><h2>Sekirite ak PIN</h2></div>
+        <span class="icon-badge">◇</span>
+      </div>
+      <div id="pinState" class="security-state">Ap verifye estati PIN lan…</div>
+      <form id="pinManagementForm" class="form-stack" hidden>
+        <label id="currentPinField">PIN aktyèl
+          <input id="currentPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="current-password">
+        </label>
+        <label>Nouvo PIN 4 chif
+          <input id="newPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required>
+        </label>
+        <label>Konfime nouvo PIN lan
+          <input id="confirmPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required>
+        </label>
+        <button id="pinSubmitButton" class="button button-secondary full" type="submit">Kreye PIN sekirite</button>
+      </form>
+      <p class="field-hint">Apre 3 move tantativ, sistèm lan bloke PIN lan pandan yon peryòd sekirite. Pa pataje PIN ou ak pèsonn.</p>
+    </section>
 
     <section class="surface-card profile-card">
       <div class="section-heading">
@@ -196,6 +211,6 @@
     </footer>
   </main>
 
-  <script type="module" src="/app.js?v=20261116-04"></script>
+  <script type="module" src="/app.js?v=20261116-05"></script>
 </body>
 </html>
