@@ -1,4 +1,5 @@
-import { json, requireAdminAal2, callRpc, readJson, validUuid } from "../../../_shared/superbase.js";
+import { json, callRpc, readJson, validUuid } from "../../../_shared/superbase.js";
+import { requireAdminAal2 } from "../../../_shared/security.js";
 import { financialFail } from "../../../_shared/financial-errors.js";
 
 export async function onRequestPost({ request, env }) {
