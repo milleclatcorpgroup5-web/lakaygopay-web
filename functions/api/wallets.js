@@ -5,7 +5,7 @@ export async function onRequestGet({ request, env }) {
     const auth = await requireUser(request, env);
     if (auth.error) return auth.error;
     const wallets = await callUserRest(env, auth.accessToken,
-      "wallet_balances?select=wallet_id,owner_user_id,merchant_id,currency,status,balance,created_at&order=created_at.asc");
+      "wallet_balances?select=wallet_id,owner_user_id,merchant_id,currency,balance,created_at&order=created_at.asc");
     return json({ ok: true, wallets });
   } catch (error) {
     return fail(error);
