@@ -100,3 +100,8 @@ input[readonly]{background:#f3f7f8;color:#718593}
 .install-button{white-space:nowrap}
 .install-help{width:min(1100px,calc(100% - 32px));margin:10px auto 0;padding:11px 14px;border:1px solid #cfe5e3;border-radius:11px;background:#e8f5f3;color:#245d60;font-size:12px;line-height:1.55}
 @media(max-width:560px){.install-button{padding:9px 10px;font-size:11px}.install-help{width:calc(100% - 22px);font-size:11px}.tester-note{padding:14px}}
+
+/* Wallet transfer and account settings layout */
+.transfer-layout{grid-template-columns:1fr}
+.settings-panel{scroll-margin-top:18px;border-color:#cfe2e6}
+.settings-panel .form-stack{max-width:520px}
