@@ -109,8 +109,7 @@ begin
          last_name = nullif(trim(new.raw_user_meta_data->>'last_name'),''),
          date_of_birth = coalesce(v_dob, date_of_birth),
          account_type = v_type,
-         phone = coalesce(v_phone, phone),
-         updated_at = now()
+         phone = coalesce(v_phone, phone)
    where id = new.id;
 
   return new;
