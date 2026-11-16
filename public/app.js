@@ -9,6 +9,7 @@ let currentProfile = null;
 let currentWallets = [];
 let currentMerchants = [];
 let pinConfigured = false;
+let recoveryMode = false;
 
 function message(selector, value, kind) {
   const node = $(selector);
@@ -296,6 +297,15 @@ function renderPinState(result) {
   node.textContent = "Ou poko kreye PIN sekirite ou. Fè sa anvan ou voye lajan.";
 }
 async function syncSession(session) {
+  if (recoveryMode && session && session.user) {
+    activeUserId = null;
+    dashboardPromise = null;
+    $("#authView").hidden = false;
+    $("#appView").hidden = true;
+    $("#logoutButton").hidden = true;
+    setAuthMode("newpassword");
+    return;
+  }
   if (!session || !session.user) {
     activeUserId = null;
     dashboardPromise = null;
@@ -451,6 +461,8 @@ function wireForms() {
       const result = await supabase.auth.updateUser({ password: password });
       if (result.error) throw result.error;
       $("#newPassword").value = "";
+      recoveryMode = false;
+      await supabase.auth.signOut();
       setAuthMode("login");
       message("#authNotice", "Modpas ou mete ajou. Konekte ak nouvo modpas la.", "success");
     } catch (error) {
@@ -606,9 +618,7 @@ async function init() {
   });
   supabase.auth.onAuthStateChange(function (event, session) {
     if (event === "PASSWORD_RECOVERY") {
-      $("#authView").hidden = false;
-      $("#appView").hidden = true;
-      setAuthMode("newpassword");
+      recoveryMode = true;
       message("#authNotice", "Antre nouvo modpas ou pou fini rekiperasyon an.", "");
     }
     setTimeout(function () { syncSession(session); }, 0);
