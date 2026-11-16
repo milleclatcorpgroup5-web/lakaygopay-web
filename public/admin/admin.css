@@ -25,3 +25,33 @@ button,input{font:inherit}
 @media(max-width:1050px){.metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:760px){.login-wrap{grid-template-columns:1fr;gap:28px;padding-top:42px}.login-intro h1{font-size:48px}.login-card{padding:25px}.intro-copy{font-size:15px}.module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.system-grid{grid-template-columns:1fr}.admin-layout{padding-top:25px}}
 @media(max-width:520px){.topbar{height:66px;padding:0 15px}.brand-mark{width:34px;height:34px}.secure-label{display:none}.top-actions{gap:6px}.button{padding:9px 11px;font-size:11px}.login-wrap{min-height:calc(100vh - 66px);padding:33px 16px}.login-intro h1{font-size:42px}.security-note,.internal-note{padding:14px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.metric-card{padding:13px}.metric-card strong{font-size:25px}.module-grid{grid-template-columns:1fr}.welcome-row{align-items:flex-start;flex-direction:column}.banner-status{display:none}.security-banner{align-items:flex-start}.section-head{align-items:flex-start;flex-direction:column}.admin-footer{flex-direction:column}}
+
+
+/* Business plan / fee schedule — planning only; no live fee rules are applied. */
+.business-plan-section{margin-top:38px;padding:20px;background:linear-gradient(145deg,rgba(14,43,62,.82),rgba(8,29,44,.88));border:1px solid rgba(116,198,203,.17);border-radius:18px}
+.business-plan-heading{margin:0 0 16px}
+.business-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.business-summary-card{padding:16px;background:rgba(5,22,34,.58);border:1px solid var(--line);border-radius:13px}
+.business-summary-label{display:block;color:var(--muted);font-size:10px;font-weight:700;margin-bottom:9px}
+.business-summary-card strong{display:block;font-size:19px;letter-spacing:-.4px}
+.business-summary-card small{display:block;color:#819eaf;font-size:10px;line-height:1.5;margin-top:5px}
+.fee-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:13px}
+.fee-table{width:100%;border-collapse:collapse;min-width:760px;text-align:left;background:rgba(4,21,33,.34)}
+.fee-table th{padding:13px 14px;color:#80bfc9;background:rgba(81,164,180,.08);font-size:9px;letter-spacing:.8px;text-transform:uppercase}
+.fee-table td{padding:13px 14px;border-top:1px solid var(--line);font-size:10px;color:#c4d4de;vertical-align:middle}
+.fee-table td:first-child{min-width:185px}
+.fee-table td strong{display:block;color:var(--text);font-size:11px}
+.fee-table td small{display:block;color:#839ead;font-size:9px;line-height:1.4;margin-top:4px}
+.fee-pending{display:inline-block;padding:6px 8px;border-radius:7px;color:var(--amber);background:rgba(244,189,103,.1);font-size:10px;font-weight:800;white-space:nowrap}
+.fee-state{display:inline-block;padding:6px 8px;border-radius:7px;font-size:9px;font-weight:800;white-space:nowrap}
+.fee-test{color:#8ec4fb;background:rgba(86,169,255,.1)}
+.fee-warn{color:var(--amber);background:rgba(244,189,103,.1)}
+.fee-off{color:#ff9999;background:rgba(255,133,133,.09)}
+.fee-plan{color:#9ce5d9;background:rgba(66,215,192,.09)}
+.business-formula{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-top:15px}
+.business-formula>div{padding:17px;background:rgba(5,22,34,.48);border:1px solid var(--line);border-radius:12px}
+.business-formula h3{font-size:15px;line-height:1.45;margin:0 0 8px}
+.business-formula p{color:var(--muted);font-size:10px;line-height:1.65;margin:0}
+.formula-note strong{display:block;color:#a4eade;font-size:11px;margin-bottom:7px}
+.business-disclaimer{color:#8ca8b8;font-size:10px;line-height:1.6;margin:13px 2px 0}
+@media(max-width:760px){.business-summary-grid{grid-template-columns:1fr}.business-formula{grid-template-columns:1fr}.business-plan-section{padding:14px}}
