@@ -189,21 +189,21 @@
         </div>
         <p class="muted admin-mfa-copy">Aksyon ki anba yo mande PIN Admin verifye, MFA TOTP (AAL2), ak tras audit. Pa gen aksyon ki voye lajan deyò.</p>
         <div class="admin-action-grid">
-          <form id="adminMerchantReviewForm" class="admin-action-card">
+          <form id="adminMerchantReviewForm" class="admin-action-card" hidden>
             <h3>Revize machann</h3>
             <label>ID machann<input id="adminMerchantId" required></label>
             <label>Desizyon<select id="adminMerchantStatus"><option value="under_review">An revizyon</option><option value="active">Apwouve / Aktif</option><option value="rejected">Rejte</option><option value="suspended">Sispann</option></select></label>
             <label>Nòt (opsyonèl)<input id="adminMerchantComment" maxlength="500"></label>
             <button class="button button-primary full" type="submit">Anrejistre desizyon</button>
           </form>
-          <form id="adminWithdrawalReviewForm" class="admin-action-card">
+          <form id="adminWithdrawalReviewForm" class="admin-action-card" hidden>
             <h3>Revize demann retrè</h3>
             <label>ID demann retrè<input id="adminWithdrawalId" required></label>
             <label>Desizyon<select id="adminWithdrawalDecision"><option value="approved">Apwouve</option><option value="rejected">Rejte</option></select></label>
             <label>Kòmantè (opsyonèl)<input id="adminWithdrawalComment" maxlength="500"></label>
             <button class="button button-primary full" type="submit">Anrejistre desizyon</button>
           </form>
-          <form id="adminAgentReviewForm" class="admin-action-card">
+          <form id="adminAgentReviewForm" class="admin-action-card" hidden>
             <h3>Revize aplikasyon ajan</h3>
             <label>ID aplikasyon ajan<input id="adminAgentApplicationId" required></label>
             <label>Desizyon<select id="adminAgentDecision"><option value="approved">Apwouve</option><option value="rejected">Rejte</option></select></label>
