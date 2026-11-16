@@ -155,6 +155,75 @@
 
     </div>
 
+
+    <section id="qrPaymentSection" class="surface-card action-card">
+      <div class="section-heading">
+        <div><p class="eyebrow">PEMAN ANNDAN LAKAYGOPAY</p><h2>Peye ak QR</h2></div>
+        <span class="icon-badge">▦</span>
+      </div>
+      <p class="field-hint">Eskane QR machann lan oswa kole kòd/lyen demann lan. Verifye non machann, montan ak lajan an anvan ou peye.</p>
+      <div class="qr-tools-row">
+        <button id="qrScanButton" class="button button-secondary" type="button">Eskane QR ak kamera</button>
+        <button id="qrStopScanButton" class="button button-quiet" type="button" hidden>Fèmen kamera</button>
+      </div>
+      <video id="qrScannerVideo" class="qr-scanner-video" playsinline muted hidden></video>
+      <form id="qrLookupForm" class="form-stack">
+        <label>Kòd QR oswa lyen demann lan
+          <input id="qrTokenInput" type="text" inputmode="text" autocomplete="off" placeholder="Eskane oswa kole kòd QR la" required>
+        </label>
+        <button class="button button-secondary full" type="submit">Verifye demann peman</button>
+      </form>
+      <div id="qrDetails" class="qr-details" hidden></div>
+      <form id="qrPayForm" class="form-stack" hidden>
+        <label>Bous HTG pou peye a
+          <select id="qrPayerWallet" required></select>
+        </label>
+        <label>Montan pou peye (HTG)
+          <input id="qrPayAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="Montan demann lan" required>
+        </label>
+        <label>PIN tranzaksyon 4 chif
+          <input id="qrPayPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required>
+        </label>
+        <button class="button button-primary full" type="submit">Konfime peman QR</button>
+        <p class="field-hint">Peman sa a se yon transfè HTG entèn. Li pa voye lajan sou MonCash oswa NatCash.</p>
+      </form>
+      <div id="qrNotice" class="notice" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="withdrawalSection" class="surface-card action-card">
+      <div class="section-heading">
+        <div><p class="eyebrow">DEMAND SÈVIS</p><h2>Demann retrè</h2></div>
+        <span class="subtle-tag">TÈS · PA GEN PEMAN DEYÒ</span>
+      </div>
+      <p class="field-hint">Ou kapab anrejistre yon demann pou tès ak verifikasyon. Apwobasyon pa egzekite yon retrè MonCash, NatCash oswa bank.</p>
+      <form id="withdrawalForm" class="form-stack">
+        <label>Bous
+          <select id="withdrawWallet" required></select>
+        </label>
+        <label>Montan
+          <input id="withdrawAmount" type="number" inputmode="decimal" min="0.01" step="0.01" required>
+        </label>
+        <label>Destinasyon
+          <select id="withdrawType" required>
+            <option value="moncash">MonCash</option>
+            <option value="natcash">NatCash</option>
+            <option value="bank">Bank</option>
+            <option value="cash_agent">Ajan lajan kach</option>
+            <option value="other">Lòt</option>
+          </select>
+        </label>
+        <label>Referans destinasyon (opsyonèl)
+          <input id="withdrawReference" type="text" maxlength="120" autocomplete="off" placeholder="Nimewo oswa referans">
+        </label>
+        <label>PIN tranzaksyon 4 chif
+          <input id="withdrawPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required>
+        </label>
+        <button class="button button-secondary full" type="submit">Soumèt demann retrè tès</button>
+      </form>
+      <div id="withdrawalsList" class="compact-list"><div class="empty-state">Pa gen demann retrè pou kounye a.</div></div>
+      <div id="withdrawalNotice" class="notice" role="status" aria-live="polite"></div>
+    </section>
+
     <section id="settingsPanel" class="surface-card settings-panel" hidden>
       <div class="section-heading">
         <div><p class="eyebrow">PARAMÈT KONT</p><h2>Sekirite ak PIN</h2></div>
@@ -192,6 +261,30 @@
         <span id="merchantStatus" class="status-pill pending">Ap tann</span>
       </div>
       <div id="merchantDetails" class="field-hint">Verifikasyon enfòmasyon biznis la anvan peman komèsyal yo aktive.</div>
+      <div id="merchantQrPanel" class="merchant-qr-panel">
+        <div class="section-heading compact-heading">
+          <div><p class="eyebrow">KOLEKSYON KOMÈSYAL</p><h3>QR pou resevwa peman HTG</h3></div>
+          <span class="subtle-tag">LEDGER ENTÈN</span>
+        </div>
+        <p id="merchantQrStatus" class="field-hint">Sèl machann ki aktive kapab kreye demann peman QR.</p>
+        <form id="merchantQrForm" class="form-stack">
+          <label>Montan (HTG)
+            <input id="merchantQrAmount" type="number" inputmode="decimal" min="0.01" step="0.01" required>
+          </label>
+          <label>Deskripsyon
+            <input id="merchantQrDescription" type="text" maxlength="140" placeholder="Egzanp: Acha pwodwi">
+          </label>
+          <button id="merchantQrCreateButton" class="button button-secondary full" type="submit">Kreye demann QR</button>
+        </form>
+        <div id="merchantQrResult" class="merchant-qr-result" hidden>
+          <img id="merchantQrImage" alt="QR demann peman LakayGoPay">
+          <p id="merchantQrSummary" class="field-hint"></p>
+          <a id="merchantQrLink" href="#" target="_blank" rel="noopener noreferrer">Louvri lyen peman</a>
+          <button id="merchantQrCopyButton" class="button button-quiet" type="button">Kopye lyen QR</button>
+        </div>
+        <h3 class="merchant-history-title">Peman machann resevwa</h3>
+        <div id="merchantPaymentsList" class="compact-list"><div class="empty-state">Pa gen peman QR anrejistre.</div></div>
+      </div>
     </section>
 
     <section class="surface-card">
