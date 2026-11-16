@@ -4,46 +4,67 @@
 
 begin;
 
--- The original schema allowed only one HTG wallet per owner and rejected other currencies.
+-- The original schema allowed only HTG. Some optional payment tables may not
+-- exist yet, so inspect tables safely instead of casting missing names to regclass.
 do $$
 declare
-  item record;
+  v_table text;
+  v_relation regclass;
+  v_constraint record;
+  v_constraint_name text;
 begin
-  for item in
-    select c.conrelid::regclass as relation_name, c.conname
-      from pg_constraint c
-     where c.contype = 'c'
-       and c.conrelid in (
-         'public.wallets'::regclass,
-         'public.ledger_entries'::regclass,
-         'public.transfers'::regclass,
-         'public.deposit_requests'::regclass,
-         'public.withdrawal_requests'::regclass,
-         'public.payment_requests'::regclass,
-         'public.merchant_payment_records'::regclass
-       )
-       and pg_get_constraintdef(c.oid) ilike '%currency%'
-       and pg_get_constraintdef(c.oid) ilike '%HTG%'
+  foreach v_table in array array[
+    'wallets',
+    'ledger_entries',
+    'transfers',
+    'deposit_requests',
+    'withdrawal_requests',
+    'payment_requests',
+    'merchant_payment_records'
+  ]
   loop
-    execute format('alter table %s drop constraint %I', item.relation_name, item.conname);
+    v_relation := to_regclass('public.' || v_table);
+    if v_relation is null then
+      continue;
+    end if;
+
+    if not exists (
+      select 1
+        from information_schema.columns
+       where table_schema = 'public'
+         and table_name = v_table
+         and column_name = 'currency'
+    ) then
+      continue;
+    end if;
+
+    for v_constraint in
+      select conname
+        from pg_constraint
+       where conrelid = v_relation
+         and contype = 'c'
+         and pg_get_constraintdef(oid) ilike '%currency%'
+         and pg_get_constraintdef(oid) ilike '%HTG%'
+    loop
+      execute format('alter table %s drop constraint %I', v_relation, v_constraint.conname);
+    end loop;
+
+    v_constraint_name := v_table || '_supported_currency_check';
+    if not exists (
+      select 1
+        from pg_constraint
+       where conrelid = v_relation
+         and conname = v_constraint_name
+    ) then
+      execute format(
+        'alter table %s add constraint %I check (currency in (''HTG'',''USD'',''EUR''))',
+        v_relation,
+        v_constraint_name
+      );
+    end if;
   end loop;
 end;
 $$;
-
-alter table public.wallets
-  add constraint wallets_supported_currency_check check (currency in ('HTG','USD','EUR'));
-alter table public.ledger_entries
-  add constraint ledger_entries_supported_currency_check check (currency in ('HTG','USD','EUR'));
-alter table public.transfers
-  add constraint transfers_supported_currency_check check (currency in ('HTG','USD','EUR'));
-alter table public.deposit_requests
-  add constraint deposit_requests_supported_currency_check check (currency in ('HTG','USD','EUR'));
-alter table public.withdrawal_requests
-  add constraint withdrawal_requests_supported_currency_check check (currency in ('HTG','USD','EUR'));
-alter table public.payment_requests
-  add constraint payment_requests_supported_currency_check check (currency in ('HTG','USD','EUR'));
-alter table public.merchant_payment_records
-  add constraint merchant_payment_records_supported_currency_check check (currency in ('HTG','USD','EUR'));
 
 -- Replace per-owner unique indexes with per-currency uniqueness.
 drop index if exists public.wallets_personal_owner_uq;
