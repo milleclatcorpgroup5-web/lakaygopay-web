@@ -1,5 +1,5 @@
 import { json, config } from "../../_shared/superbase.js";
-import { requireAdmin } from "../../_shared/admin-auth.js";
+import { requireAdminPinSession } from "../../_shared/admin-pin.js";
 
 async function countRows(url, secretKey, table) {
   try {
@@ -22,7 +22,7 @@ async function countRows(url, secretKey, table) {
 }
 
 export async function onRequestGet({ request, env }) {
-  const access = await requireAdmin(request, env);
+  const access = await requireAdminPinSession(request, env);
   if (access.error) return access.error;
 
   try {
