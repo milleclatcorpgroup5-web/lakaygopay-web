@@ -10,6 +10,7 @@ let currentWallets = [];
 let currentMerchants = [];
 let pinConfigured = false;
 let recoveryMode = false;
+let deferredInstallPrompt = null;
 
 function message(selector, value, kind) {
   const node = $(selector);
@@ -599,7 +600,66 @@ function wireActions() {
     await supabase.auth.signOut();
   });
 }
+function wireInstallButton() {
+  const button = $("#installButton");
+  const help = $("#installHelp");
+  if (!button || !help) return;
+
+  const standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+    window.navigator.standalone === true;
+  if (standalone) return;
+
+  const userAgent = window.navigator.userAgent || "";
+  const isIOS = /iphone|ipad|ipod/i.test(userAgent) ||
+    (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
+  const isAndroid = /android/i.test(userAgent);
+
+  // iOS does not expose beforeinstallprompt; Android may expose it when install is available.
+  if (isIOS || isAndroid) button.hidden = false;
+
+  window.addEventListener("beforeinstallprompt", function (event) {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    button.hidden = false;
+    button.textContent = "Enstale app";
+  });
+
+  button.addEventListener("click", async function () {
+    if (deferredInstallPrompt) {
+      const promptEvent = deferredInstallPrompt;
+      deferredInstallPrompt = null;
+      try {
+        await promptEvent.prompt();
+        const choice = await promptEvent.userChoice;
+        if (choice && choice.outcome === "accepted") {
+          button.hidden = true;
+          help.hidden = true;
+          return;
+        }
+        help.textContent = "Ou ka enstale LakayGoPay nenpòt lè depi meni navigatè a.";
+      } catch {
+        help.textContent = "Enstalasyon an pa lanse. Eseye opsyon enstalasyon nan meni navigatè a.";
+      }
+      help.hidden = false;
+      return;
+    }
+
+    help.hidden = false;
+    if (isIOS) {
+      help.textContent = "Sou iPhone/iPad: peze Pataje (kare ak flèch anlè), chwazi “Add to Home Screen” oswa “Ajoute sou ekran dakèy la”, epi konfime.";
+    } else {
+      help.textContent = "Sou Android: ouvri meni ⋮ nan Chrome oswa Samsung Internet, chwazi “Install app” oswa “Add to Home screen”, epi konfime.";
+    }
+  });
+
+  window.addEventListener("appinstalled", function () {
+    button.hidden = true;
+    help.hidden = true;
+  });
+}
+
 async function init() {
+  wireInstallButton();
   wireForms();
   wireActions();
   const response = await fetch("/api/config", { headers: { accept: "application/json" } });
@@ -626,7 +686,7 @@ async function init() {
   const session = await sessionNow();
   await syncSession(session);
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js?v=20261116-03").catch(function () {});
+    navigator.serviceWorker.register("/service-worker.js?v=20261116-04").catch(function () {});
   }
 }
 init().catch(function (error) {
