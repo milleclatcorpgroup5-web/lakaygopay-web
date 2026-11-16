@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#071b2a">
   <title>LakayGoPay — Sant Kontwòl Admin</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/admin/admin.css?v=20261116-06">
+  <link rel="stylesheet" href="/admin/admin.css?v=20261116-07">
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -136,6 +136,89 @@
       <article class="module-card"><div class="module-symbol">04</div><div><h3>Retrè</h3><p>Siveyans demann retrè; okenn peman ekstèn pa egzekite.</p><span class="module-state">Aksyon dezaktive</span></div></article>
       <article class="module-card"><div class="module-symbol">05</div><div><h3>Sekirite & Risk</h3><p>Espas pou kontwòl aksè ak siveyans evènman sekirite.</p><span class="module-state">Kantite evènman sèlman</span></div></article>
       <article class="module-card"><div class="module-symbol">06</div><div><h3>Jounal audit</h3><p>Vizibilite sou kantite tras administrasyon ki anrejistre.</p><span class="module-state">Apèsi sèlman</span></div></article>
+    </section>
+
+
+    <section class="admin-workspace">
+      <section class="surface-card admin-mfa-panel" id="adminMfaPanel">
+        <div class="section-head">
+          <div><p class="eyebrow">SEKIRITE POU AKSYON SANSIB</p><h2>Verifikasyon MFA (TOTP)</h2></div>
+          <span id="adminMfaBadge" class="read-only-tag">MFA obligatwa pou aksyon</span>
+        </div>
+        <p id="adminMfaStatus" class="muted admin-mfa-copy">Ap verifye nivo sekirite sesyon an…</p>
+        <div class="admin-mfa-actions">
+          <button id="adminMfaEnrollButton" class="button button-quiet" type="button">Kreye / aktive MFA</button>
+          <div id="adminMfaQrWrap" hidden>
+            <img id="adminMfaQr" alt="QR pou aplikasyon authenticator">
+            <p id="adminMfaSecret" class="small muted"></p>
+          </div>
+          <label>Kòd authenticator 6 chif
+            <input id="adminMfaCode" type="password" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000">
+          </label>
+          <button id="adminMfaVerifyButton" class="button button-primary" type="button">Verifye MFA</button>
+        </div>
+      </section>
+
+      <section class="surface-card admin-records-panel">
+        <div class="section-head">
+          <div><p class="eyebrow">MODIL OPERASYONÈL</p><h2>Dosye ak aktivite platfòm lan</h2></div>
+          <button id="adminRecordsRefresh" class="button button-quiet" type="button">Rafrechi lis la</button>
+        </div>
+        <nav class="admin-record-tabs" aria-label="Modil administrasyon">
+          <button type="button" data-record-type="users" class="active">Itilizatè</button>
+          <button type="button" data-record-type="merchants">Machann</button>
+          <button type="button" data-record-type="wallets">Bous</button>
+          <button type="button" data-record-type="ledger">Ledger</button>
+          <button type="button" data-record-type="withdrawals">Retrè</button>
+          <button type="button" data-record-type="agents">Ajan</button>
+          <button type="button" data-record-type="audit">Audit</button>
+        </nav>
+        <div id="adminRecordsNotice" class="notice" role="status" aria-live="polite">Chwazi yon modil pou chaje dosye yo.</div>
+        <div class="admin-record-table-wrap">
+          <table class="admin-record-table">
+            <thead id="adminRecordsHead"><tr><th>Enfòmasyon</th></tr></thead>
+            <tbody id="adminRecordsBody"><tr><td class="muted">Pa gen lis chaje.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="surface-card admin-actions-panel" id="adminActionsPanel">
+        <div class="section-head">
+          <div><p class="eyebrow">AKSYON ADMINISTRATÈ</p><h2>Revizyon ak desizyon</h2></div>
+          <span class="read-only-tag">PIN + MFA obligatwa</span>
+        </div>
+        <p class="muted admin-mfa-copy">Aksyon ki anba yo mande PIN Admin verifye, MFA TOTP (AAL2), ak tras audit. Pa gen aksyon ki voye lajan deyò.</p>
+        <div class="admin-action-grid">
+          <form id="adminMerchantReviewForm" class="admin-action-card">
+            <h3>Revize machann</h3>
+            <label>ID machann<input id="adminMerchantId" required></label>
+            <label>Desizyon<select id="adminMerchantStatus"><option value="under_review">An revizyon</option><option value="active">Apwouve / Aktif</option><option value="rejected">Rejte</option><option value="suspended">Sispann</option></select></label>
+            <label>Nòt (opsyonèl)<input id="adminMerchantComment" maxlength="500"></label>
+            <button class="button button-primary full" type="submit">Anrejistre desizyon</button>
+          </form>
+          <form id="adminWithdrawalReviewForm" class="admin-action-card">
+            <h3>Revize demann retrè</h3>
+            <label>ID demann retrè<input id="adminWithdrawalId" required></label>
+            <label>Desizyon<select id="adminWithdrawalDecision"><option value="approved">Apwouve</option><option value="rejected">Rejte</option></select></label>
+            <label>Kòmantè (opsyonèl)<input id="adminWithdrawalComment" maxlength="500"></label>
+            <button class="button button-primary full" type="submit">Anrejistre desizyon</button>
+          </form>
+          <form id="adminAgentReviewForm" class="admin-action-card">
+            <h3>Revize aplikasyon ajan</h3>
+            <label>ID aplikasyon ajan<input id="adminAgentApplicationId" required></label>
+            <label>Desizyon<select id="adminAgentDecision"><option value="approved">Apwouve</option><option value="rejected">Rejte</option></select></label>
+            <label>Nòt admin<input id="adminAgentNote" maxlength="1000"></label>
+            <button class="button button-primary full" type="submit">Anrejistre desizyon</button>
+          </form>
+          <article class="admin-action-card">
+            <h3>Odit entegrite ledger</h3>
+            <p class="muted">Kontwòl sa a verifye balans antre debit/kredi yo. Li pa chanje ni repare balans.</p>
+            <button id="adminLedgerAuditButton" class="button button-quiet full" type="button">Kouri odit ledger</button>
+            <pre id="adminLedgerAuditResult" class="admin-audit-result">Pa gen odit lanse.</pre>
+          </article>
+        </div>
+        <div id="adminActionNotice" class="notice" role="status" aria-live="polite"></div>
+      </section>
     </section>
 
     <section class="business-plan-section">
@@ -356,6 +439,6 @@
     <footer class="admin-footer"><span>LakayGoPay · Sant Kontwòl</span><span>Entèfas administrasyon prive · Rejim tès</span></footer>
   </main>
 
-  <script type="module" src="/admin/admin.js?v=20261116-06"></script>
+  <script type="module" src="/admin/admin.js?v=20261116-07"></script>
 </body>
 </html>
