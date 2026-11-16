@@ -54,7 +54,7 @@ const panel = document.createElement("section");
 panel.id = "lgp-panel";
 panel.hidden = true;
 panel.innerHTML = `
-  <header><div><strong>LakayGoPay — tès backend</strong><p style="color:#c7e0e9;margin-top:3px">Mòd verifikasyon · pa gen lajan reyèl</p></div><button id="lgp-close" class="secondary" type="button">Fèmen</button></header>
+  <header><div><strong>LakayGoPay — Kont ou</strong><p style="color:#c7e0e9;margin-top:3px">Konekte, kreye kont, oswa mande aksè ajan.</p></div><button id="lgp-close" class="secondary" type="button">Fèmen</button></header>
   <div id="lgp-body">
     <div id="lgp-config-status" class="status">Chèk konfigirasyon…</div>
     <div id="lgp-auth-card" class="card">
