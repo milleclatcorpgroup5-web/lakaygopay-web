@@ -127,6 +127,49 @@
       <p class="field-hint">Chak lajan kenbe pwòp balans li. LakayGoPay pa fè konvèsyon otomatik ant HTG, USD ak EUR.</p>
     </section>
 
+
+    <section id="exchangeQuoteSection" class="surface-card exchange-quote-card">
+      <div class="section-heading">
+        <div><p class="eyebrow">HTG · USD · EUR</p><h2>Kalkilatè echanj lajan</h2></div>
+        <span class="subtle-tag">ESTIMASYON · PA TRANSFÈ</span>
+      </div>
+      <p class="field-hint">Gade konbyen ou ta resevwa selon dènye taux BRH/BUH ki disponib. LakayGoPay montre yon komisyon pwopoze 0.50%. Kalkil sa a pa retire lajan nan bous ou ni pa fè konvèsyon reyèl.</p>
+      <form id="exchangeQuoteForm" class="exchange-quote-form">
+        <label>Lajan ou voye
+          <select id="exchangeSourceCurrency">
+            <option value="HTG">HTG · Goud</option>
+            <option value="USD">USD · Dola</option>
+            <option value="EUR">EUR · Euro</option>
+          </select>
+        </label>
+        <label>Lajan ou vle resevwa
+          <select id="exchangeDestinationCurrency">
+            <option value="USD">USD · Dola</option>
+            <option value="HTG">HTG · Goud</option>
+            <option value="EUR">EUR · Euro</option>
+          </select>
+        </label>
+        <label>Montan
+          <input id="exchangeAmount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required>
+        </label>
+        <button id="exchangeQuoteButton" class="button button-secondary full" type="submit">Kalkile estimasyon</button>
+      </form>
+      <div id="exchangeQuoteResult" class="exchange-quote-result" hidden>
+        <div class="exchange-receive">
+          <span>Montan estimatif pou resevwa</span>
+          <strong id="exchangeReceiveAmount">—</strong>
+        </div>
+        <div class="exchange-detail-grid">
+          <div><span>Montan voye</span><strong id="exchangeSourceAmount">—</strong></div>
+          <div><span>Komisyon 0.50%</span><strong id="exchangeFeeAmount">—</strong></div>
+          <div><span>Taux itilize</span><strong id="exchangeRateUsed">—</strong></div>
+          <div><span>Taux dat</span><strong id="exchangeRateDate">—</strong></div>
+        </div>
+        <p id="exchangeQuoteDisclaimer" class="field-hint"></p>
+      </div>
+      <div id="exchangeQuoteNotice" class="notice" role="status" aria-live="polite"></div>
+    </section>
+
     <div class="main-grid transfer-layout">
       <section class="surface-card">
         <div class="section-heading">
