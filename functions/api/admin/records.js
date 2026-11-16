@@ -1,5 +1,5 @@
 import { json, config } from "../../_shared/superbase.js";
-import { requireAdminPinSession } from "../../_shared/admin-pin.js";
+import { requireAdminAal2 } from "../../_shared/security.js";
 
 const RESOURCE_BY_TYPE = {
   users: "profiles?select=id,full_name,account_status,preferred_language,created_at&order=created_at.desc&limit=75",
@@ -12,7 +12,7 @@ const RESOURCE_BY_TYPE = {
 };
 
 export async function onRequestGet({ request, env }) {
-  const access = await requireAdminPinSession(request, env);
+  const access = await requireAdminAal2(request, env);
   if (access.error) return access.error;
 
   const type = new URL(request.url).searchParams.get("type") || "";
