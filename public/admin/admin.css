@@ -112,3 +112,44 @@ button,input{font:inherit}
 .admin-pin-card>.muted{font-size:13px;line-height:1.65;margin:0 0 22px}
 .admin-pin-card .card-symbol{margin-bottom:19px}
 @media(max-width:520px){.admin-pin-wrap{min-height:calc(100vh - 66px);padding:20px 14px}.admin-pin-card{padding:22px 18px}}
+
+
+/* Admin operational workspace: records, MFA, and audited review actions. */
+.admin-workspace{display:grid;gap:18px;margin:26px 0}
+.admin-mfa-panel,.admin-records-panel,.admin-actions-panel{padding:20px;background:rgba(13,38,56,.86);border:1px solid var(--line);border-radius:17px}
+.admin-mfa-copy{font-size:11px;line-height:1.65;margin:0 0 13px}
+.admin-mfa-actions{display:flex;align-items:center;flex-wrap:wrap;gap:11px}
+.admin-mfa-actions label{display:grid;gap:6px;color:#c6d7e1;font-size:11px;font-weight:700}
+.admin-mfa-actions input,.admin-action-card input,.admin-action-card select{min-width:0;background:#071c2b;border:1px solid rgba(169,203,222,.2);border-radius:9px;padding:11px 12px;color:var(--text);outline:none}
+.admin-mfa-actions input{width:150px;letter-spacing:4px}
+.admin-mfa-actions button{margin:0}
+.admin-mfa-actions [hidden]{display:none!important}
+.admin-mfa-actions img{display:block;width:180px;height:180px;object-fit:contain;background:#fff;border-radius:10px;padding:8px}
+#adminMfaSecret{max-width:360px;overflow-wrap:anywhere;font-size:9px;line-height:1.6}
+.mfa-active{background:rgba(66,215,192,.12);color:#9be8d9}
+.admin-record-tabs{display:flex;gap:7px;overflow-x:auto;padding:4px 1px 10px;scrollbar-width:thin}
+.admin-record-tabs button{flex:0 0 auto;border:1px solid var(--line);border-radius:9px;padding:9px 12px;background:rgba(255,255,255,.035);color:#afc4d0;font-size:11px;font-weight:800;cursor:pointer}
+.admin-record-tabs button.active{border-color:rgba(66,215,192,.36);background:rgba(66,215,192,.12);color:#9de9dc}
+.admin-record-table-wrap{width:100%;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.admin-record-table{width:100%;min-width:760px;border-collapse:collapse;background:rgba(4,21,33,.3);text-align:left}
+.admin-record-table th{padding:12px 13px;background:rgba(81,164,180,.08);color:#80bfc9;font-size:9px;letter-spacing:.7px;text-transform:uppercase;white-space:nowrap}
+.admin-record-table td{max-width:260px;padding:11px 13px;border-top:1px solid var(--line);color:#c4d4de;font-size:10px;line-height:1.45;overflow-wrap:anywhere}
+.admin-record-table tbody tr:hover{background:rgba(255,255,255,.025)}
+.admin-row-action{padding:7px 9px;font-size:9px;white-space:nowrap}
+.admin-actions-panel .section-head{margin-top:0}
+.admin-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:14px}
+.admin-action-card{min-width:0;display:grid;align-content:start;gap:10px;padding:16px;border:1px solid var(--line);border-radius:13px;background:rgba(4,21,33,.35)}
+.admin-action-card[hidden]{display:none!important}
+.admin-action-card h3{margin:0;color:#e4f0f5;font-size:13px}
+.admin-action-card label{display:grid;gap:6px;color:#bfd0da;font-size:10px;font-weight:700}
+.admin-action-card input,.admin-action-card select{width:100%;font-size:11px}
+.admin-action-card p{font-size:10px;line-height:1.6}
+.admin-action-card .button{margin-top:3px}
+.admin-audit-result{max-height:220px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:10px;border:1px solid var(--line);border-radius:9px;background:#061723;color:#a9c4d3;font-size:9px;line-height:1.5}
+.admin-action-card form[hidden]{display:none!important}
+@media(max-width:760px){
+ .admin-mfa-panel,.admin-records-panel,.admin-actions-panel{padding:14px}
+ .admin-action-grid{grid-template-columns:1fr}
+ .admin-mfa-actions{align-items:stretch}
+ .admin-mfa-actions button{flex:1}
+}
