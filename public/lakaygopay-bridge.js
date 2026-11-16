@@ -30,7 +30,7 @@ document.head.append(style);
 const launch = document.createElement("button");
 launch.id = "lgp-launch";
 launch.type = "button";
-launch.textContent = "LakayGoPay · Backend";
+launch.textContent = "Konekte / Kont LakayGoPay";
 document.body.append(launch);
 
 const panel = document.createElement("section");
@@ -182,6 +182,108 @@ function setWalletOptions(wallets) {
     }
   }
 }
+function renderMainAccount(profile, wallets, activity) {
+  const displayName = profile?.full_name || profile?.phone || "Kont LakayGoPay";
+  const htgWallets = wallets.filter((wallet) => wallet.currency === "HTG" && !wallet.merchant_id);
+  const htgBalance = htgWallets.reduce((sum, wallet) => sum + Number(wallet.balance || 0), 0);
+  const ownWalletIds = new Set(wallets.map((wallet) => wallet.wallet_id));
+  const fmt = (amount) => Number(amount || 0).toLocaleString("fr-FR", {
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  });
+  const setText = (selector, value) => {
+    const node = $(selector);
+    if (node) node.textContent = value;
+  };
+
+  setText("#topName", displayName);
+  setText("#sidebarName", displayName);
+  setText("#welcomeName", displayName.split(/\s+/)[0]);
+  const miniLabel = $(".profile-meta small");
+  if (miniLabel) { miniLabel.textContent = "Compte connecté"; miniLabel.removeAttribute("data-i18n"); }
+  const topLabel = $(".top-profile-meta small");
+  if (topLabel) { topLabel.textContent = "Compte authentifié"; topLabel.removeAttribute("data-i18n"); }
+  const demoMode = $(".connection-pill span:last-child");
+  if (demoMode) { demoMode.textContent = "Compte connecté · test interne"; demoMode.removeAttribute("data-i18n"); }
+  const dot = $(".demo-dot");
+  if (dot) dot.title = "Compte authentifié";
+
+  const banner = $(".prototype-banner");
+  if (banner) {
+    banner.hidden = false;
+    const heading = banner.querySelector("strong");
+    const copy = banner.querySelector("p");
+    if (heading) { heading.textContent = "Compte connecté — registre interne uniquement"; heading.removeAttribute("data-i18n"); }
+    if (copy) {
+      copy.textContent = "Les données affichées viennent du backend LakayGoPay. Les soldes sont des écritures internes de test : aucun paiement réel, retrait bancaire, MonCash ou NatCash n’est activé.";
+      copy.removeAttribute("data-i18n");
+    }
+  }
+
+  setText("#overviewBalance", fmt(htgBalance));
+  setText("#walletBalance", fmt(htgBalance));
+  const balanceLabel = $(".balance-status span");
+  if (balanceLabel) { balanceLabel.textContent = "Solde du registre interne"; balanceLabel.removeAttribute("data-i18n"); }
+  const walletDescription = $(".wallet-feature-card p");
+  if (walletDescription) { walletDescription.textContent = "Solde tiré du backend, sans valeur de retrait réel."; walletDescription.removeAttribute("data-i18n"); }
+  const walletStatus = $("#view-wallet .status-label");
+  if (walletStatus) walletStatus.textContent = "Backend";
+  const currencyHeading = $("#view-wallet .currency-card h3");
+  if (currencyHeading) currencyHeading.innerHTML = `${fmt(htgBalance)} <small>HTG</small>`;
+  const statusLabel = $(".status-card .status-label");
+  if (statusLabel) statusLabel.textContent = "Connecté";
+  const ring = $(".readiness-ring strong");
+  if (ring) ring.textContent = "OK";
+  const progress = $(".progress-track span");
+  if (progress) progress.style.width = "100%";
+  const setupHint = $(".readiness-score small");
+  if (setupHint) { setupHint.textContent = "Supabase et bous chaje"; setupHint.removeAttribute("data-i18n"); }
+
+  const incoming = activity.filter((item) =>
+    item.kind === "deposit" || (item.kind === "transfer" && ownWalletIds.has(item.recipient_wallet_id))
+  ).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const outgoing = activity.filter((item) =>
+    item.kind === "withdrawal" || (item.kind === "transfer" && ownWalletIds.has(item.sender_wallet_id))
+  ).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  setText("#incomingMetric", `${fmt(incoming)} HTG`);
+  setText("#outgoingMetric", `${fmt(outgoing)} HTG`);
+  setText("#transactionMetric", String(activity.length));
+  setText("#beneficiaryMetric", "—");
+
+  const recent = $("#recentTransactions");
+  if (recent) {
+    recent.replaceChildren();
+    if (!activity.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "Pa gen tranzaksyon backend pou kont sa a pou kounye a.";
+      recent.append(empty);
+    } else {
+      activity.slice(0, 5).forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "transaction-row";
+        const icon = document.createElement("div");
+        icon.className = "transaction-avatar";
+        icon.textContent = item.kind === "deposit" ? "↙" : item.kind === "withdrawal" ? "↗" : "⇄";
+        const main = document.createElement("div");
+        main.className = "transaction-main";
+        const title = document.createElement("strong");
+        title.textContent = item.kind === "deposit" ? "Depo" : item.kind === "withdrawal" ? "Demann retrè" : "Transfè";
+        const detail = document.createElement("small");
+        detail.textContent = `${item.status || "anrejistre"} · ${new Date(item.created_at).toLocaleString("fr-FR")}`;
+        main.append(title, detail);
+        const amount = document.createElement("div");
+        amount.className = "transaction-amount";
+        amount.textContent = `${fmt(item.amount)} ${item.currency || "HTG"}`;
+        const state = document.createElement("small");
+        state.textContent = "Backend";
+        amount.append(state);
+        row.append(icon, main, amount);
+        recent.append(row);
+      });
+    }
+  }
+}
+
 async function currentSession() {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw error;
@@ -212,18 +314,21 @@ async function api(path, { method = "GET", body, idempotency = false } = {}) {
   return payload;
 }
 async function loadAccount() {
-  const [profile, wallets, merchants, payments, withdrawals] = await Promise.all([
-    api("/api/profile"), api("/api/wallets"), api("/api/merchant/mine"), api("/api/payments"), api("/api/withdrawals"),
+  const [profile, wallets, merchants, payments, withdrawals, activity] = await Promise.all([
+    api("/api/profile"), api("/api/wallets"), api("/api/merchant/mine"), api("/api/payments"), api("/api/withdrawals"), api("/api/activity"),
   ]);
   loadedWallets = wallets.wallets || [];
   loadedMerchants = merchants.merchants || [];
   setWalletOptions(loadedWallets);
+  const backendActivity = activity.activity || [];
+  renderMainAccount(profile.profile, loadedWallets, backendActivity);
   const summary = {
     profile: profile.profile,
     wallets: loadedWallets,
     merchants: loadedMerchants,
     merchantPayments: payments.payments || [],
     withdrawals: withdrawals.withdrawals || [],
+    activity: backendActivity,
   };
   $("#lgp-wallet-list").textContent = JSON.stringify(summary, null, 2);
   if (loadedMerchants.length && !getValue("lgp-merchant-id")) $("#lgp-merchant-id").value = loadedMerchants[0].id;
