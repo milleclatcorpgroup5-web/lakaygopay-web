@@ -1,5 +1,5 @@
-import { json, requireAdminAal2 } from "../../../_shared/superbase.js";
-import { config } from "../../../_shared/superbase.js";
+import { json, config } from "../../../_shared/superbase.js";
+import { requireAdminAal2 } from "../../../_shared/security.js";
 
 export async function onRequestGet({ request, env }) {
   try {
