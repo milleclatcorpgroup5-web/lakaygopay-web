@@ -834,7 +834,7 @@ if (!config.configured) {
     const { supabaseUrl, publishableKey } = config;
     supabase = createClient(supabaseUrl, publishableKey, {
       auth: {
-        storage: window.sessionStorage,
+        storage: window.localStorage,
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
