@@ -9,6 +9,7 @@ let currentProfile = null;
 let currentWallets = [];
 let currentMerchants = [];
 let pinConfigured = false;
+let pinSetupPendingAfterSignup = false;
 let recoveryMode = false;
 let deferredInstallPrompt = null;
 
@@ -53,6 +54,13 @@ function translateError(code) {
     PIN_INVALID: "PIN tranzaksyon an pa kòrèk.",
     PIN_TEMPORARILY_LOCKED: "PIN lan bloke tanporèman apre twòp move tantativ.",
     PIN_MUST_BE_4_DIGITS: "PIN lan dwe gen egzakteman 4 chif.",
+    PIN_CONFIRMATION_MISMATCH: "Konfimasyon PIN lan pa menm ak PIN ou te antre a.",
+    PIN_SETUP_FAILED: "Nou pa t kapab anrejistre PIN lan. Eseye ankò nan Paramèt.",
+    CURRENT_PIN_REQUIRED: "Antre PIN aktyèl ou anvan ou chanje li.",
+    PIN_CHANGE_CONFLICT: "PIN lan chanje nan yon lòt sesyon. Rafrechi paj la epi eseye ankò.",
+    PIN_MUST_DIFFER_FROM_CURRENT: "Nouvo PIN lan dwe diferan ak PIN aktyèl la.",
+    PIN_CONFIGURATION_INVALID: "Paramèt sekirite PIN lan pa valab. Kontakte sipò LakayGoPay.",
+    PIN_SECURITY_UNAVAILABLE: "Sèvis sekirite PIN lan pa disponib kounye a.",
     INSUFFICIENT_AVAILABLE_FUNDS: "Balans disponib la pa sifi pou transfè sa a.",
     CURRENCY_MISMATCH: "Bous moun k ap voye a ak moun k ap resevwa a dwe nan menm lajan.",
     SENDER_WALLET_FORBIDDEN: "Ou pa gen dwa itilize bous sa a pou voye lajan.",
@@ -139,6 +147,9 @@ async function loadDashboard(session) {
     message("#appNotice", "Pwofil ak bous yo chaje, men enskripsyon machann lan poko fini: " +
       translateError(merchantProvisionError.code || merchantProvisionError.message) +
       ". Rafrechi pou eseye ankò.", "error");
+  } else if (pinSetupPendingAfterSignup) {
+    message("#appNotice", "Kont ou kreye. PIN lan poko anrejistre; ouvri Paramèt pou kreye PIN sekirite ou anvan premye transfè.", "error");
+    pinSetupPendingAfterSignup = false;
   } else {
     message("#appNotice", "", "");
   }
@@ -285,17 +296,20 @@ function renderActivity(rows) {
 function renderPinState(result) {
   const node = $("#pinState");
   const cannotVerify = result.status === "rejected";
-  $("#pinSetupForm").hidden = pinConfigured || cannotVerify;
+  $("#pinManagementForm").hidden = cannotVerify;
+  $("#currentPinField").hidden = !pinConfigured;
+  $("#currentPin").required = pinConfigured;
+  $("#pinSubmitButton").textContent = pinConfigured ? "Chanje PIN sekirite" : "Kreye PIN sekirite";
   $("#transferForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
-  if (pinConfigured) {
-    node.textContent = "PIN sekirite a deja konfigire. Ou dwe antre PIN lan pou chak transfè.";
-    return;
-  }
   if (cannotVerify) {
     node.textContent = "Nou pa kapab verifye estati PIN lan kounye a. Transfè yo rete bloke; rafrechi paj la.";
     return;
   }
-  node.textContent = "Ou poko kreye PIN sekirite ou. Fè sa anvan ou voye lajan.";
+  if (pinConfigured) {
+    node.textContent = "PIN sekirite ou aktive. Pou chanje li, antre PIN aktyèl ou epi chwazi yon nouvo PIN 4 chif.";
+    return;
+  }
+  node.textContent = "Ou poko kreye PIN sekirite ou. Kreye li nan Paramèt anvan ou fè premye transfè.";
 }
 async function syncSession(session) {
   if (recoveryMode && session && session.user) {
@@ -304,6 +318,8 @@ async function syncSession(session) {
     $("#authView").hidden = false;
     $("#appView").hidden = true;
     $("#logoutButton").hidden = true;
+    $("#settingsButton").hidden = true;
+    $("#settingsPanel").hidden = true;
     setAuthMode("newpassword");
     return;
   }
@@ -313,11 +329,14 @@ async function syncSession(session) {
     $("#authView").hidden = false;
     $("#appView").hidden = true;
     $("#logoutButton").hidden = true;
+    $("#settingsButton").hidden = true;
+    $("#settingsPanel").hidden = true;
     return;
   }
   $("#authView").hidden = true;
   $("#appView").hidden = false;
   $("#logoutButton").hidden = false;
+  $("#settingsButton").hidden = false;
   if (activeUserId === session.user.id && dashboardPromise) return dashboardPromise;
   activeUserId = session.user.id;
   dashboardPromise = loadDashboard(session).catch(function (error) {
@@ -347,18 +366,22 @@ async function registerAccount(payload, emailField) {
   });
   const data = await response.json().catch(function () { return {}; });
   if (!response.ok) throw new Error(translateError(data.error || "SIGNUP_FAILED"));
+  const pinReady = data.pin_configured === true;
   if (data.session && data.session.access_token && data.session.refresh_token) {
     const result = await supabase.auth.setSession({
       access_token: data.session.access_token,
       refresh_token: data.session.refresh_token
     });
     if (result.error) throw result.error;
-    message("#authNotice", "Kont lan kreye avèk siksè.", "success");
+    pinSetupPendingAfterSignup = !pinReady;
     return;
   }
   setAuthMode("login");
   $("#loginEmail").value = emailField;
-  message("#authNotice", "Kont lan kreye. Verifye imèl ou pou konfime kont lan, epi konekte.", "success");
+  message("#authNotice", pinReady
+    ? "Kont lan kreye. Verifye imèl ou pou konfime kont lan, epi konekte."
+    : "Kont lan kreye. Apre ou fin konfime imèl la epi konekte, ouvri Paramèt pou verifye oswa kreye PIN sekirite ou.",
+    "success");
 }
 function wireForms() {
   $$("[data-auth-mode]").forEach(function (button) {
@@ -393,6 +416,11 @@ function wireForms() {
   $("#personalForm").addEventListener("submit", async function (event) {
     event.preventDefault();
     const button = event.submitter;
+    if (!/^[0-9]{4}$/.test($("#personalPin").value) ||
+        $("#personalPin").value !== $("#personalPinConfirm").value) {
+      message("#authNotice", "Antre yon PIN 4 chif epi konfime menm PIN lan.", "error");
+      return;
+    }
     button.disabled = true;
     try {
       await registerAccount({
@@ -402,9 +430,13 @@ function wireForms() {
         date_of_birth: $("#personalDob").value,
         phone: $("#personalPhone").value.trim(),
         email: $("#personalEmail").value.trim(),
-        password: $("#personalPassword").value
+        password: $("#personalPassword").value,
+        pin: $("#personalPin").value,
+        pin_confirmation: $("#personalPinConfirm").value
       }, $("#personalEmail").value.trim());
       $("#personalPassword").value = "";
+      $("#personalPin").value = "";
+      $("#personalPinConfirm").value = "";
     } catch (error) {
       message("#authNotice", translateError(error.message), "error");
     } finally {
@@ -415,6 +447,11 @@ function wireForms() {
   $("#merchantForm").addEventListener("submit", async function (event) {
     event.preventDefault();
     const button = event.submitter;
+    if (!/^[0-9]{4}$/.test($("#merchantPin").value) ||
+        $("#merchantPin").value !== $("#merchantPinConfirm").value) {
+      message("#authNotice", "Antre yon PIN 4 chif epi konfime menm PIN lan.", "error");
+      return;
+    }
     button.disabled = true;
     try {
       await registerAccount({
@@ -422,9 +459,13 @@ function wireForms() {
         business_name: $("#merchantName").value.trim(),
         business_phone: $("#merchantPhone").value.trim(),
         email: $("#merchantEmail").value.trim(),
-        password: $("#merchantPassword").value
+        password: $("#merchantPassword").value,
+        pin: $("#merchantPin").value,
+        pin_confirmation: $("#merchantPinConfirm").value
       }, $("#merchantEmail").value.trim());
       $("#merchantPassword").value = "";
+      $("#merchantPin").value = "";
+      $("#merchantPinConfirm").value = "";
     } catch (error) {
       message("#authNotice", translateError(error.message), "error");
     } finally {
@@ -493,27 +534,43 @@ function wireForms() {
     }
   });
 
-  $("#pinSetupForm").addEventListener("submit", async function (event) {
+  $("#pinManagementForm").addEventListener("submit", async function (event) {
     event.preventDefault();
+    const currentPin = $("#currentPin").value;
     const pin = $("#newPin").value;
     const confirmation = $("#confirmPin").value;
+    if (pinConfigured && !/^[0-9]{4}$/.test(currentPin)) {
+      message("#appNotice", "Antre PIN aktyèl ou pou kontinye.", "error");
+      return;
+    }
     if (!/^[0-9]{4}$/.test(pin)) {
-      message("#appNotice", "PIN lan dwe gen egzakteman 4 chif.", "error");
+      message("#appNotice", "Nouvo PIN lan dwe gen egzakteman 4 chif.", "error");
       return;
     }
     if (pin !== confirmation) {
-      message("#appNotice", "De PIN yo pa menm. Verifye yo epi eseye ankò.", "error");
+      message("#appNotice", "Nouvo PIN lan ak konfimasyon an pa menm.", "error");
+      return;
+    }
+    if (pinConfigured && pin === currentPin) {
+      message("#appNotice", "Nouvo PIN lan dwe diferan ak PIN aktyèl la.", "error");
       return;
     }
     const button = event.submitter;
     button.disabled = true;
     try {
-      await api("/api/pin/setup", { method: "POST", body: { pin: pin } });
+      const wasConfigured = pinConfigured;
+      await api("/api/pin/setup", {
+        method: "POST",
+        body: { pin: pin, current_pin: wasConfigured ? currentPin : undefined }
+      });
+      $("#currentPin").value = "";
       $("#newPin").value = "";
       $("#confirmPin").value = "";
       pinConfigured = true;
       renderPinState({ status: "fulfilled", value: { pin_configured: true } });
-      message("#appNotice", "PIN sekirite ou anrejistre. Chak transfè ap mande li.", "success");
+      message("#appNotice", wasConfigured
+        ? "PIN sekirite ou chanje avèk siksè."
+        : "PIN sekirite ou anrejistre. Chak transfè ap mande li.", "success");
     } catch (error) {
       message("#appNotice", translateError(error.code || error.message), "error");
     } finally {
@@ -595,6 +652,13 @@ function wireActions() {
     } finally {
       button.disabled = false;
     }
+  });
+  $("#settingsButton").addEventListener("click", function () {
+    const panel = $("#settingsPanel");
+    panel.hidden = !panel.hidden;
+    $("#settingsButton").setAttribute("aria-expanded", String(!panel.hidden));
+    $("#settingsButton").textContent = panel.hidden ? "Paramèt" : "Fèmen paramèt";
+    if (!panel.hidden) panel.scrollIntoView({ behavior: "smooth", block: "start" });
   });
   $("#logoutButton").addEventListener("click", async function () {
     await supabase.auth.signOut();
@@ -686,7 +750,7 @@ async function init() {
   const session = await sessionNow();
   await syncSession(session);
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js?v=20261116-04").catch(function () {});
+    navigator.serviceWorker.register("/service-worker.js?v=20261116-05").catch(function () {});
   }
 }
 init().catch(function (error) {
