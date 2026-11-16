@@ -352,6 +352,142 @@ function renderMainAccount(profile, wallets, activity) {
   }
 }
 
+function setAuthMode(mode) {
+  const allowed = ["login","personal","merchant","agent"];
+  if (!allowed.includes(mode)) mode = "login";
+  for (const button of document.querySelectorAll("[data-auth-mode]")) {
+    button.classList.toggle("active", button.dataset.authMode === mode);
+  }
+  $("#lgp-login-pane").hidden = mode !== "login";
+  $("#lgp-personal-pane").hidden = mode !== "personal";
+  $("#lgp-merchant-pane").hidden = mode !== "merchant";
+  $("#lgp-agent-intro").hidden = mode !== "agent";
+  $("#lgp-auth-message").textContent = "";
+  if (mode === "agent") {
+    currentSession().then((session) => {
+      if (session) {
+        $("#lgp-agent-card").hidden = false;
+        panel.hidden = false;
+        loadAgentStatus();
+      }
+    }).catch(() => {});
+  }
+}
+
+async function postSignup(payload) {
+  const response = await fetch("/api/auth/register", {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const messages = {
+      MINIMUM_AGE_18: "Ou dwe gen omwen 18 an pou ouvri kont pèsonèl.",
+      EMAIL_ALREADY_REGISTERED: "Imèl sa a deja gen yon kont. Konekte pito.",
+      VALID_PHONE_REQUIRED: "Antre yon nimewo telefòn ki valab.",
+      VALID_BUSINESS_PHONE_REQUIRED: "Antre nimewo telefòn biznis la.",
+      VALID_BUSINESS_NAME_REQUIRED: "Antre non biznis la.",
+      SIGNUP_FAILED: "Kreyasyon kont lan pa reyisi. Verifye enfòmasyon yo.",
+      PASSWORD_POLICY_REJECTED: "Modpas la pa satisfè kondisyon sekirite yo.",
+    };
+    throw new Error(messages[data.error] || data.error || "SIGNUP_FAILED");
+  }
+  if (data.session?.access_token && data.session?.refresh_token) {
+    const { data: sessionData, error } = await supabase.auth.setSession({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    });
+    if (error) throw error;
+    setAuthenticated(sessionData.session);
+    return { signedIn: true, data };
+  }
+  return { signedIn: false, data };
+}
+
+async function maybeProvisionMerchant(session) {
+  const metadata = session?.user?.user_metadata || {};
+  if (metadata.account_type !== "merchant") return;
+  const existing = await api("/api/merchant/mine");
+  if ((existing.merchants || []).length) return;
+  const businessName = String(metadata.business_name || "").trim();
+  const businessPhone = String(metadata.business_phone || metadata.phone || "").trim();
+  if (!businessName || !businessPhone) return;
+  await api("/api/merchant/register", {
+    method: "POST",
+    body: { business_name: businessName, business_type: "other", contact_phone: businessPhone },
+    idempotency: true,
+  });
+  result("Kont biznis la ak bous machann lan kreye. Estati a rete an atant verifikasyon admin.", "success");
+}
+
+async function loadAgentStatus() {
+  const statusNode = $("#lgp-agent-status");
+  const form = $("#lgp-agent-form");
+  if (!statusNode || !form) return;
+  statusNode.className = "status";
+  statusNode.textContent = "Ap verifye estati demann ajan ou…";
+  try {
+    const data = await api("/api/agents/status");
+    if (data.agent?.status === "active") {
+      form.hidden = true;
+      statusNode.className = "status success";
+      statusNode.textContent = `Ajan aktive. Kòd ajan ou: ${data.agent.agent_code}. Kenbe kòd sa a prive.`;
+      return;
+    }
+    const latest = (data.applications || [])[0];
+    if (latest && ["submitted","under_review"].includes(latest.status)) {
+      form.hidden = true;
+      statusNode.textContent = `Demann ou an ${latest.status === "submitted" ? "resevwa" : "an revizyon"}. Se admin k ap deside sou aktivasyon an.`;
+      return;
+    }
+    form.hidden = false;
+    statusNode.textContent = latest?.status === "rejected"
+      ? `Dènye demann lan pa t apwouve. Nòt admin: ${latest.admin_note || "Pa gen nòt."} Ou kapab soumèt yon nouvo demann.`
+      : "Ou poko soumèt yon demann ajan.";
+  } catch (error) {
+    statusNode.className = "status error";
+    statusNode.textContent = `Pa kapab chaje estati ajan an: ${error.message}`;
+  }
+}
+
+async function loadAgentApplications() {
+  const node = $("#lgp-agent-review-list");
+  node.className = "status";
+  node.textContent = "Ap chaje demann ajan yo…";
+  try {
+    const data = await api("/api/admin/agents");
+    node.replaceChildren();
+    if (!data.applications?.length) {
+      node.textContent = "Pa gen demann ajan k ap tann revizyon.";
+      return;
+    }
+    for (const item of data.applications) {
+      const row = document.createElement("div");
+      row.className = "agent-review-row";
+      const details = document.createElement("div");
+      details.textContent = `ID: ${item.id}\nItilizatè: ${item.applicant_user_id}\nTelefòn: ${item.contact_phone}\nZòn: ${item.commune}, ${item.department}\nAdrès: ${item.business_address || "Pa bay"}\nMotif: ${item.motivation || "Pa bay"}`;
+      const actions = document.createElement("div");
+      actions.className = "agent-review-actions";
+      for (const decision of ["approved","rejected"]) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.action = "agent-review";
+        button.dataset.applicationId = item.id;
+        button.dataset.decision = decision;
+        button.className = decision === "approved" ? "" : "danger";
+        button.textContent = decision === "approved" ? "Apwouve epi bay aksè" : "Rejte";
+        actions.append(button);
+      }
+      row.append(details, actions);
+      node.append(row);
+    }
+  } catch (error) {
+    node.className = "status error";
+    node.textContent = `Pa kapab chaje aplikasyon yo: ${error.message}`;
+  }
+}
+
 async function currentSession() {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw error;
@@ -445,10 +581,22 @@ function setAuthenticated(session) {
   const loggedIn = Boolean(session?.user);
   refreshPinStatus();
   $("#lgp-auth-card").hidden = loggedIn;
-  for (const id of ["lgp-account-card", "lgp-mfa-card", "lgp-wallet-card", "lgp-merchant-card", "lgp-transfer-card", "lgp-pay-card", "lgp-withdraw-card"]) $("#" + id).hidden = !loggedIn;
+  $("#lgp-account-card").hidden = !loggedIn;
+  $("#lgp-agent-card").hidden = true;
+  $("#lgp-mfa-card").hidden = true;
+  $("#lgp-advanced-tools").hidden = !loggedIn;
+  for (const id of ["lgp-wallet-card", "lgp-merchant-card", "lgp-transfer-card", "lgp-pay-card", "lgp-withdraw-card"]) $("#" + id).hidden = !loggedIn;
   $("#lgp-admin-card").hidden = true;
-  $("#lgp-user-label").textContent = loggedIn ? `${session.user.email || session.user.phone || session.user.id}\nNivo sesyon: verifye nan API admin.` : "Pa konekte.";
-  if (loggedIn) loadAccount().catch((error) => result(`Erè chajman: ${error.message}`, "error"));
+  const type = session?.user?.user_metadata?.account_type === "merchant" ? "Kont machann" : "Kont pèsonèl";
+  $("#lgp-user-label").textContent = loggedIn
+    ? `${session.user.email || session.user.phone || session.user.id}\n${type} · koneksyon verifye.`
+    : "Pa konekte.";
+  if (loggedIn) {
+    loadAccount()
+      .then(() => maybeProvisionMerchant(session))
+      .then(() => loadAccount())
+      .catch((error) => result(`Erè chajman kont lan: ${error.message}`, "error"));
+  }
 }
 async function makeQr(payload) {
   const box = $("#lgp-qr");
