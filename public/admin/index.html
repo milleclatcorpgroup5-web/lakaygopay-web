@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#071b2a">
   <title>LakayGoPay — Sant Kontwòl Admin</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/admin/admin.css?v=20261116-04">
+  <link rel="stylesheet" href="/admin/admin.css?v=20261116-05">
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -212,6 +212,94 @@
         <div class="formula-note">
           <strong>Separasyon ki obligatwa</strong>
           <p>Benchmark MonCash = done konparatif. Tarif LakayGoPay = desizyon biznis apa. Frè patnè, frè kliyan, revni LakayGoPay ak taks dwe parèt separeman epi klèman anvan konfimasyon.</p>
+        </div>
+      </div>
+
+
+      <div class="fee-block fx-plan-block">
+        <div class="fee-block-heading">
+          <div><p class="eyebrow">06 · KONVÈSYON LAJAN · HTG ↔ USD / EUR</p><h3>Plan revni pou echanj ant goud, dola ak euro</h3></div>
+          <span class="fee-unit">PLAN PWopoze · PA AKTIVE</span>
+        </div>
+        <div class="source-verification fx-source">
+          <span class="source-check">✓</span>
+          <div>
+            <strong>Taux sous ofisyèl yo verifye pou 16 novanm 2026</strong>
+            <p>USD: BUH afiche acha 129.5000 HTG ak vant 131.7500 HTG; BRH pibliye menm cotasyon BUH a nan tablo bank yo. Taux referans BRH pou USD se 130.7437 HTG. EUR: BRH/DAI afiche acha 144.5891 HTG ak vant 145.6264 HTG. Sa yo se yon foto taux pou dat sa a, yo pa garanti kòm taux demen.</p>
+            <a href="https://www.brh.ht/taux-affiches-par-les-banques-et-les-agents-de-change-2/" target="_blank" rel="noopener noreferrer">Taux bank yo sou BRH ↗</a>
+            <a href="https://www.brh.ht/" target="_blank" rel="noopener noreferrer">Taux ak lòt devis sou BRH ↗</a>
+            <a href="https://buh.ht/" target="_blank" rel="noopener noreferrer">Taux ofisyèl BUH ↗</a>
+          </div>
+        </div>
+        <div class="fee-table-wrap">
+          <table class="fee-table fx-rate-table">
+            <thead><tr><th>Deviz</th><th>Nou achte deviz la</th><th>Nou vann deviz la</th><th>Sous</th></tr></thead>
+            <tbody>
+              <tr><td class="fee-range">1 USD</td><td class="fee-amount">129.5000 HTG</td><td class="fee-amount">131.7500 HTG</td><td>BUH / tablo BRH</td></tr>
+              <tr><td class="fee-range">1 EUR</td><td class="fee-amount">144.5891 HTG</td><td class="fee-amount">145.6264 HTG</td><td>BRH / DAI</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="fee-footnote">Taux referans BRH USD pou 16/11/2026: 130.7437 HTG. Taux referans lan se yon endikatè, li pa menm bagay ak pri acha/vant bank lan. BUH presize sou paj pa li ke vant USD ki depase $500 ka mande apwobasyon Depatman Change; pa bay yon kotasyon otomatik pou montan sa yo san konfimasyon patnè a.</p>
+
+        <div class="fx-fee-banner">
+          <div><span class="eyebrow">KOMISYON LAKAYGOPAY · PWOPozisyon INISYAL</span><strong>0.50% pa konvèsyon</strong><p>Yon ti frè transparan, kalkile sou montan kliyan an voye, epi dedwi nan menm deviz li voye a. Pa ajoute yon lòt marge kache sou taux patnè a.</p></div>
+          <span class="fx-fee-chip">0.005 × montan voye</span>
+        </div>
+
+        <div class="business-formula fx-formula">
+          <div>
+            <p class="eyebrow">KIJAN KALKIL LA FÈT</p>
+            <h3>De sans konvèsyon yo</h3>
+            <p><strong>HTG → USD/EUR:</strong> sèvi ak taux VANT patnè a, paske platfòm nan ap bay kliyan an deviz etranje. Dedwi frè 0.50% sou HTG kliyan an voye, epi divize rès la pa taux vant lan.</p>
+            <p class="fx-formula-spacer"><strong>USD/EUR → HTG:</strong> sèvi ak taux ACHA patnè a, paske patnè a ap achte deviz kliyan an. Dedwi frè 0.50% nan deviz kliyan an voye, epi miltipliye rès la pa taux acha a.</p>
+          </div>
+          <div class="formula-note">
+            <strong>Egzanp ak taux 16/11/2026</strong>
+            <p>10 000 HTG → USD: frè 50 HTG; rès 9 950 ÷ 131.75 = anviwon <b>75.52 USD</b>.</p>
+            <p class="fx-formula-spacer">100 USD → HTG: frè 0.50 USD; rès 99.50 × 129.50 = <b>12 885.25 HTG</b>.</p>
+            <p class="fx-formula-spacer">Montan yo se egzanp kalkil sèlman, yo pa yon òf echanj aktif.</p>
+          </div>
+        </div>
+
+        <div class="fee-block fx-revenue-block">
+          <div class="fee-block-heading">
+            <div><p class="eyebrow">REVNI BRIT · SENARYO PLANIFIKASYON</p><h3>Konbyen 0.50% kapab rapòte</h3></div>
+            <span class="fee-unit">HTG / MWA</span>
+          </div>
+          <div class="fee-table-wrap">
+            <table class="fee-table">
+              <thead><tr><th>Volim echanj chak mwa (ekivalan HTG)</th><th>Frè 0.50% (revni brit)</th></tr></thead>
+              <tbody>
+                <tr><td>1 000 000 HTG</td><td class="fee-amount">5 000 HTG</td></tr>
+                <tr><td>5 000 000 HTG</td><td class="fee-amount">25 000 HTG</td></tr>
+                <tr><td>10 000 000 HTG</td><td class="fee-amount">50 000 HTG</td></tr>
+                <tr><td>50 000 000 HTG</td><td class="fee-amount">250 000 HTG</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="fee-footnote">Sa yo se revni brit anvan frè bank/patnè, depans likidite, sekirite, konfòmite, ranbousman ak taks. Pa konsidere yo kòm pwofi nèt.</p>
+        </div>
+
+        <div class="business-formula fx-guardrails">
+          <div>
+            <p class="eyebrow">RÈG OPERASYONÈL POU LÈ SÈVIS LA OTORIZE</p>
+            <h3>Kontwòl pou pwoteje kliyan ak LakayGoPay</h3>
+            <p>• Montre taux acha/vant, frè 0.50%, montan final, sous ak lè taux la mete ajou anvan kliyan konfime.</p>
+            <p>• Kenbe kotasyon an pandan 60 segonn; apre sa, kalkile yon nouvo kotasyon.</p>
+            <p>• Mete ajou taux yo chak jou ouvrab apati sous ofisyèl/patnè; bloke echanj la si taux la twò ansyen, sous la pa disponib oswa pa gen likidite nan deviz la.</p>
+            <p>• Fè yon sèl frè pou yon konvèsyon. Nan premye faz la, sèlman HTG↔USD ak HTG↔EUR; USD↔EUR rete pou yon faz apre.</p>
+          </div>
+          <div class="formula-note">
+            <strong>Tras ak rekonsilyasyon</strong>
+            <p>Chak resi dwe montre deviz ak montan voye, taux egzak, frè, montan resevwa, sous/timestamp, ID inik ak estati. Kontablite a dwe separe kantite kapital ki chanje men ak revni komisyon LakayGoPay.</p>
+          </div>
+        </div>
+
+        <div class="fx-compliance-note">
+          <strong>OBLIGASYON LEGAL — BLOKAJ ANVAN AKTIVASYON</strong>
+          <p>Sikilè BRH No. 119 defini yon operasyon change kòm konvèsyon yon deviz nan yon lòt. Li egzije, pou entèmedyè change ki tonbe anba li, idantifikasyon kliyan, resi tranzaksyon, afichaj taux acha/vant ak taux referans BRH, rapò chak jou sou pozisyon change; li endike tou tranzaksyon ki rive 350 000 HTG oswa ekivalan dwe fèt pa chèk oswa transfè labank. Pozisyon cambiste a dwe regle chak jou. LakayGoPay pa dwe egzekite echanj reyèl ni pran frè change anvan BRH/avoka konfime kad legal la epi gen yon kontra ak yon bank oswa entèmedyè change ki otorize. Responsablite egzak platfòm lan ak patnè a dwe ekri nan kontra a.</p>
+          <a href="https://www.brh.ht/wp-content/uploads/circulaire-119-portant-sur-les-operations-de-change.pdf" target="_blank" rel="noopener noreferrer">Li Sikilè BRH No. 119 ↗</a>
         </div>
       </div>
 
