@@ -129,7 +129,8 @@ export async function requireAdminPinSession(request, env) {
     const verifiedAt = Date.parse(record?.last_verified_at || "");
     const sameSession = record?.last_verified_session_id === sessionId;
     const fresh = Number.isFinite(verifiedAt) && Date.now() - verifiedAt <= 10 * 60 * 1000;
-    if (!record?.pin_hash || !sameSession || !fresh) {
+    const currentlyLocked = record?.locked_until && Date.parse(record.locked_until) > Date.now();
+    if (!record?.pin_hash || !sameSession || !fresh || currentlyLocked) {
       return { error: error("ADMIN_PIN_REQUIRED", 403) };
     }
     return access;
