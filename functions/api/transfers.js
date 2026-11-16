@@ -1,5 +1,6 @@
 import { json, requireUser, callRpc, readJson, validUuid, validAmount, idempotencyKey } from "../_shared/superbase.js";
 import { financialFail } from "../_shared/financial-errors.js";
+import { assertTransactionPin } from "../_shared/pin.js";
 
 export async function onRequestPost({ request, env }) {
   try {
@@ -16,6 +17,11 @@ export async function onRequestPost({ request, env }) {
     if (body?.note != null && (typeof body.note !== "string" || body.note.length > 140)) {
       return json({ error: "NOTE_TOO_LONG" }, 400);
     }
+
+    // PIN is verified on the server for every transfer; a prior UI-only
+    // verification can never authorize a later financial request.
+    await assertTransactionPin(env, auth.user.id, body?.pin);
+
     const transfer = await callRpc(env, "post_wallet_transfer", {
       p_actor_user_id: auth.user.id,
       p_sender_wallet_id: body.sender_wallet_id,
