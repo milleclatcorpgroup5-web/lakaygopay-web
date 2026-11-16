@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#071b2a">
   <title>LakayGoPay — Sant Kontwòl Admin</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/admin/admin.css?v=20261116-05">
+  <link rel="stylesheet" href="/admin/admin.css?v=20261116-06">
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -56,6 +56,36 @@
       </form>
       <div id="loginNotice" class="notice" role="status" aria-live="polite"></div>
       <p class="login-foot">Pa gen bouton enskripsyon administratè. Wòl yo dwe bay separeman atravè bazdone sekirize a.</p>
+    </section>
+  </main>
+
+
+  <main id="pinView" class="admin-pin-wrap" hidden>
+    <section class="admin-pin-card">
+      <div class="card-symbol">L</div>
+      <p class="eyebrow">DEZYÈM ETAP SEKIRITE · ADMIN</p>
+      <h1 id="pinTitle">Verifye PIN sekrè ou</h1>
+      <p id="pinDescription" class="muted">Apre imèl ak modpas, antre PIN Admin 6 chif ou pou ouvri Sant Kontwòl la.</p>
+
+      <form id="adminPinVerifyForm" class="form-stack" hidden>
+        <label>PIN sekrè Admin · 6 chif
+          <input id="adminPinInput" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required>
+        </label>
+        <button id="adminPinVerifyButton" class="button button-primary full" type="submit">Verifye PIN la <span>→</span></button>
+      </form>
+
+      <form id="adminPinSetupForm" class="form-stack" hidden>
+        <label>Kreye PIN sekrè Admin · 6 chif
+          <input id="adminPinNew" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required>
+        </label>
+        <label>Konfime PIN sekrè Admin
+          <input id="adminPinConfirm" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required>
+        </label>
+        <button id="adminPinSetupButton" class="button button-primary full" type="submit">Anrejistre PIN Admin <span>→</span></button>
+      </form>
+
+      <div id="pinNotice" class="notice" role="status" aria-live="polite"></div>
+      <p class="login-foot">PIN lan estoke kòm hash PBKDF2 ak salt. 5 move tantativ youn apre lòt bloke verifikasyon pandan 15 minit. Pa pataje PIN lan.</p>
     </section>
   </main>
 
@@ -326,6 +356,6 @@
     <footer class="admin-footer"><span>LakayGoPay · Sant Kontwòl</span><span>Entèfas administrasyon prive · Rejim tès</span></footer>
   </main>
 
-  <script type="module" src="/admin/admin.js?v=20261116-04"></script>
+  <script type="module" src="/admin/admin.js?v=20261116-06"></script>
 </body>
 </html>
