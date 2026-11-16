@@ -307,7 +307,13 @@ function renderMainAccount(profile, wallets, activity) {
   const progress = $(".progress-track span");
   if (progress) progress.style.width = "100%";
   const setupHint = $(".readiness-score small");
-  if (setupHint) { setupHint.textContent = "Supabase et bous chaje"; setupHint.removeAttribute("data-i18n"); }
+  if (setupHint) { setupHint.textContent = "Supabase ak bous ou chaje"; setupHint.removeAttribute("data-i18n"); }
+  const welcomeSubtitle = $(".welcome-row .subtext");
+  if (welcomeSubtitle) { welcomeSubtitle.textContent = "Kont ou konekte ak done ki sòti nan backend LakayGoPay."; welcomeSubtitle.removeAttribute("data-i18n"); }
+  const secureCaption = $(".secure-note small");
+  if (secureCaption) { secureCaption.textContent = "Kont konekte · sekirite"; secureCaption.removeAttribute("data-i18n"); }
+  const footer = $(".footer-prototype");
+  if (footer) footer.textContent = "Rejis entèn · HTG";
 
   const incoming = activity.filter((item) =>
     item.kind === "deposit" || (item.kind === "transfer" && ownWalletIds.has(item.recipient_wallet_id))
@@ -510,6 +516,20 @@ function renderPublicPreview() {
   if (topLabel) { topLabel.textContent = "Aperçu piblik"; topLabel.removeAttribute("data-i18n"); }
   const badge = $(".connection-pill span:last-child");
   if (badge) { badge.textContent = "Aperçu piblik · non connecté"; badge.removeAttribute("data-i18n"); }
+  const dot = $(".demo-dot");
+  if (dot) dot.title = "Koneksyon obligatwa";
+  const balanceLabel = $(".balance-status span");
+  if (balanceLabel) { balanceLabel.textContent = "Konekte pou wè balans backend"; balanceLabel.removeAttribute("data-i18n"); }
+  const subtitle = $(".welcome-row .subtext");
+  if (subtitle) { subtitle.textContent = "Konekte oswa kreye kont ou pou antre nan espas finansye ou."; subtitle.removeAttribute("data-i18n"); }
+  const secureCaption = $(".secure-note small");
+  if (secureCaption) { secureCaption.textContent = "Kont ak verifikasyon an sekirite"; secureCaption.removeAttribute("data-i18n"); }
+  const walletBadge = $("#view-wallet .status-label");
+  if (walletBadge) walletBadge.textContent = "Konekte pou antre";
+  const footer = $(".footer-prototype");
+  if (footer) footer.textContent = "Aperçu piblik · HTG";
+  const readiness = $(".status-card .status-label");
+  if (readiness) readiness.textContent = "Pa konekte";
   setText("#overviewBalance", "—");
   setText("#walletBalance", "—");
   setText("#incomingMetric", "—");
