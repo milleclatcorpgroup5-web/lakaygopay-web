@@ -1,14 +1,30 @@
 {
+  "id": "/",
   "name": "LakayGoPay",
   "short_name": "LakayGoPay",
-  "description": "Bous dijital LakayGoPay pou kliyan ak machann an Ayiti.",
+  "description": "Vèsyon beta LakayGoPay pou teste enskripsyon, sekirite PIN ak bous entèn.",
   "lang": "ht-HT",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "standalone"
+  ],
   "background_color": "#f3f7f9",
   "theme_color": "#082f49",
+  "prefer_related_applications": false,
   "icons": [
-    {"src": "/assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+    {
+      "src": "/assets/icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }
