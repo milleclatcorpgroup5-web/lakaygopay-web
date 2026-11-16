@@ -614,6 +614,128 @@ async function makeQr(payload) {
 launch.addEventListener("click", () => { panel.hidden = !panel.hidden; });
 $("#lgp-close").addEventListener("click", () => { panel.hidden = true; });
 
+panel.querySelectorAll("[data-auth-mode]").forEach((button) => {
+  button.addEventListener("click", () => setAuthMode(button.dataset.authMode));
+});
+setAuthMode("login");
+
+const dobInput = $("#lgp-personal-dob");
+if (dobInput) {
+  const today = new Date();
+  const maxDob = new Date(Date.UTC(today.getUTCFullYear() - 18, today.getUTCMonth(), today.getUTCDate()));
+  dobInput.max = maxDob.toISOString().slice(0, 10);
+}
+
+$("#lgp-login-pane").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = event.submitter;
+  if (button) button.disabled = true;
+  $("#lgp-auth-message").textContent = "Ap konekte…";
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: getValue("lgp-email"),
+      password: getValue("lgp-password"),
+    });
+    if (error) throw error;
+    setAuthenticated(data.session);
+    $("#lgp-password").value = "";
+    $("#lgp-auth-message").textContent = "Koneksyon reyisi.";
+    result("Kont ou konekte avèk siksè.", "success");
+  } catch (error) {
+    $("#lgp-auth-message").textContent = error.message === "Invalid login credentials"
+      ? "Imèl oswa modpas la pa kòrèk."
+      : error.message;
+  } finally {
+    if (button) button.disabled = false;
+  }
+});
+
+$("#lgp-personal-pane").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = event.submitter;
+  if (button) button.disabled = true;
+  $("#lgp-auth-message").textContent = "Ap kreye kont pèsonèl la…";
+  try {
+    const outcome = await postSignup({
+      account_type: "personal",
+      first_name: getValue("lgp-personal-first"),
+      last_name: getValue("lgp-personal-last"),
+      date_of_birth: getValue("lgp-personal-dob"),
+      phone: getValue("lgp-personal-phone"),
+      email: getValue("lgp-personal-email"),
+      password: $("#lgp-personal-password").value,
+    });
+    $("#lgp-personal-password").value = "";
+    if (outcome.signedIn) {
+      $("#lgp-auth-message").textContent = "Kont pèsonèl la kreye epi konekte.";
+      result("Kont pèsonèl la pare. Ou kapab konfigire PIN sekirite ou nan seksyon Sekirite.", "success");
+    } else {
+      $("#lgp-auth-message").textContent = "Kont lan kreye. Verifye imèl ou pou konfime l, epi konekte.";
+      setAuthMode("login");
+      $("#lgp-email").value = getValue("lgp-personal-email");
+    }
+  } catch (error) {
+    $("#lgp-auth-message").textContent = error.message;
+  } finally {
+    if (button) button.disabled = false;
+  }
+});
+
+$("#lgp-merchant-pane").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = event.submitter;
+  if (button) button.disabled = true;
+  $("#lgp-auth-message").textContent = "Ap kreye kont biznis la…";
+  try {
+    const outcome = await postSignup({
+      account_type: "merchant",
+      business_name: getValue("lgp-merchant-name"),
+      business_phone: getValue("lgp-merchant-phone"),
+      email: getValue("lgp-merchant-email"),
+      password: $("#lgp-merchant-password").value,
+    });
+    $("#lgp-merchant-password").value = "";
+    if (outcome.signedIn) {
+      $("#lgp-auth-message").textContent = "Kont biznis la kreye. Bous machann lan ap prepare.";
+      result("Kont biznis la kreye; estati machann lan ap tann verifikasyon admin.", "success");
+    } else {
+      $("#lgp-auth-message").textContent = "Kont biznis la kreye. Verifye imèl biznis la, epi konekte ak menm imèl la.";
+      setAuthMode("login");
+      $("#lgp-email").value = getValue("lgp-merchant-email");
+    }
+  } catch (error) {
+    $("#lgp-auth-message").textContent = error.message;
+  } finally {
+    if (button) button.disabled = false;
+  }
+});
+
+$("#lgp-agent-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = event.submitter;
+  if (button) button.disabled = true;
+  try {
+    const data = await api("/api/agents/apply", {
+      method: "POST",
+      body: {
+        contact_phone: getValue("lgp-agent-phone"),
+        department: getValue("lgp-agent-department"),
+        commune: getValue("lgp-agent-commune"),
+        business_address: getValue("lgp-agent-address") || null,
+        motivation: getValue("lgp-agent-motivation") || null,
+      },
+    });
+    result("Demann ajan an resevwa. Se admin ki dwe verifye epi apwouve l.", "success");
+    await loadAgentStatus();
+    log("Demann ajan soumèt", { application_id: data.application?.application_id, status: data.application?.status });
+  } catch (error) {
+    $("#lgp-agent-status").className = "status error";
+    $("#lgp-agent-status").textContent = error.message;
+  } finally {
+    if (button) button.disabled = false;
+  }
+});
+
 if (!config.configured) {
   $("#lgp-config-status").className = "status error";
   $("#lgp-config-status").textContent = "Backend poko konfigire. Mete SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY ak SUPABASE_SECRET_KEY nan Cloudflare Pages → Settings → Variables and Secrets.";
@@ -718,7 +840,28 @@ panel.addEventListener("click", async (event) => {
   const action = button.dataset.action;
   button.disabled = true;
   try {
-    if (action === "health") {
+    if (action === "agent-login") {
+      setAuthMode("login");
+    } else if (action === "agent-apply-open") {
+      $("#lgp-agent-card").hidden = false;
+      await loadAgentStatus();
+      $("#lgp-agent-card").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    } else if (action === "agent-list") {
+      await loadAgentApplications();
+    } else if (action === "agent-review") {
+      const decision = button.dataset.decision;
+      const data = await api("/api/admin/agents/review", {
+        method: "POST",
+        body: {
+          application_id: button.dataset.applicationId,
+          decision,
+          admin_note: null,
+        },
+      });
+      result(decision === "approved" ? "Ajan apwouve. Aksè ajan an kreye." : "Demann ajan an rejte.", "success");
+      log("Revizyon demann ajan", data);
+      await loadAgentApplications();
+    } else if (action === "health") {
       const health = await fetch("/api/health").then((response) => response.json());
       result(JSON.stringify(health), health.status === "ok" ? "success" : "error");
       log("Health API", health);
@@ -849,7 +992,10 @@ panel.addEventListener("click", async (event) => {
       const data = await api("/api/admin/me");
       $("#lgp-admin-status").textContent = JSON.stringify(data, null, 2);
       $("#lgp-admin-card").hidden = !(data.is_admin && data.aal2);
-      if (data.is_admin) $("#lgp-mfa-card").hidden = false;
+      if (data.is_admin) {
+        $("#lgp-mfa-card").hidden = false;
+        if (data.aal2) await loadAgentApplications();
+      }
       result(data.is_admin ? (data.aal2 ? "Dwa admin aktif ak MFA aal2." : "Kont admin sa a dwe verifye MFA TOTP anvan aksyon privilejye.") : "Kont sa a pa gen wòl admin.", data.is_admin && data.aal2 ? "success" : "error");
       log("Kontwòl dwa admin", data);
     } else if (action === "test-credit") {
