@@ -108,7 +108,12 @@ async function provisionMerchant(session) {
   });
 }
 async function loadDashboard(session) {
-  await provisionMerchant(session);
+  let merchantProvisionError = null;
+  try {
+    await provisionMerchant(session);
+  } catch (error) {
+    merchantProvisionError = error;
+  }
   const results = await Promise.allSettled([
     api("/api/profile"),
     api("/api/wallets"),
@@ -128,7 +133,13 @@ async function loadDashboard(session) {
   renderMerchants(session);
   renderActivity(activity);
   renderPinState(results[4]);
-  message("#appNotice", "", "");
+  if (merchantProvisionError) {
+    message("#appNotice", "Pwofil ak bous yo chaje, men enskripsyon machann lan poko fini: " +
+      translateError(merchantProvisionError.code || merchantProvisionError.message) +
+      ". Rafrechi pou eseye ankò.", "error");
+  } else {
+    message("#appNotice", "", "");
+  }
 }
 function renderProfile(session) {
   const profile = currentProfile || {};
