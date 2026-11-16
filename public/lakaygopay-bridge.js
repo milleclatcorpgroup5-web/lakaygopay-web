@@ -337,7 +337,7 @@ if (pinCard) {
     event.preventDefault();
     const input = $("#lgp-pin-new");
     const pin = input.value;
-    if (!/^\\d{4}$/.test(pin)) {
+    if (!/^\d{4}$/.test(pin)) {
       $("#lgp-pin-status").className = "error";
       $("#lgp-pin-status").textContent = "PIN lan dwe gen egzakteman 4 chif.";
       return;
@@ -364,7 +364,7 @@ if (pinCard) {
     event.preventDefault();
     const input = $("#lgp-pin-check");
     const pin = input.value;
-    if (!/^\\d{4}$/.test(pin)) {
+    if (!/^\d{4}$/.test(pin)) {
       $("#lgp-pin-status").className = "error";
       $("#lgp-pin-status").textContent = "PIN lan dwe gen egzakteman 4 chif.";
       return;
