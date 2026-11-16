@@ -44,7 +44,12 @@ function explainError(code) {
     AUTH_REQUIRED: "Konekte pou kontinye.",
     INVALID_OR_EXPIRED_SESSION: "Sesyon an ekspire. Konekte ankò.",
     INVALID_CREDENTIALS: "Imèl oswa modpas la pa kòrèk.",
-    ADMIN_OVERVIEW_UNAVAILABLE: "Apèsi administrasyon an pa disponib kounye a."
+    ADMIN_OVERVIEW_UNAVAILABLE: "Apèsi administrasyon an pa disponib kounye a.",
+    ADMIN_RECORDS_UNAVAILABLE: "Lis dosye administrasyon an pa disponib kounye a.",
+    ADMIN_RECORD_TYPE_INVALID: "Kategori dosye sa a pa valab.",
+    MFA_REQUIRED: "Aksyon sa a mande verifikasyon TOTP. Verifye kòd authenticator ou a.",
+    MFA_CODE_MUST_BE_6_DIGITS: "Kòd authenticator lan dwe gen 6 chif.",
+    MFA_FACTOR_NOT_ENROLLED: "Pa gen faktè authenticator. Klike Kreye / aktive MFA an premye."
   };
   return messages[code] || "Yon erè rive. Kòd: " + (code || "UNKNOWN");
 }
@@ -240,10 +245,8 @@ async function enrollAdminMfa() {
   }
   const pending = (factorsResult.data?.totp || []).find((factor) => factor.status === "unverified");
   if (pending) {
-    $("#adminMfaStatus").textContent = "Gen yon faktè authenticator ki poko verifye. Antre kòd li bay la epi peze Verifye MFA.";
-    $("#adminMfaQrWrap").hidden = false;
-    $("#adminMfaCode").focus();
-    return;
+    const removed = await supabase.auth.mfa.unenroll({ factorId: pending.id });
+    if (removed.error) throw removed.error;
   }
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
