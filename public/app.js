@@ -8,6 +8,13 @@ let dashboardPromise = null;
 let currentProfile = null;
 let currentWallets = [];
 let currentMerchants = [];
+let currentWithdrawals = [];
+let currentMerchantPayments = [];
+let currentQrRequest = null;
+let incomingQrToken = new URLSearchParams(window.location.search).get("lgp_qr") || "";
+let incomingQrLoadedForUser = null;
+let qrScannerStream = null;
+let qrScannerFrame = null;
 let pinConfigured = false;
 let pinSetupPendingAfterSignup = false;
 let recoveryMode = false;
@@ -129,7 +136,9 @@ async function loadDashboard(session) {
     api("/api/wallets"),
     api("/api/merchant/mine"),
     api("/api/activity"),
-    api("/api/pin/status")
+    api("/api/pin/status"),
+    api("/api/withdrawals"),
+    api("/api/payments")
   ]);
   if (results[0].status === "rejected") throw results[0].reason;
   if (results[1].status === "rejected") throw results[1].reason;
@@ -137,10 +146,17 @@ async function loadDashboard(session) {
   currentWallets = (results[1].value.wallets || []).filter(function (wallet) { return !wallet.is_system; });
   currentMerchants = results[2].status === "fulfilled" ? (results[2].value.merchants || []) : [];
   const activity = results[3].status === "fulfilled" ? (results[3].value.activity || []) : [];
+  currentWithdrawals = results[5].status === "fulfilled" ? (results[5].value.withdrawals || []) : [];
+  currentMerchantPayments = results[6].status === "fulfilled" ? (results[6].value.payments || []) : [];
+  currentMerchantPayments.forEach(function (payment) {
+    activity.push(Object.assign({ kind: "qr_payment", status: "paid" }, payment));
+  });
   pinConfigured = results[4].status === "fulfilled" && Boolean(results[4].value.pin_configured);
   renderProfile(session);
   renderWallets();
   renderMerchants(session);
+  renderWithdrawals(currentWithdrawals);
+  renderMerchantPayments(currentMerchantPayments);
   renderActivity(activity);
   renderPinState(results[4]);
   if (merchantProvisionError) {
@@ -241,6 +257,30 @@ function renderWallets() {
     option.textContent = "Pa gen bous disponib";
     select.append(option);
   }
+  populateWalletSelect("#qrPayerWallet", "HTG");
+  populateWalletSelect("#withdrawWallet");
+}
+function populateWalletSelect(selector, currency) {
+  const node = $(selector);
+  if (!node) return;
+  node.replaceChildren();
+  const wallets = currentWallets.filter(function (wallet) {
+    return !currency || wallet.currency === currency;
+  });
+  wallets.forEach(function (wallet) {
+    const option = document.createElement("option");
+    option.value = wallet.wallet_id;
+    option.textContent = wallet.currency + " · " +
+      (wallet.merchant_id ? "Machann" : "Pèsonèl") + " · " +
+      formatMoney(wallet.balance, wallet.currency);
+    node.append(option);
+  });
+  if (!wallets.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = currency ? "Pa gen bous " + currency : "Pa gen bous disponib";
+    node.append(option);
+  }
 }
 function renderMerchants(session) {
   const isMerchant = session.user.user_metadata?.account_type === "merchant" || currentMerchants.length > 0;
@@ -253,6 +293,194 @@ function renderMerchants(session) {
   $("#merchantDetails").textContent = merchant
     ? "Biznis: " + merchant.business_name + ". ID machann: " + merchant.id + ". Kont komèsyal la " + statusText(merchant.status).toLowerCase() + "."
     : "Kont machann lan poko parèt nan baz done a. Verifye koneksyon an epi eseye rafrechi.";
+  const canReceive = Boolean(merchant && merchant.status === "active");
+  $("#merchantQrCreateButton").disabled = !canReceive;
+  $("#merchantQrStatus").textContent = canReceive
+    ? "Machann ou aktive. Ou kapab kreye yon demann QR HTG pou peman entèn."
+    : "Pwofil machann lan dwe aktive pa administratè anvan li kapab resevwa peman QR.";
+}
+function renderWithdrawals(rows) {
+  const list = $("#withdrawalsList");
+  if (!list) return;
+  list.replaceChildren();
+  if (!rows || !rows.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "Pa gen demann retrè pou kounye a.";
+    list.append(empty);
+    return;
+  }
+  rows.slice(0, 8).forEach(function (item) {
+    const row = document.createElement("div");
+    row.className = "compact-row";
+    const label = document.createElement("strong");
+    label.textContent = formatMoney(item.amount, item.currency) + " " + item.currency;
+    const detail = document.createElement("span");
+    detail.textContent = (item.destination_type || "Destinasyon") + " · " +
+      statusText(item.status) + " · " + new Date(item.created_at).toLocaleDateString("fr-HT");
+    row.append(label, detail);
+    list.append(row);
+  });
+}
+function renderMerchantPayments(rows) {
+  const list = $("#merchantPaymentsList");
+  if (!list) return;
+  list.replaceChildren();
+  if (!rows || !rows.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "Pa gen peman QR anrejistre sou kont sa a.";
+    list.append(empty);
+    return;
+  }
+  rows.slice(0, 8).forEach(function (item) {
+    const row = document.createElement("div");
+    row.className = "compact-row";
+    const amount = document.createElement("strong");
+    amount.textContent = formatMoney(item.amount, item.currency) + " " + item.currency;
+    const detail = document.createElement("span");
+    detail.textContent = "Peman QR · " + new Date(item.created_at).toLocaleString("fr-HT");
+    row.append(amount, detail);
+    list.append(row);
+  });
+}
+function normalizeQrToken(raw) {
+  const value = String(raw || "").trim();
+  if (!value) return "";
+  try {
+    const parsed = new URL(value, window.location.origin);
+    const fromQuery = parsed.searchParams.get("lgp_qr") || parsed.searchParams.get("token");
+    if (fromQuery) return fromQuery.trim();
+    const segments = parsed.pathname.split("/").filter(Boolean);
+    if (segments.length) return segments[segments.length - 1];
+  } catch {
+    // Accept a pasted bare UUID.
+  }
+  return value;
+}
+function qrMessage(text, kind) {
+  const node = $("#qrNotice");
+  node.textContent = text || "";
+  node.className = "notice" + (kind ? " " + kind : "");
+}
+async function lookupPaymentRequest(rawToken) {
+  const token = normalizeQrToken(rawToken);
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  $("#qrPayForm").hidden = true;
+  $("#qrDetails").hidden = true;
+  currentQrRequest = null;
+  if (!uuid.test(token)) {
+    qrMessage("Kòd QR la pa valab. Eskane QR la ankò oswa kole UUID demann lan.", "error");
+    return;
+  }
+  $("#qrTokenInput").value = token;
+  qrMessage("Ap verifye demann QR la…", "");
+  try {
+    const data = await api("/api/payment-requests/lookup?token=" + encodeURIComponent(token));
+    const request = data.payment_request || {};
+    currentQrRequest = request;
+    const details = $("#qrDetails");
+    details.replaceChildren();
+    const title = document.createElement("strong");
+    title.textContent = request.merchant_name || "Machann LakayGoPay";
+    const amount = document.createElement("div");
+    amount.className = "qr-detail-amount";
+    amount.textContent = request.amount == null
+      ? "Montan ouvè · " + (request.currency || "HTG")
+      : formatMoney(request.amount, request.currency || "HTG") + " " + (request.currency || "HTG");
+    const description = document.createElement("p");
+    description.textContent = request.description || "Demann peman LakayGoPay";
+    const state = document.createElement("p");
+    state.textContent = "Estati: " + statusText(request.status) +
+      (request.expires_at ? " · Ekspire: " + new Date(request.expires_at).toLocaleString("fr-HT") : "");
+    details.append(title, amount, description, state);
+    details.hidden = false;
+    const expired = request.status !== "pending" ||
+      (request.expires_at && Date.parse(request.expires_at) <= Date.now());
+    if (expired) {
+      $("#qrPayForm").hidden = true;
+      qrMessage(request.status === "expired" ? "Demann QR sa a ekspire." : "Demann QR sa a pa disponib pou peman.", "error");
+      return;
+    }
+    populateWalletSelect("#qrPayerWallet", request.currency || "HTG");
+    const amountInput = $("#qrPayAmount");
+    amountInput.value = request.amount == null ? "" : String(request.amount);
+    amountInput.readOnly = request.amount != null;
+    amountInput.required = request.amount == null;
+    $("#qrPayForm").hidden = false;
+    $("#qrPayForm button[type=\"submit\"]").disabled = !pinConfigured;
+    qrMessage("Demann lan verifye. Verifye detay yo epi konfime ak PIN ou.", "success");
+  } catch (error) {
+    qrMessage(translateError(error.code || error.message), "error");
+  }
+}
+async function maybeLookupIncomingQr(session) {
+  if (!incomingQrToken || !session || !session.user || incomingQrLoadedForUser === session.user.id) return;
+  incomingQrLoadedForUser = session.user.id;
+  $("#qrPaymentSection").scrollIntoView({ behavior: "smooth", block: "start" });
+  await lookupPaymentRequest(incomingQrToken);
+}
+async function renderQrImage(target, payload) {
+  const { toDataURL } = await import("https://esm.sh/qrcode@1.5.4");
+  target.alt = "QR demann peman LakayGoPay";
+  target.src = await toDataURL(payload, { width: 240, margin: 1, errorCorrectionLevel: "M" });
+}
+async function stopQrScanner() {
+  if (qrScannerFrame) cancelAnimationFrame(qrScannerFrame);
+  qrScannerFrame = null;
+  if (qrScannerStream) qrScannerStream.getTracks().forEach((track) => track.stop());
+  qrScannerStream = null;
+  const video = $("#qrScannerVideo");
+  if (video) {
+    video.pause();
+    video.srcObject = null;
+    video.hidden = true;
+  }
+  $("#qrScanButton").hidden = false;
+  $("#qrStopScanButton").hidden = true;
+}
+async function startQrScanner() {
+  if (!("BarcodeDetector" in window) || !navigator.mediaDevices?.getUserMedia) {
+    qrMessage("Kamera QR pa disponib nan navigatè sa a. Kole kòd oswa lyen QR la nan bwat anlè a.", "error");
+    return;
+  }
+  try {
+    await stopQrScanner();
+    const detector = new BarcodeDetector({ formats: ["qr_code"] });
+    qrScannerStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+      audio: false
+    });
+    const video = $("#qrScannerVideo");
+    video.srcObject = qrScannerStream;
+    video.hidden = false;
+    $("#qrScanButton").hidden = true;
+    $("#qrStopScanButton").hidden = false;
+    await video.play();
+    qrMessage("Mete QR la devan kamera a. Nou p ap fè peman otomatikman.", "");
+    const scan = async () => {
+      if (!qrScannerStream) return;
+      try {
+        if (video.readyState >= 2) {
+          const codes = await detector.detect(video);
+          if (codes.length && codes[0].rawValue) {
+            const raw = codes[0].rawValue;
+            await stopQrScanner();
+            $("#qrTokenInput").value = raw;
+            await lookupPaymentRequest(raw);
+            return;
+          }
+        }
+      } catch {
+        // Continue scanning after transient camera frame errors.
+      }
+      qrScannerFrame = requestAnimationFrame(scan);
+    };
+    scan();
+  } catch {
+    await stopQrScanner();
+    qrMessage("Nou pa kapab louvri kamera a. Verifye pèmisyon kamera a oswa kole kòd QR la manyèlman.", "error");
+  }
 }
 function renderActivity(rows) {
   const list = $("#activityList");
@@ -274,7 +502,9 @@ function renderActivity(rows) {
     const info = document.createElement("div");
     const title = document.createElement("div");
     title.className = "activity-title";
-    let titleText = item.kind === "transfer" ? "Transfè entèn" : item.kind === "deposit" ? "Demann depo" : "Demann retrè";
+    let titleText = item.kind === "transfer" ? "Transfè entèn" :
+      item.kind === "deposit" ? "Demann depo" :
+      item.kind === "qr_payment" ? "Peman QR" : "Demann retrè";
     if (item.kind === "transfer") {
       titleText += userWallets.has(item.sender_wallet_id) ? " · Voye" : " · Resevwa";
     }
@@ -299,6 +529,8 @@ function renderPinState(result) {
   $("#pinManagementForm").hidden = pinConfigured || cannotVerify;
   $("#pinSubmitButton").textContent = "Kreye PIN sekirite";
   $("#transferForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
+  $("#withdrawalForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
+  $("#qrPayForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   $("#withdrawalForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   $("#qrPayForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   if (cannotVerify) {
@@ -337,11 +569,17 @@ async function syncSession(session) {
   $("#appView").hidden = false;
   $("#logoutButton").hidden = false;
   $("#settingsButton").hidden = false;
-  if (activeUserId === session.user.id && dashboardPromise) return dashboardPromise;
+  if (activeUserId === session.user.id && dashboardPromise) {
+    await dashboardPromise;
+    await maybeLookupIncomingQr(session);
+    return dashboardPromise;
+  }
   activeUserId = session.user.id;
   dashboardPromise = loadDashboard(session).catch(function (error) {
     message("#appNotice", "Nou pa kapab chaje tout done kont lan: " + translateError(error.code || error.message), "error");
   });
+  await dashboardPromise;
+  await maybeLookupIncomingQr(session);
   return dashboardPromise;
 }
 function setAuthMode(mode) {
@@ -634,6 +872,149 @@ function wireForms() {
       button.disabled = false;
     }
   });
+
+  $("#qrLookupForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    await lookupPaymentRequest($("#qrTokenInput").value);
+  });
+
+  $("#qrPayForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    if (!currentQrRequest || currentQrRequest.status !== "pending") {
+      qrMessage("Verifye yon demann QR ki toujou aktif anvan ou peye.", "error");
+      return;
+    }
+    const pin = $("#qrPayPin").value;
+    const walletId = $("#qrPayerWallet").value;
+    const wallet = currentWallets.find((item) => item.wallet_id === walletId);
+    if (!wallet || wallet.currency !== (currentQrRequest.currency || "HTG")) {
+      qrMessage("Chwazi yon bous ki nan menm lajan ak demann QR la.", "error");
+      return;
+    }
+    if (!/^[0-9]{4}$/.test(pin)) {
+      qrMessage("Antre PIN tranzaksyon 4 chif ou a.", "error");
+      return;
+    }
+    const amount = $("#qrPayAmount").value;
+    const confirmText = currentQrRequest.amount == null
+      ? "Ou pral peye " + amount + " " + wallet.currency + " bay " + (currentQrRequest.merchant_name || "machann lan") + "."
+      : "Ou pral peye " + formatMoney(currentQrRequest.amount, wallet.currency) + " " + wallet.currency +
+        " bay " + (currentQrRequest.merchant_name || "machann lan") + ".";
+    if (!window.confirm(confirmText + " Kontinye?")) return;
+    const button = event.submitter;
+    button.disabled = true;
+    qrMessage("Ap verifye PIN epi anrejistre peman entèn lan…", "");
+    try {
+      const body = {
+        qr_token: normalizeQrToken($("#qrTokenInput").value),
+        payer_wallet_id: walletId,
+        pin
+      };
+      if (amount) body.amount = amount;
+      const result = await api("/api/payment-requests/pay", {
+        method: "POST",
+        body,
+        idempotency: true
+      });
+      $("#qrPayPin").value = "";
+      currentQrRequest.status = "paid";
+      $("#qrPayForm").hidden = true;
+      qrMessage("Peman QR anrejistre. Referans: " + (result.payment?.reference || "OK"), "success");
+      await loadDashboard(await sessionNow());
+    } catch (error) {
+      qrMessage(translateError(error.code || error.message), "error");
+    } finally {
+      $("#qrPayPin").value = "";
+      button.disabled = !pinConfigured;
+    }
+  });
+
+  $("#merchantQrForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const merchant = currentMerchants.find((item) => item.status === "active");
+    if (!merchant) {
+      message("#appNotice", "Se sèlman machann ki aktive kapab kreye demann QR.", "error");
+      return;
+    }
+    const amount = $("#merchantQrAmount").value;
+    const button = $("#merchantQrCreateButton");
+    button.disabled = true;
+    try {
+      const data = await api("/api/payment-requests", {
+        method: "POST",
+        body: {
+          merchant_id: merchant.id,
+          amount,
+          description: $("#merchantQrDescription").value.trim(),
+          expires_in_minutes: 30
+        },
+        idempotency: true
+      });
+      const token = data.payment_request?.qr_token;
+      if (!token) throw new Error("QR_TOKEN_MISSING");
+      const link = new URL("/", window.location.origin);
+      link.searchParams.set("lgp_qr", token);
+      $("#merchantQrResult").hidden = false;
+      await renderQrImage($("#merchantQrImage"), link.toString());
+      $("#merchantQrSummary").textContent = "Demann pou " + formatMoney(amount, "HTG") +
+        " HTG · ekspire nan 30 minit. Li pa peye jiskaske kliyan konfime.";
+      $("#merchantQrLink").href = link.toString();
+      $("#merchantQrLink").textContent = link.toString();
+      $("#merchantQrCopyButton").dataset.copyLink = link.toString();
+      message("#appNotice", "Demann QR kreye. Pataje QR la ak kliyan an.", "success");
+    } catch (error) {
+      message("#appNotice", translateError(error.code || error.message), "error");
+    } finally {
+      button.disabled = !currentMerchants.some((item) => item.status === "active");
+    }
+  });
+
+  $("#merchantQrCopyButton").addEventListener("click", async function () {
+    const link = this.dataset.copyLink || "";
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link);
+      message("#appNotice", "Lyen QR la kopye.", "success");
+    } catch {
+      message("#appNotice", "Navigatè a pa pèmèt kopye. Peze lontan sou lyen QR la.", "error");
+    }
+  });
+
+  $("#withdrawalForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const pin = $("#withdrawPin").value;
+    if (!/^[0-9]{4}$/.test(pin)) {
+      message("#withdrawalNotice", "Antre PIN tranzaksyon 4 chif ou a.", "error");
+      return;
+    }
+    const button = event.submitter;
+    button.disabled = true;
+    try {
+      const body = {
+        wallet_id: $("#withdrawWallet").value,
+        amount: $("#withdrawAmount").value,
+        destination_type: $("#withdrawType").value,
+        pin
+      };
+      const reference = $("#withdrawReference").value.trim();
+      if (reference) body.destination_reference = reference;
+      await api("/api/withdrawals", { method: "POST", body, idempotency: true });
+      $("#withdrawAmount").value = "";
+      $("#withdrawReference").value = "";
+      $("#withdrawPin").value = "";
+      message("#withdrawalNotice", "Demann retrè tès la anrejistre. Pa gen lajan ki voye deyò.", "success");
+      await loadDashboard(await sessionNow());
+    } catch (error) {
+      message("#withdrawalNotice", translateError(error.code || error.message), "error");
+    } finally {
+      $("#withdrawPin").value = "";
+      button.disabled = !pinConfigured;
+    }
+  });
+
+  $("#qrScanButton").addEventListener("click", startQrScanner);
+  $("#qrStopScanButton").addEventListener("click", stopQrScanner);
+
 }
 function wireActions() {
   $("#walletGrid").addEventListener("click", async function (event) {
