@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#071b2a">
   <title>LakayGoPay — Sant Kontwòl Admin</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/admin/admin.css?v=20261116-01">
+  <link rel="stylesheet" href="/admin/admin.css?v=20261116-02">
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -108,6 +108,84 @@
       <article class="module-card"><div class="module-symbol">06</div><div><h3>Jounal audit</h3><p>Vizibilite sou kantite tras administrasyon ki anrejistre.</p><span class="module-state">Apèsi sèlman</span></div></article>
     </section>
 
+    <section class="business-plan-section">
+      <div class="section-head business-plan-heading">
+        <div><p class="eyebrow">PLAN BIZNIS · REVNI PLATFÒM LAN</p><h2>Komisyon pa aktivite</h2></div>
+        <span class="read-only-tag">PLAN PRELIMINÈ · PA APLIKE</span>
+      </div>
+
+      <div class="business-summary-grid">
+        <article class="business-summary-card">
+          <span class="business-summary-label">Règ komisyon</span>
+          <strong>Poko fikse</strong>
+          <small>Pa gen pousantaj ki aktive nan sistèm nan.</small>
+        </article>
+        <article class="business-summary-card">
+          <span class="business-summary-label">Koleksyon frè</span>
+          <strong class="state-off">Dezaktive</strong>
+          <small>Pa gen frè platfòm k ap pran sou tranzaksyon tès yo.</small>
+        </article>
+        <article class="business-summary-card">
+          <span class="business-summary-label">Kontablite</span>
+          <strong>Pa aplike</strong>
+          <small>Okenn komisyon pa antre nan ledger kòm revni.</small>
+        </article>
+      </div>
+
+      <div class="fee-table-wrap">
+        <table class="fee-table">
+          <thead>
+            <tr>
+              <th>Aktivite</th>
+              <th>Baz kalkil</th>
+              <th>% LakayGoPay</th>
+              <th>Ki moun ki peye?</th>
+              <th>Eta aktyèl</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Transfè ant bous</strong><small>Voye lajan ant itilizatè LakayGoPay</small></td>
+              <td>Montan transfè a</td><td><span class="fee-pending">Poko fikse</span></td><td>Pou deside</td><td><span class="fee-state fee-test">Tès entèn</span></td>
+            </tr>
+            <tr>
+              <td><strong>Peman machann / QR</strong><small>Peman kliyan fè bay machann</small></td>
+              <td>Montan peman an</td><td><span class="fee-pending">Poko fikse</span></td><td>Kliyan oswa machann</td><td><span class="fee-state fee-warn">QR poko valide</span></td>
+            </tr>
+            <tr>
+              <td><strong>Depo / rechaj bous</strong><small>MonCash, NatCash oswa patnè otorize</small></td>
+              <td>Montan depo a</td><td><span class="fee-pending">Poko fikse</span></td><td>Kliyan oswa patnè</td><td><span class="fee-state fee-off">Dezaktive</span></td>
+            </tr>
+            <tr>
+              <td><strong>Retrè ekstèn</strong><small>Voye lajan soti nan bous pou ale deyò</small></td>
+              <td>Montan retrè a</td><td><span class="fee-pending">Poko fikse</span></td><td>Kliyan oswa patnè</td><td><span class="fee-state fee-off">Dezaktive</span></td>
+            </tr>
+            <tr>
+              <td><strong>Peman sèvis / fakti</strong><small>Peman sèvis, bòdwo ak lòt machann</small></td>
+              <td>Montan fakti a</td><td><span class="fee-pending">Poko fikse</span></td><td>Kliyan, machann oswa patnè</td><td><span class="fee-state fee-plan">Pwochen faz</span></td>
+            </tr>
+            <tr>
+              <td><strong>Echanj HTG / USD / EUR</strong><small>Konvèsyon ant lajan diferan</small></td>
+              <td>To echanj oswa frè separe</td><td><span class="fee-pending">Poko fikse</span></td><td>Pou deside</td><td><span class="fee-state fee-off">Pa aktive</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="business-formula">
+        <div>
+          <p class="eyebrow">FÒMIL REVNI</p>
+          <h3>Komisyon platfòm = montan aktivite × pousantaj komisyon</h3>
+          <p>Admin dwe defini pousantaj la, moun ki peye frè a, plafon minimòm/maksimòm, lajan an ak dat aplikasyon an pou chak aktivite.</p>
+        </div>
+        <div class="formula-note">
+          <strong>Règ transparans</strong>
+          <p>Montan frè a dwe parèt klè anvan kliyan an konfime tranzaksyon an. Nenpòt pousantaj ki apwouve dwe pase nan kontwòl aksè ak jounal audit.</p>
+        </div>
+      </div>
+      <p class="business-disclaimer">Enpòtan: seksyon sa a se planifikasyon biznis sèlman. Li pa chanje balans, li pa ajoute frè nan tranzaksyon, epi li pa aktive peman oswa retrè reyèl.</p>
+    </section>
+
     <section class="system-grid">
       <article class="surface-card">
         <p class="eyebrow">ETA SÈVIS</p><h2>Kontwòl platfòm</h2>
@@ -128,6 +206,6 @@
     <footer class="admin-footer"><span>LakayGoPay · Sant Kontwòl</span><span>Entèfas administrasyon prive · Rejim tès</span></footer>
   </main>
 
-  <script type="module" src="/admin/admin.js?v=20261116-01"></script>
+  <script type="module" src="/admin/admin.js?v=20261116-02"></script>
 </body>
 </html>
