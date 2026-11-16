@@ -225,6 +225,7 @@ let supabase = null;
 let factorId = null;
 let loadedWallets = [];
 let loadedMerchants = [];
+let merchantProvisioning = null;
 
 function log(message, value) {
   const line = `${new Date().toLocaleTimeString()} · ${message}${value === undefined ? "" : `\n${JSON.stringify(value, null, 2)}`}`;
@@ -408,17 +409,22 @@ async function postSignup(payload) {
 async function maybeProvisionMerchant(session) {
   const metadata = session?.user?.user_metadata || {};
   if (metadata.account_type !== "merchant") return;
-  const existing = await api("/api/merchant/mine");
-  if ((existing.merchants || []).length) return;
-  const businessName = String(metadata.business_name || "").trim();
-  const businessPhone = String(metadata.business_phone || metadata.phone || "").trim();
-  if (!businessName || !businessPhone) return;
-  await api("/api/merchant/register", {
-    method: "POST",
-    body: { business_name: businessName, business_type: "other", contact_phone: businessPhone },
-    idempotency: true,
-  });
-  result("Kont biznis la ak bous machann lan kreye. Estati a rete an atant verifikasyon admin.", "success");
+  if (merchantProvisioning) return merchantProvisioning;
+  merchantProvisioning = (async () => {
+    const existing = await api("/api/merchant/mine");
+    if ((existing.merchants || []).length) return;
+    const businessName = String(metadata.business_name || "").trim();
+    const businessPhone = String(metadata.business_phone || metadata.phone || "").trim();
+    if (!businessName || !businessPhone) return;
+    await api("/api/merchant/register", {
+      method: "POST",
+      body: { business_name: businessName, business_type: "other", contact_phone: businessPhone },
+      idempotency: true,
+    });
+    result("Kont biznis la ak bous machann lan kreye. Estati a rete an atant verifikasyon admin.", "success");
+  })();
+  try { return await merchantProvisioning; }
+  finally { merchantProvisioning = null; }
 }
 
 async function loadAgentStatus() {
@@ -670,9 +676,10 @@ $("#lgp-personal-pane").addEventListener("submit", async (event) => {
       $("#lgp-auth-message").textContent = "Kont pèsonèl la kreye epi konekte.";
       result("Kont pèsonèl la pare. Ou kapab konfigire PIN sekirite ou nan seksyon Sekirite.", "success");
     } else {
-      $("#lgp-auth-message").textContent = "Kont lan kreye. Verifye imèl ou pou konfime l, epi konekte.";
+      const email = getValue("lgp-personal-email");
       setAuthMode("login");
-      $("#lgp-email").value = getValue("lgp-personal-email");
+      $("#lgp-email").value = email;
+      $("#lgp-auth-message").textContent = "Kont lan kreye. Verifye imèl ou pou konfime l, epi konekte.";
     }
   } catch (error) {
     $("#lgp-auth-message").textContent = error.message;
@@ -699,9 +706,10 @@ $("#lgp-merchant-pane").addEventListener("submit", async (event) => {
       $("#lgp-auth-message").textContent = "Kont biznis la kreye. Bous machann lan ap prepare.";
       result("Kont biznis la kreye; estati machann lan ap tann verifikasyon admin.", "success");
     } else {
-      $("#lgp-auth-message").textContent = "Kont biznis la kreye. Verifye imèl biznis la, epi konekte ak menm imèl la.";
+      const email = getValue("lgp-merchant-email");
       setAuthMode("login");
-      $("#lgp-email").value = getValue("lgp-merchant-email");
+      $("#lgp-email").value = email;
+      $("#lgp-auth-message").textContent = "Kont biznis la kreye. Verifye imèl biznis la, epi konekte ak menm imèl la.";
     }
   } catch (error) {
     $("#lgp-auth-message").textContent = error.message;
