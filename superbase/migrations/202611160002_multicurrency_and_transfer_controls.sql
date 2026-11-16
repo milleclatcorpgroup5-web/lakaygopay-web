@@ -96,6 +96,24 @@ create trigger merchants_create_additional_currency_wallets
 after insert on public.merchants
 for each row execute function public.create_merchant_multi_currency_wallets();
 
+-- Backfill the three empty wallets for users and merchants who already existed
+-- before this migration. Existing balances and ledger entries are untouched.
+insert into public.wallets (owner_user_id, currency, status)
+select owners.owner_user_id, currencies.currency, 'active'
+from (
+  select distinct owner_user_id
+  from public.wallets
+  where owner_user_id is not null
+) as owners
+cross join (values ('HTG'::char(3)), ('USD'::char(3)), ('EUR'::char(3))) as currencies(currency)
+on conflict do nothing;
+
+insert into public.wallets (merchant_id, currency, status)
+select merchants.id, currencies.currency, 'active'
+from public.merchants as merchants
+cross join (values ('HTG'::char(3)), ('USD'::char(3)), ('EUR'::char(3))) as currencies(currency)
+on conflict do nothing;
+
 -- Enforce a balanced debit/credit pair independently for each currency, and
 -- ensure an entry can never be posted against a wallet denominated differently.
 create or replace function public.enforce_balanced_ledger_transaction()
