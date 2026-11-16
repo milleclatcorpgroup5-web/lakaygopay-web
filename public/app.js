@@ -73,6 +73,8 @@ function translateError(code) {
     SENDER_WALLET_FORBIDDEN: "Ou pa gen dwa itilize bous sa a pou voye lajan.",
     WALLET_NOT_FOUND: "Nou pa jwenn youn nan bous yo.",
     MERCHANT_NOT_ACTIVE: "Kont machann sa a poko aktive.",
+    ACCOUNT_SUSPENDED: "Kont sa a sispann. Kontakte sipò LakayGoPay.",
+    ACCOUNT_NOT_ACTIVE: "Kont sa a pa aktif. Kontakte sipò LakayGoPay.",
     PAYMENT_REQUEST_NOT_FOUND: "Nou pa jwenn demann QR sa a.",
     PAYMENT_REQUEST_NOT_PAYABLE: "Demann QR sa a deja peye oswa li pa disponib.",
     PAYMENT_REQUEST_EXPIRED: "Demann QR sa a ekspire.",
