@@ -1,4 +1,5 @@
 import { json, requireUser, callRpc } from "./superbase.js";
+import { requireAdminPinSession } from "./admin-pin.js";
 
 function decodeJwtPayload(token) {
   try {
@@ -28,6 +29,8 @@ export async function requireAal2(request, env) {
 export async function requireAdminAal2(request, env) {
   const auth = await requireAal2(request, env);
   if (auth.error) return auth;
+  const pinned = await requireAdminPinSession(request, env);
+  if (pinned.error) return pinned;
   const isAdmin = await callRpc(env, "is_admin_user", { p_user_id: auth.user.id });
   if (isAdmin !== true) return { error: json({ error: "ADMIN_ROLE_REQUIRED" }, 403) };
   return auth;
