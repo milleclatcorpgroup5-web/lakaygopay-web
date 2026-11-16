@@ -40,6 +40,7 @@ function explainError(code) {
     ADMIN_PIN_SETUP_FAILED: "Nou pa t kapab anrejistre PIN Admin lan.",
     ADMIN_PIN_SECURITY_UNAVAILABLE: "Verifikasyon PIN Admin lan pa disponib kounye a.",
     ADMIN_PIN_CONFIGURATION_INVALID: "Konfigirasyon PIN Admin lan pa valab.",
+    ADMIN_PIN_REQUIRED: "Pou pwoteje sesyon an, antre PIN Admin 6 chif ou ankò.",
     AUTH_REQUIRED: "Konekte pou kontinye.",
     INVALID_OR_EXPIRED_SESSION: "Sesyon an ekspire. Konekte ankò.",
     INVALID_CREDENTIALS: "Imèl oswa modpas la pa kòrèk.",
@@ -183,7 +184,16 @@ async function refreshCurrent() {
     await showPinGate(session);
     return;
   }
-  await loadOverview(session);
+  try {
+    await loadOverview(session);
+  } catch (error) {
+    if (error.code === "ADMIN_PIN_REQUIRED") {
+      adminPinVerifiedUserId = null;
+      await showPinGate(session);
+      return;
+    }
+    throw error;
+  }
 }
 async function boot() {
   const configResponse = await fetch("/api/config", { headers: { accept: "application/json" }, cache: "no-store" });
