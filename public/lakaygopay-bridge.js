@@ -60,7 +60,7 @@ panel.innerHTML = `
     <div id="lgp-auth-card" class="card">
       <h3>Kont LakayGoPay</h3>
       <p>Chwazi sèvis ou bezwen an. Nou montre sèlman chan ki nesesè yo.</p>
-      <div class="auth-tabs">
+      <div class="auth-tabs" id="lgp-auth-tabs">
         <button type="button" data-auth-mode="login" class="active">Konekte</button>
         <button type="button" data-auth-mode="personal">Kont pèsonèl</button>
         <button type="button" data-auth-mode="merchant">Kont machann</button>
@@ -100,6 +100,10 @@ panel.innerHTML = `
         <p>Ajan LakayGoPay pa kreye kont ajan poukont yo. Konekte ak kont pèsonèl ou, soumèt demann lan, epi admin ap verifye epi bay otorizasyon.</p>
         <button type="button" data-action="agent-login">Konekte pou aplike</button>
       </div>
+      <form id="lgp-password-recovery" class="auth-pane" hidden>
+        <label>Nouvo modpas kont (8 karaktè minimòm)<input id="lgp-new-password" type="password" autocomplete="new-password" minlength="8" required></label>
+        <button type="submit">Mete nouvo modpas</button>
+      </form>
       <p id="lgp-auth-message" class="form-hint" role="status"></p>
     </div>
     <div id="lgp-account-card" class="card" hidden>
@@ -770,6 +774,28 @@ $("#lgp-merchant-pane").addEventListener("submit", async (event) => {
   }
 });
 
+$("#lgp-password-recovery").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = event.submitter;
+  if (button) button.disabled = true;
+  try {
+    const password = getValue("lgp-new-password");
+    if (password.length < 8) throw new Error("Nouvo modpas la dwe gen omwen 8 karaktè.");
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    $("#lgp-new-password").value = "";
+    $("#lgp-password-recovery").hidden = true;
+    $("#lgp-auth-tabs").hidden = false;
+    setAuthMode("login");
+    $("#lgp-auth-message").textContent = "Nouvo modpas la anrejistre. Konekte ak nouvo modpas la.";
+    result("Modpas kont lan mete ajou.", "success");
+  } catch (error) {
+    $("#lgp-auth-message").textContent = error.message;
+  } finally {
+    if (button) button.disabled = false;
+  }
+});
+
 $("#lgp-agent-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = event.submitter;
@@ -820,6 +846,12 @@ if (!config.configured) {
       setAuthenticated(nextSession);
       if (event === "PASSWORD_RECOVERY") {
         $("#lgp-auth-card").hidden = false;
+        $("#lgp-auth-tabs").hidden = true;
+        $("#lgp-login-pane").hidden = true;
+        $("#lgp-personal-pane").hidden = true;
+        $("#lgp-merchant-pane").hidden = true;
+        $("#lgp-agent-intro").hidden = true;
+        $("#lgp-password-recovery").hidden = false;
         $("#lgp-new-password").focus();
         result("Antre nouvo modpas ou pou fini rekiperasyon kont lan.");
       }
