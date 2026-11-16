@@ -172,6 +172,7 @@ panel.innerHTML = `
       <label>Bous<select id="lgp-withdraw-wallet"></select></label>
       <div class="row"><label>Montan HTG<input id="lgp-withdraw-amount" type="number" min="0.01" step="0.01"></label><label>Destinasyon<select id="lgp-withdraw-type"><option value="moncash">MonCash</option><option value="natcash">NatCash</option><option value="bank">Bank</option><option value="cash_agent">Ajan lajan kach</option><option value="other">Lòt</option></select></label></div>
       <label>Referans destinasyon (opsyonèl; chiffres sou sèvè)<input id="lgp-withdraw-reference" autocomplete="off"></label>
+      <label>PIN sekirite 4 chif<input id="lgp-withdraw-pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required></label>
       <button data-action="withdraw">Soumèt demann retrè</button>
       <p>Demann lan rezève kantite lajan an. Apwobasyon pa voye lajan; entegrasyon founisè a poko aktive.</p>
     </div>
@@ -1098,9 +1099,19 @@ panel.addEventListener("click", async (event) => {
       log("Transfè entèn", data);
       await loadAccount();
     } else if (action === "withdraw") {
-      const body = { wallet_id: getValue("lgp-withdraw-wallet"), amount: getValue("lgp-withdraw-amount"), destination_type: getValue("lgp-withdraw-type") };
+      const body = {
+        wallet_id: getValue("lgp-withdraw-wallet"),
+        amount: getValue("lgp-withdraw-amount"),
+        destination_type: getValue("lgp-withdraw-type"),
+        pin: getValue("lgp-withdraw-pin")
+      };
       if (getValue("lgp-withdraw-reference")) body.destination_reference = getValue("lgp-withdraw-reference");
-      const data = await api("/api/withdrawals", { method: "POST", body, idempotency: true });
+      let data;
+      try {
+        data = await api("/api/withdrawals", { method: "POST", body, idempotency: true });
+      } finally {
+        $("#lgp-withdraw-pin").value = "";
+      }
       $("#lgp-withdrawal-id").value = data.withdrawal?.withdrawal_id || "";
       result("Demann retrè kreye epi kantite lajan an rezève. Pa gen peman deyò ki fèt.", "success");
       log("Demann retrè", data);
