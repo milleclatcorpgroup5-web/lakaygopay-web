@@ -52,6 +52,8 @@ function translateError(code) {
     INVALID_OR_EXPIRED_SESSION: "Sesyon an ekspire. Konekte ankò.",
     MINIMUM_AGE_18: "Ou dwe gen omwen 18 an pou ouvri kont pèsonèl.",
     EMAIL_ALREADY_REGISTERED: "Imèl sa a deja gen yon kont. Konekte pito.",
+    ACCOUNT_SUSPENDED: "Aksè kont sa a sispann. Kontakte sipò LakayGoPay.",
+    ACCOUNT_NOT_ACTIVE: "Kont sa a pa aktif. Kontakte sipò LakayGoPay.",
     VALID_PHONE_REQUIRED: "Antre yon nimewo telefòn ki valab.",
     VALID_BUSINESS_PHONE_REQUIRED: "Antre nimewo telefòn biznis la.",
     VALID_BUSINESS_NAME_REQUIRED: "Antre non biznis la.",
