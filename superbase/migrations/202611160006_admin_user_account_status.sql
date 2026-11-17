@@ -3,6 +3,9 @@
 
 begin;
 
+alter table public.profiles
+  add column if not exists updated_at timestamptz not null default now();
+
 create or replace function public.admin_set_user_account_status(
   p_admin_user_id uuid,
   p_target_user_id uuid,
