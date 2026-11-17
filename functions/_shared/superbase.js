@@ -70,6 +70,7 @@ async function callRpc(env, functionName, payload) {
     method: "POST",
     headers: {
       apikey: secretKey,
+      authorization: `Bearer ${secretKey}`,
       "content-type": "application/json",
       accept: "application/json",
     },
