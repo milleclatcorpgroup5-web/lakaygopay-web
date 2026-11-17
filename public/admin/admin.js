@@ -191,8 +191,8 @@ async function loadOverview(session) {
   $("#generatedAt").textContent = "Dènye mizajou: " + date.toLocaleString("fr-HT");
   setNotice("#dashboardNotice", "Aksè admin konfime sou sèvè a. PIN Admin verifye.", "success");
   await updateMfaStatus().catch(() => {});
-  await loadAdminRecords("users");
   await loadSystemHealth(session);
+  await loadAdminRecords("users");
 }
 
 function renderSystemHealth(data) {
