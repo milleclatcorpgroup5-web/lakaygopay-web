@@ -554,8 +554,10 @@ function renderActivity(rows) {
 function renderPinState(result) {
   const node = $("#pinState");
   const cannotVerify = result.status === "rejected";
-  $("#pinManagementForm").hidden = pinConfigured || cannotVerify;
-  $("#pinSubmitButton").textContent = "Kreye PIN sekirite";
+  $("#pinManagementForm").hidden = cannotVerify;
+  $("#currentPinField").hidden = !pinConfigured;
+  $("#currentPin").required = pinConfigured;
+  $("#pinSubmitButton").textContent = pinConfigured ? "Chanje PIN sekirite" : "Kreye PIN sekirite";
   $("#transferForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   $("#withdrawalForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   $("#qrPayForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
@@ -566,7 +568,7 @@ function renderPinState(result) {
     return;
   }
   if (pinConfigured) {
-    node.textContent = "PIN sekirite ou aktive. Li obligatwa pou chak transfè. Chanjman PIN poko disponib nan vèsyon beta sa a.";
+    node.textContent = "PIN sekirite ou aktive. Li obligatwa pou chak transfè. Antre PIN aktyèl ou pou chanje li.";
     return;
   }
   node.textContent = "Ou poko kreye PIN sekirite ou. Kreye li nan Paramèt anvan ou fè premye transfè.";
@@ -818,10 +820,12 @@ function wireForms() {
 
   $("#pinManagementForm").addEventListener("submit", async function (event) {
     event.preventDefault();
+    const currentPin = $("#currentPin").value;
     const pin = $("#newPin").value;
     const confirmation = $("#confirmPin").value;
-    if (pinConfigured) {
-      message("#appNotice", "PIN sekirite ou deja aktive. Chanjman PIN poko disponib nan vèsyon beta sa a.", "error");
+
+    if (pinConfigured && !/^[0-9]{4}$/.test(currentPin)) {
+      message("#appNotice", "Antre PIN aktyèl 4 chif ou a.", "error");
       return;
     }
     if (!/^[0-9]{4}$/.test(pin)) {
@@ -832,15 +836,31 @@ function wireForms() {
       message("#appNotice", "PIN lan ak konfimasyon an pa menm.", "error");
       return;
     }
+    if (pinConfigured && pin === currentPin) {
+      message("#appNotice", translateError("PIN_MUST_DIFFER_FROM_CURRENT"), "error");
+      return;
+    }
+
     const button = event.submitter;
+    const changing = pinConfigured;
     button.disabled = true;
     try {
-      await api("/api/pin/setup", { method: "POST", body: { pin: pin } });
+      if (changing) {
+        await api("/api/pin/change", {
+          method: "POST",
+          body: { current_pin: currentPin, new_pin: pin }
+        });
+      } else {
+        await api("/api/pin/setup", { method: "POST", body: { pin: pin } });
+      }
+      $("#currentPin").value = "";
       $("#newPin").value = "";
       $("#confirmPin").value = "";
       pinConfigured = true;
       renderPinState({ status: "fulfilled", value: { pin_configured: true } });
-      message("#appNotice", "PIN sekirite ou anrejistre. Chak transfè ap mande li.", "success");
+      message("#appNotice", changing
+        ? "PIN sekirite ou chanje avèk siksè."
+        : "PIN sekirite ou anrejistre. Chak transfè ap mande li.", "success");
     } catch (error) {
       message("#appNotice", translateError(error.code || error.message), "error");
     } finally {
