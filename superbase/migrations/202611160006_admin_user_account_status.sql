@@ -6,6 +6,29 @@ begin;
 alter table public.profiles
   add column if not exists updated_at timestamptz not null default now();
 
+-- Keep the migration self-contained when the role table was created manually
+-- before the canonical financial migrations were applied.
+create or replace function public.has_role_for_user(p_user_id uuid, p_role text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $
+  select
+    exists (
+      select 1 from public.user_roles ur
+       where ur.user_id = p_user_id and ur.role = p_role
+    )
+    or exists (
+      select 1 from public.user_roles ur
+       where ur.user_id = p_user_id and ur.role = 'super_admin'
+    );
+$;
+revoke all on function public.has_role_for_user(uuid,text) from public, anon, authenticated;
+grant execute on function public.has_role_for_user(uuid,text) to service_role;
+
+
 create or replace function public.admin_set_user_account_status(
   p_admin_user_id uuid,
   p_target_user_id uuid,
