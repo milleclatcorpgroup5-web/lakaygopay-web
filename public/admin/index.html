@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#071b2a">
   <title>LakayGoPay — Sant Kontwòl Admin</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/admin/admin.css?v=20261116-08">
+  <link rel="stylesheet" href="/admin/admin.css?v=20261117-01">
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -109,6 +109,23 @@
       </div>
       <span class="banner-status">TEST MODE</span>
     </section>
+
+
+    <section class="surface-card system-health-panel" aria-labelledby="systemHealthHeading">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">DYAGNOSTIK AK SIVEYANS</p>
+          <h2 id="systemHealthHeading">System Health · Sante sistèm</h2>
+          <p class="muted">Idantifye sèvis ki mache, sèvis ki echwe, etap la ak kòd dyagnostik la. Tès sa yo pa kreye tranzaksyon ni pa manyen balans.</p>
+        </div>
+        <button id="systemHealthRefresh" class="button button-quiet" type="button">Teste sèvis yo</button>
+      </div>
+      <div id="systemHealthNotice" class="notice" role="status" aria-live="polite">Siveyans lan ap kòmanse apre verifikasyon Admin.</div>
+      <strong id="systemHealthSummary" class="health-summary">Ap tann verifikasyon…</strong>
+      <div id="systemHealthList" class="system-health-list" aria-live="polite"></div>
+      <p id="systemHealthTimestamp" class="muted small"></p>
+    </section>
+
 
     <section class="section-head">
       <div><p class="eyebrow">VIZIBILITE PLATFÒM LAN</p><h2>Apèsi operasyonèl</h2></div>
@@ -467,6 +484,6 @@
     <footer class="admin-footer"><span>LakayGoPay · Sant Kontwòl</span><span>Entèfas administrasyon prive · Rejim tès</span></footer>
   </main>
 
-  <script type="module" src="/admin/admin.js?v=20261117-11"></script>
+  <script type="module" src="/admin/admin.js?v=20261117-01"></script>
 </body>
 </html>

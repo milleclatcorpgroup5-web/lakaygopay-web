@@ -153,3 +153,23 @@ button,input{font:inherit}
  .admin-mfa-actions{align-items:stretch}
  .admin-mfa-actions button{flex:1}
 }
+
+
+/* Read-only System Health diagnostics. */
+.system-health-panel{margin:20px 0 24px}
+.system-health-panel .section-head{align-items:flex-start;gap:18px}
+.system-health-panel .section-head h2{margin:0 0 7px}
+.system-health-panel .section-head p.muted{max-width:760px;font-size:11px;line-height:1.6;margin:0}
+.health-summary{display:block;margin:14px 0 10px;color:#d6e7ef;font-size:12px}
+.system-health-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.health-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 13px;border:1px solid var(--line);border-radius:11px;background:rgba(4,21,33,.35);min-width:0}
+.health-row-main{display:grid;gap:5px;min-width:0}
+.health-row-main strong{font-size:11px;color:#deebf1}
+.health-row-main small{font-size:9px;line-height:1.5;color:#8fa9b8;overflow-wrap:anywhere}
+.health-state{flex:0 0 auto;font-size:9px;font-weight:900;letter-spacing:.4px}
+.health-ok .health-state{color:var(--teal)}
+.health-warning .health-state{color:var(--amber)}
+.health-error .health-state{color:#ff9999}
+.health-disabled .health-state{color:#9acbfb}
+#systemHealthTimestamp{margin:10px 0 0}
+@media(max-width:760px){.system-health-panel{padding:14px}.system-health-panel .section-head{flex-direction:column}.system-health-list{grid-template-columns:1fr}.health-row{align-items:flex-start}}

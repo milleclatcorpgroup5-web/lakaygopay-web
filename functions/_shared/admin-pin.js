@@ -1,9 +1,11 @@
 
-import { config, json, requireUser, readJson, callRpc } from "./superbase.js";
+import { config, json, readJson, callRpc } from "./superbase.js";
 import { requireAdmin } from "./admin-auth.js";
 
 const PIN_PATTERN = /^\d{6}$/;
 const ITERATIONS = 600000;
+const SETUP_CHALLENGE_TTL_MS = 5 * 60 * 1000;
+const VERIFY_CHALLENGE_TTL_MS = 90 * 1000;
 const WEAK_PINS = new Set([
   "000000","111111","222222","333333","444444","555555","666666","777777","888888","999999",
   "123456","234567","345678","456789","654321","543210","432109","987654","121212","112233","123123"
@@ -15,25 +17,17 @@ function error(code, status, extra = {}) {
 function setupFailureDiagnostic(stage, err) {
   const message = String(err?.message || "");
   const status = Number(err?.httpStatus) || 0;
-
   if (message === "BACKEND_NOT_CONFIGURED") {
-    return stage === "LOAD_INSERT_CONFIG"
-      ? "INSERT_BACKEND_NOT_CONFIGURED"
-      : "BACKEND_NOT_CONFIGURED";
+    return stage === "LOAD_INSERT_CONFIG" ? "INSERT_BACKEND_NOT_CONFIGURED" : "BACKEND_NOT_CONFIGURED";
   }
-  if (message === "ADMIN_PIN_DATABASE_UNAVAILABLE" && status) {
-    return "CHECK_EXISTING_PIN_HTTP_" + status;
-  }
+  if (message === "ADMIN_PIN_DATABASE_UNAVAILABLE" && status) return "CHECK_EXISTING_PIN_HTTP_" + status;
   if (message === "BODY_TOO_LARGE") return "REQUEST_BODY_TOO_LARGE";
-
   if (stage === "READ_REQUEST") return "REQUEST_READ_FAILED";
   if (stage === "CHECK_EXISTING_PIN") {
     if (err?.name === "SyntaxError") return "CHECK_EXISTING_PIN_INVALID_RESPONSE";
     if (err?.name === "TypeError") return "CHECK_EXISTING_PIN_NETWORK_ERROR";
     return "CHECK_EXISTING_PIN_INTERNAL_ERROR";
   }
-  if (stage === "GENERATE_SALT") return "SALT_GENERATION_FAILED";
-  if (stage === "DERIVE_PIN_HASH") return "PIN_HASH_DERIVATION_FAILED";
   if (stage === "LOAD_INSERT_CONFIG") return "INSERT_CONFIG_LOAD_FAILED";
   if (stage === "INSERT_PIN" && err?.name === "TypeError") return "INSERT_PIN_NETWORK_ERROR";
   if (stage === "INSERT_PIN") return "INSERT_PIN_INTERNAL_ERROR";
@@ -57,20 +51,61 @@ function decodeJwtPayload(token) {
     return null;
   }
 }
-function constantTimeEqual(a, b) {
-  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
+function base64UrlEncode(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
-async function deriveHash(pin, saltHex, iterations) {
-  const material = await crypto.subtle.importKey(
-    "raw", new TextEncoder().encode(pin), "PBKDF2", false, ["deriveBits"]
+function base64UrlDecode(value) {
+  if (typeof value !== "string" || !/^[A-Za-z0-9_-]+$/.test(value)) return null;
+  try {
+    const normalized = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+    const binary = atob(normalized);
+    return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  } catch {
+    return null;
+  }
+}
+async function challengeSigningKey(env) {
+  const { secretKey } = config(env);
+  return crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secretKey),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"]
   );
-  const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt: fromHex(saltHex), iterations }, material, 256
+}
+async function signChallenge(payload, env) {
+  const payloadPart = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
+  const key = await challengeSigningKey(env);
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payloadPart));
+  return payloadPart + "." + base64UrlEncode(new Uint8Array(signature));
+}
+async function verifyChallenge(token, env) {
+  if (typeof token !== "string" || token.length > 4096) return null;
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  const signature = base64UrlDecode(parts[1]);
+  const payloadBytes = base64UrlDecode(parts[0]);
+  if (!signature || signature.length !== 32 || !payloadBytes) return null;
+  const key = await challengeSigningKey(env);
+  const valid = await crypto.subtle.verify(
+    "HMAC", key, signature, new TextEncoder().encode(parts[0])
   );
-  return toHex(new Uint8Array(bits));
+  if (!valid) return null;
+  try {
+    return JSON.parse(new TextDecoder().decode(payloadBytes));
+  } catch {
+    return null;
+  }
+}
+function validChallengeTimes(payload, ttl, now = Date.now()) {
+  return Number.isSafeInteger(payload?.issued_at) &&
+    Number.isSafeInteger(payload?.expires_at) &&
+    payload.issued_at <= now + 30000 &&
+    payload.expires_at > now &&
+    payload.expires_at - payload.issued_at <= ttl;
 }
 async function readAdminPin(env, userId) {
   const { url, secretKey } = config(env);
@@ -101,28 +136,115 @@ export async function adminPinStatus(request, env) {
     return error("ADMIN_PIN_DATABASE_UNAVAILABLE", 503);
   }
 }
+export async function adminPinSetupChallenge(request, env) {
+  const access = await requireAdmin(request, env);
+  if (access.error) return access.error;
+  try {
+    const existing = await readAdminPin(env, access.user.id);
+    if (existing) return error("ADMIN_PIN_ALREADY_SET", 409);
+
+    const saltHex = toHex(crypto.getRandomValues(new Uint8Array(16)));
+    const now = Date.now();
+    const challenge = await signChallenge({
+      version: 1,
+      purpose: "setup",
+      sub: access.user.id,
+      salt: saltHex,
+      iterations: ITERATIONS,
+      issued_at: now,
+      expires_at: now + SETUP_CHALLENGE_TTL_MS,
+      nonce: toHex(crypto.getRandomValues(new Uint8Array(16)))
+    }, env);
+    return json({ ok: true, challenge, salt: saltHex, iterations: ITERATIONS });
+  } catch (err) {
+    const diagnostic = err?.message === "ADMIN_PIN_DATABASE_UNAVAILABLE"
+      ? "CHECK_EXISTING_PIN_FAILED"
+      : "SETUP_CHALLENGE_FAILED";
+    console.error("ADMIN_PIN_SETUP_CHALLENGE_FAILED", JSON.stringify({
+      diagnostic,
+      error_name: String(err?.name || "Error").slice(0, 40),
+      http_status: Number(err?.httpStatus) || null
+    }));
+    return error("ADMIN_PIN_SETUP_FAILED", 503, { diagnostic });
+  }
+}
+
+export async function adminPinChallenge(request, env) {
+  const access = await requireAdmin(request, env);
+  if (access.error) return access.error;
+  try {
+    const claims = decodeJwtPayload(access.accessToken);
+    const sessionId = claims?.session_id;
+    if (
+      claims?.sub !== access.user.id ||
+      typeof sessionId !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId)
+    ) return error("ADMIN_PIN_SESSION_INVALID", 401);
+
+    const record = await readAdminPin(env, access.user.id);
+    if (!record?.pin_hash || !record?.pin_salt) return error("ADMIN_PIN_NOT_SET", 409);
+    const iterations = Number(record.pin_iterations);
+    if (
+      !Number.isInteger(iterations) || iterations !== ITERATIONS ||
+      !/^[a-f0-9]{32}$/.test(record.pin_salt) ||
+      !/^[a-f0-9]{64}$/.test(record.pin_hash)
+    ) return error("ADMIN_PIN_CONFIGURATION_INVALID", 503);
+    if (record.locked_until && Date.parse(record.locked_until) > Date.now()) {
+      return json({ error: "ADMIN_PIN_TEMPORARILY_LOCKED", locked_until: record.locked_until }, 423);
+    }
+
+    const now = Date.now();
+    const challenge = await signChallenge({
+      version: 1,
+      purpose: "verify",
+      sub: access.user.id,
+      session_id: sessionId,
+      salt: record.pin_salt,
+      iterations,
+      failed_attempts: Number(record.failed_attempts || 0),
+      last_verified_at: record.last_verified_at || null,
+      issued_at: now,
+      expires_at: now + VERIFY_CHALLENGE_TTL_MS,
+      nonce: toHex(crypto.getRandomValues(new Uint8Array(16)))
+    }, env);
+    return json({ ok: true, challenge, salt: record.pin_salt, iterations });
+  } catch (err) {
+    console.error("ADMIN_PIN_CHALLENGE_ISSUE_FAILED", JSON.stringify({
+      error_name: String(err?.name || "Error").slice(0, 40),
+      http_status: Number(err?.httpStatus) || null
+    }));
+    return error("ADMIN_PIN_SECURITY_UNAVAILABLE", 503);
+  }
+}
+
 export async function setupAdminPin(request, env) {
   const access = await requireAdmin(request, env);
   if (access.error) return access.error;
   let stage = "READ_REQUEST";
   try {
-    const body = await readJson(request, 2000);
+    const body = await readJson(request, 5000);
     const pin = typeof body?.pin === "string" ? body.pin : "";
-    const confirmation = typeof body?.pin_confirmation === "string" ? body.pin_confirmation : "";
+    const pinHash = typeof body?.pin_hash === "string" ? body.pin_hash : "";
+    const challengeToken = typeof body?.challenge === "string" ? body.challenge : "";
     if (!PIN_PATTERN.test(pin)) return error("ADMIN_PIN_MUST_BE_6_DIGITS", 400);
-    if (pin !== confirmation) return error("ADMIN_PIN_CONFIRMATION_MISMATCH", 400);
     if (WEAK_PINS.has(pin) || /^([0-9])\1{5}$/.test(pin)) return error("ADMIN_PIN_TOO_WEAK", 400);
+    if (!/^[a-f0-9]{64}$/.test(pinHash)) return error("ADMIN_PIN_HASH_INVALID", 400);
+
+    const challenge = await verifyChallenge(challengeToken, env);
+    if (
+      !challenge ||
+      challenge.version !== 1 ||
+      challenge.purpose !== "setup" ||
+      challenge.sub !== access.user.id ||
+      !validChallengeTimes(challenge, SETUP_CHALLENGE_TTL_MS) ||
+      challenge.iterations !== ITERATIONS ||
+      !/^[a-f0-9]{32}$/.test(challenge.salt) ||
+      !/^[a-f0-9]{32}$/.test(challenge.nonce)
+    ) return error("ADMIN_PIN_CHALLENGE_INVALID", 401);
 
     stage = "CHECK_EXISTING_PIN";
     const existing = await readAdminPin(env, access.user.id);
     if (existing) return error("ADMIN_PIN_ALREADY_SET", 409);
-
-    stage = "GENERATE_SALT";
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const saltHex = toHex(salt);
-
-    stage = "DERIVE_PIN_HASH";
-    const hash = await deriveHash(pin, saltHex, ITERATIONS);
 
     stage = "LOAD_INSERT_CONFIG";
     const { url, secretKey } = config(env);
@@ -138,8 +260,8 @@ export async function setupAdminPin(request, env) {
       },
       body: JSON.stringify({
         user_id: access.user.id,
-        pin_hash: hash,
-        pin_salt: saltHex,
+        pin_hash: pinHash,
+        pin_salt: challenge.salt,
         pin_iterations: ITERATIONS
       })
     });
@@ -185,7 +307,6 @@ export async function setupAdminPin(request, env) {
     return error("ADMIN_PIN_SETUP_FAILED", 503, { diagnostic });
   }
 }
-
 export async function requireAdminPinSession(request, env) {
   const access = await requireAdmin(request, env);
   if (access.error) return access;
@@ -223,9 +344,22 @@ export async function verifyAdminPin(request, env) {
       typeof sessionId !== "string" ||
       !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId)
     ) return error("ADMIN_PIN_SESSION_INVALID", 401);
-    const body = await readJson(request, 1000);
-    const pin = typeof body?.pin === "string" ? body.pin : "";
-    if (!PIN_PATTERN.test(pin)) return error("ADMIN_PIN_MUST_BE_6_DIGITS", 400);
+
+    const body = await readJson(request, 5000);
+    const challengeToken = typeof body?.challenge === "string" ? body.challenge : "";
+    const responseHex = typeof body?.response === "string" ? body.response : "";
+    if (!/^[a-f0-9]{64}$/.test(responseHex)) return error("ADMIN_PIN_RESPONSE_INVALID", 400);
+
+    const challenge = await verifyChallenge(challengeToken, env);
+    if (
+      !challenge ||
+      challenge.version !== 1 ||
+      challenge.purpose !== "verify" ||
+      challenge.sub !== access.user.id ||
+      challenge.session_id !== sessionId ||
+      !validChallengeTimes(challenge, VERIFY_CHALLENGE_TTL_MS) ||
+      !/^[a-f0-9]{32}$/.test(challenge.nonce)
+    ) return error("ADMIN_PIN_CHALLENGE_INVALID", 401);
 
     const record = await readAdminPin(env, access.user.id);
     if (!record?.pin_hash || !record?.pin_salt) return error("ADMIN_PIN_NOT_SET", 409);
@@ -234,12 +368,34 @@ export async function verifyAdminPin(request, env) {
     }
     const iterations = Number(record.pin_iterations);
     if (
-      !Number.isInteger(iterations) || iterations < 600000 || iterations > 1000000 ||
-      !/^[a-f0-9]{32}$/.test(record.pin_salt) || !/^[a-f0-9]{64}$/.test(record.pin_hash)
+      !Number.isInteger(iterations) || iterations !== ITERATIONS ||
+      !/^[a-f0-9]{32}$/.test(record.pin_salt) ||
+      !/^[a-f0-9]{64}$/.test(record.pin_hash)
     ) return error("ADMIN_PIN_CONFIGURATION_INVALID", 503);
 
-    const candidate = await deriveHash(pin, record.pin_salt, iterations);
-    const valid = constantTimeEqual(candidate, record.pin_hash);
+    // A successful or failed RPC changes one of these values. Requiring the
+    // snapshot to match makes a challenge unusable after its first attempt.
+    if (
+      challenge.salt !== record.pin_salt ||
+      challenge.iterations !== iterations ||
+      challenge.failed_attempts !== Number(record.failed_attempts || 0) ||
+      challenge.last_verified_at !== (record.last_verified_at || null)
+    ) return error("ADMIN_PIN_CHALLENGE_EXPIRED", 409);
+
+    const pinKey = await crypto.subtle.importKey(
+      "raw",
+      fromHex(record.pin_hash),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+    const valid = await crypto.subtle.verify(
+      "HMAC",
+      pinKey,
+      fromHex(responseHex),
+      new TextEncoder().encode(challengeToken)
+    );
+
     const attempt = await callRpc(env, "record_admin_pin_attempt", {
       p_user_id: access.user.id,
       p_success: valid,
