@@ -12,7 +12,7 @@ function config(env) {
 }
 
 async function requireUser(request, env) {
-  const { url, publishableKey } = config(env);
+  const { url, publishableKey, secretKey } = config(env);
   const authorization = request.headers.get("authorization") || "";
   const match = authorization.match(/^Bearer\s+(.+)$/i);
   if (!match) return { error: json({ error: "AUTH_REQUIRED" }, 401) };
