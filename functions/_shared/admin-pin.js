@@ -12,6 +12,33 @@ const WEAK_PINS = new Set([
 function error(code, status, extra = {}) {
   return json({ error: code, ...extra }, status);
 }
+function setupFailureDiagnostic(stage, err) {
+  const message = String(err?.message || "");
+  const status = Number(err?.httpStatus) || 0;
+
+  if (message === "BACKEND_NOT_CONFIGURED") {
+    return stage === "LOAD_INSERT_CONFIG"
+      ? "INSERT_BACKEND_NOT_CONFIGURED"
+      : "BACKEND_NOT_CONFIGURED";
+  }
+  if (message === "ADMIN_PIN_DATABASE_UNAVAILABLE" && status) {
+    return "CHECK_EXISTING_PIN_HTTP_" + status;
+  }
+  if (message === "BODY_TOO_LARGE") return "REQUEST_BODY_TOO_LARGE";
+
+  if (stage === "READ_REQUEST") return "REQUEST_READ_FAILED";
+  if (stage === "CHECK_EXISTING_PIN") {
+    if (err?.name === "SyntaxError") return "CHECK_EXISTING_PIN_INVALID_RESPONSE";
+    if (err?.name === "TypeError") return "CHECK_EXISTING_PIN_NETWORK_ERROR";
+    return "CHECK_EXISTING_PIN_INTERNAL_ERROR";
+  }
+  if (stage === "GENERATE_SALT") return "SALT_GENERATION_FAILED";
+  if (stage === "DERIVE_PIN_HASH") return "PIN_HASH_DERIVATION_FAILED";
+  if (stage === "LOAD_INSERT_CONFIG") return "INSERT_CONFIG_LOAD_FAILED";
+  if (stage === "INSERT_PIN" && err?.name === "TypeError") return "INSERT_PIN_NETWORK_ERROR";
+  if (stage === "INSERT_PIN") return "INSERT_PIN_INTERNAL_ERROR";
+  return "SETUP_UNEXPECTED_STAGE_ERROR";
+}
 function toHex(bytes) {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
@@ -90,11 +117,16 @@ export async function setupAdminPin(request, env) {
     const existing = await readAdminPin(env, access.user.id);
     if (existing) return error("ADMIN_PIN_ALREADY_SET", 409);
 
+    stage = "GENERATE_SALT";
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const saltHex = toHex(salt);
+
+    stage = "DERIVE_PIN_HASH";
     const hash = await deriveHash(pin, saltHex, ITERATIONS);
-    stage = "INSERT_PIN";
+
+    stage = "LOAD_INSERT_CONFIG";
     const { url, secretKey } = config(env);
+    stage = "INSERT_PIN";
     const response = await fetch(url + "/rest/v1/admin_security", {
       method: "POST",
       headers: {
@@ -121,10 +153,18 @@ export async function setupAdminPin(request, env) {
         "23505": "UNIQUE_CONSTRAINT",
         "23503": "FOREIGN_KEY_CONSTRAINT",
         "23514": "CHECK_CONSTRAINT",
+        "23502": "NOT_NULL_CONSTRAINT",
         "42501": "PERMISSION_DENIED",
+        "42P01": "TABLE_MISSING",
+        "42703": "COLUMN_MISSING",
         "PGRST116": "POSTGREST_RESPONSE",
-        "PGRST204": "POSTGREST_SCHEMA_CACHE"
-      })[rawCode] || "DATABASE_REJECTED_INSERT";
+        "PGRST204": "COLUMN_NOT_IN_SCHEMA_CACHE",
+        "PGRST205": "TABLE_NOT_IN_SCHEMA_CACHE"
+      })[rawCode] || (response.status === 401
+        ? "INVALID_SERVICE_ROLE_KEY"
+        : response.status === 403
+          ? "DATABASE_PERMISSION_DENIED"
+          : "DATABASE_REJECTED_INSERT");
       const diagnostic = "INSERT_HTTP_" + response.status + "_" + safeCode;
       console.error("ADMIN_PIN_SETUP_INSERT_FAILED", JSON.stringify({
         status: response.status,
@@ -135,12 +175,13 @@ export async function setupAdminPin(request, env) {
     return json({ ok: true, pin_configured: true });
   } catch (err) {
     if (err?.message === "INVALID_JSON") return error("INVALID_JSON", 400);
-    let diagnostic = "SETUP_INTERNAL_ERROR";
-    if (err?.message === "BACKEND_NOT_CONFIGURED") diagnostic = "BACKEND_NOT_CONFIGURED";
-    else if (err?.message === "ADMIN_PIN_DATABASE_UNAVAILABLE") {
-      diagnostic = "CHECK_EXISTING_PIN_HTTP_" + (Number(err.httpStatus) || "UNKNOWN");
-    } else if (stage === "READ_REQUEST") diagnostic = "REQUEST_READ_FAILED";
-    console.error("ADMIN_PIN_SETUP_EXCEPTION", JSON.stringify({ stage, diagnostic }));
+    const diagnostic = setupFailureDiagnostic(stage, err);
+    console.error("ADMIN_PIN_SETUP_EXCEPTION", JSON.stringify({
+      stage,
+      diagnostic,
+      error_name: String(err?.name || "Error").slice(0, 40),
+      http_status: Number(err?.httpStatus) || null
+    }));
     return error("ADMIN_PIN_SETUP_FAILED", 503, { diagnostic });
   }
 }
