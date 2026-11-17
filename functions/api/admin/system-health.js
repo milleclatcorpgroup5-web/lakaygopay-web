@@ -2,7 +2,7 @@ import { json, config } from "../../_shared/superbase.js";
 import { requireAdminPinSession } from "../../_shared/admin-pin.js";
 
 const TABLE_CHECKS = [
-  { id: "profiles", label: "Pwofil itilizatè", resource: "profiles?select=id,account_status&limit=0" },
+  { id: "profiles", label: "Supabase DB / pwofil itilizatè", resource: "profiles?select=id,account_status&limit=0" },
   { id: "admin_roles", label: "Wòl administratè", resource: "user_roles?select=user_id,role&limit=0" },
   {
     id: "admin_pin_storage",
@@ -141,6 +141,7 @@ export async function onRequestGet({ request, env }) {
       { id: "backend", label: "Konfigirasyon backend", status: "ok", stage: "CLOUDFLARE_ENV", diagnostic: "REQUIRED_BINDINGS_PRESENT" },
       authCheck,
       ...tableChecks,
+      { id: "admin_pin_session", label: "PIN Admin / sesyon aktyèl", status: "ok", stage: "ADMIN_PIN_SESSION", diagnostic: "PIN_HASH_VERIFIED_FOR_CURRENT_SESSION" },
       {
         id: "real_payments",
         label: "Peman reyèl / retrè ekstèn",
