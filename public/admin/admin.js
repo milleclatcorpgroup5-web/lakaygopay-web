@@ -211,7 +211,9 @@ function renderSystemHealth(data) {
     detail.textContent = [
       check.diagnostic || "NO_DIAGNOSTIC",
       check.stage || "",
-      check.http_status ? "HTTP " + check.http_status : ""
+      check.http_status ? "HTTP " + check.http_status : "",
+      check.signup_enabled === true ? "ENSKRIPSYON OUVÈ" : check.signup_enabled === false ? "ENSKRIPSYON FÈMEN" : "",
+      check.email_confirmation_required === true ? "KONFIMASYON IMÈL OBLIGATWA" : ""
     ].filter(Boolean).join(" · ");
     main.append(title, detail);
     const state = document.createElement("span");
@@ -661,7 +663,10 @@ async function boot() {
     try {
       await completePinVerification(pinGateSession, pin);
     } catch (error) {
-      setNotice("#pinNotice", explainError(error.code || error.message), "error");
+      setNotice("#pinNotice",
+        explainError(error.code || error.message) +
+        (error.diagnostic ? " (Dyagnostik: " + error.diagnostic + ")" : ""),
+        "error");
       $("#adminPinInput").value = "";
     } finally {
       button.disabled = false;
