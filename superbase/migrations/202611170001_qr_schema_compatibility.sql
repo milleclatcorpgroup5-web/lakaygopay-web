@@ -125,7 +125,14 @@ begin
     return v_existing;
   end if;
 
-  if to_regclass('public.merchant_payment_requests') is not null
+  if exists (
+    select 1
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public'
+       and c.relname = 'payment_requests'
+       and c.relkind = 'v'
+  )
   then
     insert into public.merchant_payment_requests(
       merchant_id, created_by_user_id, amount, currency, description,
@@ -374,7 +381,14 @@ begin
      set status = 'paid', paid_ledger_transaction_id = v_ledger_id
    where id = v_request.id;
 
-  if to_regclass('public.merchant_payment_requests') is not null then
+  if exists (
+    select 1
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public'
+       and c.relname = 'payment_requests'
+       and c.relkind = 'v'
+  ) then
     update public.merchant_payment_requests
        set paid_at = now(), updated_at = now()
      where id = v_request.id;
