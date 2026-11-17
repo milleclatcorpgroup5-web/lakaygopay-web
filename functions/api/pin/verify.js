@@ -70,12 +70,29 @@ export async function onRequestPost({ request, env }) {
     const candidate = await derivePinHash(body.pin, record.pin_salt, iterations);
     const valid = constantTimeEqual(candidate, record.pin_hash);
 
-    await callRpc(env, "record_pin_attempt", {
+    const attempt = await callRpc(env, "record_pin_attempt", {
       p_user_id: auth.user.id,
       p_success: valid,
     });
-
-    if (!valid) return json({ error: "PIN_INVALID" }, 401);
+    if (
+      !Array.isArray(attempt) ||
+      attempt.length !== 1 ||
+      typeof attempt[0]?.is_locked !== "boolean"
+    ) {
+      return json({ error: "PIN_SECURITY_UNAVAILABLE" }, 503);
+    }
+    if (attempt[0].is_locked) {
+      return json({
+        error: "PIN_TEMPORARILY_LOCKED",
+        locked_until: attempt[0].locked_until || null
+      }, 423);
+    }
+    if (!valid) {
+      return json({
+        error: "PIN_INVALID",
+        attempts_remaining: Math.max(0, 3 - Number(attempt[0].failed_attempts || 0))
+      }, 401);
+    }
     return json({ ok: true, pin_verified: true });
   } catch {
     return json({ error: "PIN_VERIFICATION_UNAVAILABLE" }, 503);
