@@ -246,4 +246,88 @@ revoke all on function public.admin_set_user_account_status(uuid,uuid,text,text)
 grant execute on function public.admin_set_user_account_status(uuid,uuid,text,text)
   to service_role;
 
+
+-- A suspended account must also be blocked by direct Supabase REST/RLS access,
+-- not only by the Cloudflare Worker API. This helper reveals only the caller's
+-- own active/inactive state.
+create or replace function public.is_current_user_active()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $active_user$
+  select exists (
+    select 1
+      from public.profiles p
+     where p.id = auth.uid()
+       and p.account_status = 'active'
+  );
+$active_user$;
+
+revoke all on function public.is_current_user_active() from public, anon;
+grant execute on function public.is_current_user_active() to authenticated, service_role;
+
+-- Restrictive policies are ANDed with the existing ownership/role policies.
+-- Thus an inactive profile cannot read or mutate any client-facing financial
+-- or identity table even while an old Auth JWT remains valid.
+do $active_guard$
+declare
+  v_table text;
+  v_policy text;
+  v_kind "char";
+begin
+  foreach v_table in array array[
+    'profiles','user_roles','merchants','merchant_members','wallets',
+    'ledger_transactions','ledger_entries','transfers','deposit_requests',
+    'withdrawal_requests','withdrawal_approvals','platform_settings',
+    'payment_requests','merchant_payment_records','notifications',
+    'security_events','audit_logs'
+  ]
+  loop
+    select c.relkind into v_kind
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public' and c.relname = v_table;
+
+    if v_kind in ('r','p') then
+      execute format('alter table public.%I enable row level security', v_table);
+      v_policy := v_table || '_active_user_guard';
+      if not exists (
+        select 1
+          from pg_policies p
+         where p.schemaname = 'public'
+           and p.tablename = v_table
+           and p.policyname = v_policy
+      ) then
+        execute format(
+          'create policy %I on public.%I as restrictive for all to authenticated using (public.is_current_user_active()) with check (public.is_current_user_active())',
+          v_policy, v_table
+        );
+      end if;
+    end if;
+    v_kind := null;
+  end loop;
+end;
+$active_guard$;
+
+-- Never allow clients to change their own access state or directly approve
+-- their merchant account. Profile editing is limited to fields used by the UI.
+revoke update on table public.profiles from public, anon, authenticated;
+grant update (full_name, preferred_language) on table public.profiles to authenticated;
+revoke insert, update, delete on table public.merchants from public, anon, authenticated;
+
+-- QR tokens are obtained only through authenticated, server-side lookup RPCs.
+-- The compatibility relation may be a table or a view depending on the DB schema.
+revoke all on table public.payment_requests from public, anon, authenticated;
+do $qr_lock$
+begin
+  if to_regclass('public.merchant_payment_requests') is not null then
+    execute 'alter table public.merchant_payment_requests enable row level security';
+    execute 'revoke all on table public.merchant_payment_requests from public, anon, authenticated';
+  end if;
+end;
+$qr_lock$;
+
+
 commit;
