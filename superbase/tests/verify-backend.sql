@@ -8,10 +8,20 @@ select 'required_relation' as check_type, name as object_name,
 from (values
   ('profiles'), ('user_roles'), ('wallets'), ('wallet_balances'),
   ('ledger_transactions'), ('ledger_entries'), ('transfers'), ('merchants'),
-  ('payment_requests'), ('merchant_payment_records'), ('merchant_payment_requests'),
+  ('payment_requests'), ('merchant_payment_records'),
   ('withdrawal_requests'), ('withdrawal_approvals'), ('idempotency_keys'),
   ('notifications'), ('audit_logs'), ('user_security'), ('admin_security')
 ) objects(name);
+
+-- QR storage can be either the original payment_requests table or the
+-- compatibility view backed by merchant_payment_requests.
+select 'qr_request_storage' as check_type,
+       (to_regclass('public.payment_requests') is not null
+        and (to_regclass('public.merchant_payment_requests') is not null
+             or exists (
+               select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace
+                where n.nspname='public' and c.relname='payment_requests' and c.relkind='r'
+             ))) as passed;
 
 -- 2. RLS must be enabled on sensitive BASE TABLES.
 -- payment_requests is intentionally omitted here because it can be a simple
@@ -26,7 +36,7 @@ where n.nspname = 'public'
     'profiles','user_roles','merchants','merchant_members','wallets',
     'ledger_transactions','ledger_entries','transfers','idempotency_keys',
     'deposit_requests','withdrawal_requests','withdrawal_approvals',
-    'merchant_payment_requests','merchant_payment_records','otp_challenges',
+    'payment_requests','merchant_payment_requests','merchant_payment_records','otp_challenges',
     'security_events','notifications','audit_logs','user_security','admin_security'
   )
 order by c.relname;
