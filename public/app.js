@@ -47,6 +47,15 @@ function statusText(value) {
   return map[value] || value || "Pa disponib";
 }
 function translateError(code) {
+  const normalized = String(code || "").trim().toLowerCase();
+  if (normalized === "invalid login credentials" ||
+      normalized === "invalid_credentials" ||
+      normalized === "invalid_grant") {
+    return "Supabase Production pa valide konbinezon imèl/modpas sa a. Verifye imèl la; si ou pa sonje modpas la, itilize “Mwen bliye modpas mwen”. Pa kreye yon lòt kont ak menm imèl la.";
+  }
+  if (normalized === "email not confirmed" || normalized === "email_not_confirmed") {
+    return "Ou dwe konfime imèl kont sa a anvan ou konekte. Verifye bwat resepsyon ak spam ou.";
+  }
   const map = {
     AUTH_REQUIRED: "Konekte pou kontinye.",
     INVALID_OR_EXPIRED_SESSION: "Sesyon an ekspire. Konekte ankò.",
@@ -95,7 +104,7 @@ function translateError(code) {
     FX_AMOUNT_INVALID: "Antre yon montan valab pou kalkil la.",
     FX_QUOTE_UNAVAILABLE: "Estimasyon echanj la pa disponib kounye a."
   };
-  return map[code] || code || "Yon erè rive. Eseye ankò.";
+  return map[code] || map[String(code || "").toUpperCase()] || code || "Yon erè rive. Eseye ankò.";
 }
 async function sessionNow() {
   const result = await supabase.auth.getSession();
@@ -686,7 +695,7 @@ function wireForms() {
     message("#authNotice", "Ap verifye kont ou…", "");
     try {
       const result = await supabase.auth.signInWithPassword({
-        email: $("#loginEmail").value.trim(),
+        email: $("#loginEmail").value.trim().toLowerCase(),
         password: $("#loginPassword").value
       });
       if (result.error) throw result.error;
@@ -1232,7 +1241,7 @@ async function init() {
   const session = await sessionNow();
   await syncSession(session);
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js?v=20261116-16").catch(function () {});
+    navigator.serviceWorker.register("/service-worker.js?v=20261117-01").catch(function () {});
   }
 }
 init().catch(function (error) {

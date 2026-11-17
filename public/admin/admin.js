@@ -25,6 +25,12 @@ function displayRole(role) {
   return names[role] || role;
 }
 function explainError(code) {
+  const normalized = String(code || "").trim().toLowerCase();
+  if (normalized === "invalid login credentials" ||
+      normalized === "invalid_credentials" ||
+      normalized === "invalid_grant") {
+    return "Supabase Production pa valide konbinezon imèl/modpas sa a. Verifye imèl la oswa itilize rekiperasyon modpas la.";
+  }
   const messages = {
     ADMIN_ACCESS_DENIED: "Kont sa a pa gen wòl administratè. Aksè a refize.",
     ADMIN_ROLE_SYSTEM_NOT_READY: "Sistèm wòl administratè a poko disponib nan bazdone a.",
@@ -481,7 +487,7 @@ async function boot() {
     setNotice("#loginNotice", "Ap verifye imèl ak modpas la…", "");
     try {
       const result = await supabase.auth.signInWithPassword({
-        email: $("#emailInput").value.trim(),
+        email: $("#emailInput").value.trim().toLowerCase(),
         password: $("#passwordInput").value
       });
       if (result.error) throw result.error;
