@@ -11,7 +11,7 @@ const WEAK_PINS = new Set([
   "123456","234567","345678","456789","654321","543210","432109","987654","121212","112233","123123"
 ]);
 
-function error(function error(code, status, extra = {}) {
+function error(code, status, extra = {}) {
   return json({ error: code, ...extra }, status);
 }
 function setupFailureDiagnostic(stage, err) {
@@ -33,7 +33,7 @@ function setupFailureDiagnostic(stage, err) {
   if (stage === "INSERT_PIN") return "INSERT_PIN_INTERNAL_ERROR";
   return "SETUP_UNEXPECTED_STAGE_ERROR";
 }
-function toHex(function toHex(bytes) {
+function toHex(bytes) {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 function fromHex(value) {
@@ -113,7 +113,7 @@ function validChallengeTimes(payload, ttl, now = Date.now()) {
     payload.expires_at > now &&
     payload.expires_at - payload.issued_at <= ttl;
 }
-async function readAdminPin(async function readAdminPin(env, userId) {
+async function readAdminPin(env, userId) {
   const { url, secretKey } = config(env);
   const response = await fetch(
     url + "/rest/v1/admin_security?user_id=eq." + encodeURIComponent(userId) +
