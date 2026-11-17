@@ -318,10 +318,13 @@ grant update (full_name, preferred_language) on table public.profiles to authent
 revoke insert, update, delete on table public.merchants from public, anon, authenticated;
 
 -- QR tokens are obtained only through authenticated, server-side lookup RPCs.
--- The compatibility relation may be a table or a view depending on the DB schema.
-revoke all on table public.payment_requests from public, anon, authenticated;
+-- At this point payment_requests may not exist yet; QR migration 170001 may
+-- create its compatibility view afterwards.
 do $qr_lock$
 begin
+  if to_regclass('public.payment_requests') is not null then
+    execute 'revoke all on table public.payment_requests from public, anon, authenticated';
+  end if;
   if to_regclass('public.merchant_payment_requests') is not null then
     execute 'alter table public.merchant_payment_requests enable row level security';
     execute 'revoke all on table public.merchant_payment_requests from public, anon, authenticated';
