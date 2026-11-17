@@ -31,7 +31,10 @@ export async function requireAdminAal2(request, env) {
   if (auth.error) return auth;
   const pinned = await requireAdminPinSession(request, env);
   if (pinned.error) return pinned;
-  const isAdmin = await callRpc(env, "is_admin_user", { p_user_id: auth.user.id });
+  const isAdmin = await callRpc(env, "has_role_for_user", {
+    p_user_id: auth.user.id,
+    p_role: "admin"
+  });
   if (isAdmin !== true) return { error: json({ error: "ADMIN_ROLE_REQUIRED" }, 403) };
   return auth;
 }
