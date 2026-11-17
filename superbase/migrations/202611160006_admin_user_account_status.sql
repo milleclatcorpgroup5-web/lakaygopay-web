@@ -88,4 +88,8 @@ revoke all on function public.admin_set_user_account_status(uuid,uuid,text,text)
 grant execute on function public.admin_set_user_account_status(uuid,uuid,text,text)
   to service_role;
 
+-- The Worker checks the verified admin role through this existing helper.
+-- It is not exposed to anon/authenticated clients.
+grant execute on function public.has_role_for_user(uuid,text) to service_role;
+
 commit;
