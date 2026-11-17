@@ -103,7 +103,7 @@ where n.nspname = 'public'
     'create_merchant_payment_request','pay_merchant_payment_request',
     'get_payment_request_details','record_withdrawal_approval',
     'set_merchant_status','run_ledger_integrity_check',
-    'create_test_credit','store_user_pin_hash','record_pin_attempt',
+    'create_test_credit','store_user_pin_hash','record_customer_pin_attempt',
     'record_admin_pin_attempt','admin_set_user_account_status'
   )
 order by p.proname;
