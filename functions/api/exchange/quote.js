@@ -52,47 +52,67 @@ async function fetchHtml(url) {
 async function readBrhRates() {
   const [homeHtml, bankHtml] = await Promise.all([
     fetchHtml(BRH_HOME),
-    fetchHtml(BRH_BANK_RATES)
+    fetchHtml(BRH_BANK_RATES).catch(() => "")
   ]);
 
-  const bankDateMatch = bankHtml.match(/Taux affich[eé]s par les banques\s*:\s*([^<\r\n]+)/i);
   const marketIndex = homeHtml.toLowerCase().indexOf("marché des changes");
-  const homeMarketSection = marketIndex >= 0 ? homeHtml.slice(marketIndex, marketIndex + 6500) : "";
-  const homeDateMatch = homeMarketSection.match(/(\d{1,2}\s+[A-Za-zÀ-ÿ]+\s+\d{4})/);
-  const bankDate = parseFrenchDate(cleanText(bankDateMatch?.[1]));
-  const homeDate = parseFrenchDate(cleanText(homeDateMatch?.[1]));
+  if (marketIndex < 0) throw new Error("FX_RATE_PARSE_FAILED");
+  const homeMarketSection = homeHtml.slice(marketIndex, marketIndex + 8000);
+  const homeText = cleanText(homeMarketSection);
   const today = localToday();
-  if (!bankDate || !homeDate || bankDate !== today || homeDate !== today) {
+  const homeDateMatch = homeText.match(/(\\d{1,2}\\s+[A-Za-zÀ-ÿ]+\\s+\\d{4})/);
+  const homeDate = parseFrenchDate(homeDateMatch?.[1]);
+  if (!homeDate || homeDate !== today) {
     throw new Error("FX_RATES_NOT_CURRENT");
   }
 
-  const rows = [...bankHtml.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
+  // Prefer the BUH row on the BRH bank-rate page only when that page carries
+  // today's date. The BRH homepage sometimes updates before the bank table.
+  const bankDateMatch = bankHtml.match(/Taux affich[eé]s par les banques\\s*:\\s*([^<\\r\\n]+)/i);
+  const bankDate = parseFrenchDate(cleanText(bankDateMatch?.[1]));
   let usdBuy = null;
   let usdSell = null;
-  for (const row of rows) {
-    const cells = [...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)]
-      .map((cell) => cleanText(cell[1]));
-    if (cells[0]?.toUpperCase() === "BUH") {
-      usdBuy = numeric(cells[2]);
-      usdSell = numeric(cells[3]);
-      break;
+  let usdSource = "";
+
+  if (bankDate === today) {
+    const rows = [...bankHtml.matchAll(/<tr\\b[^>]*>([\\s\\S]*?)<\\/tr>/gi)];
+    for (const row of rows) {
+      const cells = [...row[1].matchAll(/<t[dh]\\b[^>]*>([\\s\\S]*?)<\\/t[dh]>/gi)]
+        .map((cell) => cleanText(cell[1]));
+      if (cells[0]?.toUpperCase() === "BUH") {
+        usdBuy = numeric(cells[2]);
+        usdSell = numeric(cells[3]);
+        break;
+      }
     }
+    if (usdBuy && usdSell) usdSource = "BUH · tableau bancaire BRH";
   }
 
-  const euroMatch = homeMarketSection.match(/>\s*Euro\s*<\/[a-z0-9]+>[\s\S]{0,900}?Achat\s*:\s*([0-9.]+)[\s\S]{0,250}?Vente\s*:\s*([0-9.]+)/i) ||
-    homeMarketSection.match(/Euro[\s\S]{0,700}?Achat\s*:\s*([0-9.]+)[\s\S]{0,250}?Vente\s*:\s*([0-9.]+)/i);
+  // Current BRH homepage fallback: use the published maximum bank purchase
+  // and maximum bank sale rates for today's date, never yesterday's table.
+  if (!usdBuy || !usdSell) {
+    const buyRange = homeText.match(/([0-9.]+)\\s*\\/\\s*([0-9.]+)\\s+Maximum\\s*\\/\\s*Minimum\\s+Taux d'achat affiché/i);
+    const sellRange = homeText.match(/([0-9.]+)\\s*\\/\\s*([0-9.]+)\\s+Maximum\\s*\\/\\s*Minimum\\s+Taux de vente affiché/i);
+    usdBuy = numeric(buyRange?.[1]);
+    usdSell = numeric(sellRange?.[1]);
+    if (usdBuy && usdSell) usdSource = "BRH · maximum des taux bancaires affichés";
+  }
+
+  const euroMatch = homeText.match(/Euro\\s+Achat\\s*:\\s*([0-9.]+)\\s+Vente\\s*:\\s*([0-9.]+)/i);
   const eurBuy = numeric(euroMatch?.[1]);
   const eurSell = numeric(euroMatch?.[2]);
-
-  const usdRefMatch = homeMarketSection.match(/([0-9.]+)\s*<\/p>\s*<p>Taux de Référence/i);
+  const usdRefMatch = homeText.match(/([0-9.]+)\\s+Taux de Référence/i);
   const usdReference = numeric(usdRefMatch?.[1]);
+
   if (!usdBuy || !usdSell || !eurBuy || !eurSell || !usdReference) {
     throw new Error("FX_RATE_PARSE_FAILED");
   }
+
+  const usedBankPage = bankDate === today && usdSource.startsWith("BUH");
   return {
     as_of: today,
-    source: "BRH · taux affichés BUH + BRH/DAI",
-    source_urls: [BRH_BANK_RATES, BRH_HOME],
+    source: usdSource + " · BRH/DAI EUR et taux de référence",
+    source_urls: usedBankPage ? [BRH_BANK_RATES, BRH_HOME] : [BRH_HOME],
     rates: {
       USD: { buy: usdBuy, sell: usdSell, reference: usdReference },
       EUR: { buy: eurBuy, sell: eurSell }
