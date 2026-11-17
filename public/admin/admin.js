@@ -50,7 +50,11 @@ function explainError(code) {
     ADMIN_PIN_CHALLENGE_EXPIRED: "Demann sekirite a ekspire oswa li deja itilize. Eseye ankò.",
     ADMIN_PIN_HASH_INVALID: "Kalkil hash PIN lan pa pwodwi yon rezilta valab.",
     ADMIN_PIN_RESPONSE_INVALID: "Repons kriptografik la pa valab.",
-    PIN_HASH_DERIVATION_FAILED: "Navigatè a pa t kapab kalkile hash PIN lan. Mete navigatè a ajou epi eseye ankò.",
+    PIN_HASH_DERIVATION_FAILED: "Navigatè a pa t kapab kalkile hash PIN lan.",
+    PIN_CRYPTO_API_UNAVAILABLE: "Navigatè a pa ofri sèvis kriptografik sekirize. Louvri sit la sou HTTPS epi mete navigatè a ajou.",
+    PIN_HASH_ALGORITHM_UNSUPPORTED: "Navigatè a pa sipòte algoritm sekirite PIN lan.",
+    PIN_HASH_DERIVATION_RUNTIME_ERROR: "Kalkil hash PIN lan echwe nan navigatè a. Dyagnostik teknik la montre etap ki echwe a.",
+    ADMIN_SYSTEM_HEALTH_UNAVAILABLE: "Siveyans sistèm nan pa disponib kounye a.",
     ADMIN_PIN_REQUIRED: "Pou pwoteje sesyon an, antre PIN Admin 6 chif ou ankò.",
     AUTH_REQUIRED: "Konekte pou kontinye.",
     INVALID_OR_EXPIRED_SESSION: "Sesyon an ekspire. Konekte ankò.",
@@ -188,7 +192,67 @@ async function loadOverview(session) {
   setNotice("#dashboardNotice", "Aksè admin konfime sou sèvè a. PIN Admin verifye.", "success");
   await updateMfaStatus().catch(() => {});
   await loadAdminRecords("users");
+  await loadSystemHealth(session);
 }
+
+function renderSystemHealth(data) {
+  const list = $("#systemHealthList");
+  if (!list) return;
+  list.replaceChildren();
+  const labels = { ok: "OK", warning: "AVÈTISMAN", error: "ERÈ", disabled: "DEZAKTIVE" };
+  (data.checks || []).forEach((check) => {
+    const row = document.createElement("article");
+    row.className = "health-row health-" + (check.status || "error");
+    const main = document.createElement("div");
+    main.className = "health-row-main";
+    const title = document.createElement("strong");
+    title.textContent = check.label || check.id || "Sèvis";
+    const detail = document.createElement("small");
+    detail.textContent = [
+      check.diagnostic || "NO_DIAGNOSTIC",
+      check.stage || "",
+      check.http_status ? "HTTP " + check.http_status : ""
+    ].filter(Boolean).join(" · ");
+    main.append(title, detail);
+    const state = document.createElement("span");
+    state.className = "health-state";
+    state.textContent = labels[check.status] || "ENKONI";
+    row.append(main, state);
+    list.append(row);
+  });
+  const counts = data.counts || {};
+  $("#systemHealthSummary").textContent =
+    (counts.ok || 0) + " OK · " + (counts.warning || 0) + " Avètisman · " +
+    (counts.error || 0) + " Erè · " + (counts.disabled || 0) + " Dezaktive";
+  $("#systemHealthTimestamp").textContent = data.checked_at
+    ? "Dènye verifikasyon: " + new Date(data.checked_at).toLocaleString("fr-HT")
+    : "";
+  const notice = data.overall === "error"
+    ? "Gen sèvis ki an erè. Gade kòd dyagnostik yo anba a."
+    : data.overall === "warning"
+      ? "Gen avètisman ki mande verifikasyon, espesyalman enskripsyon."
+      : "Sèvis ki teste yo disponib. Peman reyèl rete dezaktive.";
+  setNotice("#systemHealthNotice", notice, data.overall === "ok" ? "success" : "error");
+}
+async function loadSystemHealth(session) {
+  const button = $("#systemHealthRefresh");
+  if (button) button.disabled = true;
+  setNotice("#systemHealthNotice", "Ap teste koneksyon, bazdone, sekirite ak enskripsyon…", "");
+  try {
+    const data = await adminRequest("/api/admin/system-health", session);
+    renderSystemHealth(data);
+  } catch (error) {
+    setNotice("#systemHealthNotice",
+      explainError(error.code || error.message) +
+      (error.diagnostic ? " (Dyagnostik: " + error.diagnostic + ")" : ""),
+      "error");
+    $("#systemHealthSummary").textContent = "Verifikasyon an pa fini.";
+    $("#systemHealthList").replaceChildren();
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
 function pinHexToBytes(value) {
   if (typeof value !== "string" || !/^[a-f0-9]{32,64}$/.test(value) || value.length % 2 !== 0) {
     throw new Error("ADMIN_PIN_HASH_INVALID");
@@ -205,6 +269,7 @@ async function deriveAdminPinHashBytes(pin, saltHex, iterations) {
     Number(iterations) !== 600000
   ) throw new Error("ADMIN_PIN_CONFIGURATION_INVALID");
 
+  if (!globalThis.crypto?.subtle) throw new Error("PIN_CRYPTO_API_UNAVAILABLE");
   try {
     const material = await crypto.subtle.importKey(
       "raw",
@@ -224,8 +289,15 @@ async function deriveAdminPinHashBytes(pin, saltHex, iterations) {
       256
     );
     return new Uint8Array(result);
-  } catch {
-    throw new Error("PIN_HASH_DERIVATION_FAILED");
+  } catch (cause) {
+    const failure = new Error("PIN_HASH_DERIVATION_FAILED");
+    const causeName = String(cause?.name || "Error");
+    failure.diagnostic = causeName === "NotSupportedError"
+      ? "WEBCRYPTO_ALGORITHM_UNSUPPORTED"
+      : causeName === "OperationError"
+        ? "WEBCRYPTO_PBKDF2_OPERATION_ERROR"
+        : "WEBCRYPTO_" + causeName.replace(/[^A-Za-z0-9_]/g, "").slice(0, 32);
+    throw failure;
   }
 }
 async function signAdminPinChallenge(pin, challengeData) {
@@ -721,6 +793,11 @@ async function boot() {
       setNotice("#adminActionNotice", explainError(error.code || error.message), "error");
       $("#adminLedgerAuditResult").textContent = error.message;
     }
+  });
+
+  $("#systemHealthRefresh").addEventListener("click", async () => {
+    const session = await currentSession();
+    if (session) await loadSystemHealth(session);
   });
 
   $("#refreshButton").addEventListener("click", async () => {
