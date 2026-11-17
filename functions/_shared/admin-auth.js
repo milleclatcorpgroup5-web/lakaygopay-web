@@ -32,7 +32,7 @@ export async function requireAdmin(request, env) {
       return { error: json({ error: "ADMIN_ACCESS_DENIED" }, 403) };
     }
 
-    return { user: auth.user, roles };
+    return { user: auth.user, accessToken: auth.accessToken, roles };
   } catch {
     return { error: json({ error: "ADMIN_ACCESS_CHECK_FAILED" }, 503) };
   }
