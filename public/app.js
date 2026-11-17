@@ -733,7 +733,7 @@ function wireForms() {
       message("#authNotice", "Sesyon verifikasyon an fini. Rekòmanse enskripsyon an.", "error");
       return;
     }
-    if (!/^\\d{6}$/.test(token)) {
+    if (!/^\d{6}$/.test(token)) {
       message("#authNotice", "Kòd konfimasyon an dwe gen 6 chif.", "error");
       return;
     }
