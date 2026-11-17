@@ -120,7 +120,19 @@ where n.nspname = 'public'
   and c.relname in ('user_security','admin_security')
 order by c.relname;
 
--- 8. Test funding must remain OFF unless an operator explicitly enables it
+-- 8. Privilege boundaries: users cannot promote themselves, un-suspend
+-- themselves, approve merchants, or read QR tokens directly from storage.
+select
+  has_column_privilege('authenticated','public.profiles','account_status','UPDATE')
+    as authenticated_can_change_own_account_status,
+  has_table_privilege('authenticated','public.merchants','UPDATE')
+    as authenticated_can_directly_change_merchant_status,
+  has_table_privilege('authenticated','public.payment_requests','SELECT')
+    as authenticated_can_read_qr_requests,
+  has_function_privilege('authenticated','public.is_current_user_active()','EXECUTE')
+    as authenticated_can_check_own_active_state;
+
+-- 9. Test funding must remain OFF unless an operator explicitly enables it
 -- in a fully isolated TEST project.
 select setting_key, setting_value
 from public.platform_settings
