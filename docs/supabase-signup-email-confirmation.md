@@ -16,7 +16,11 @@ Supabase documents `{{ .Data }}`, `{{ .Token }}`, `{{ .ConfirmationURL }}`, cond
 
 ## Email delivery requirement
 
-Enabling email signups does **not** prove that Supabase can deliver mail to every tester. Supabase's default SMTP is restricted to pre-authorized team email addresses and currently has a low sending limit; public testing requires configuring a custom SMTP provider in **Authentication → SMTP Settings**. Do not disable email confirmations to work around delivery failures.
+Enabling email signups does **not** prove that Supabase can deliver mail to every tester. Supabase's default SMTP is restricted to pre-authorized team email addresses and currently has a low sending limit; public testing requires configuring a custom SMTP provider in **Authentication → SMTP Settings** and setting the Production Site URL / redirect allow-list to the LakayGoPay Production address. Do not disable email confirmations to work around delivery failures.
+
+## What the current System Health result proves
+
+The public Auth settings endpoint can confirm that email signups are enabled and whether email confirmation is required. It cannot verify SMTP delivery. A successful `AUTH_REACHABLE` check is therefore not proof that a confirmation email can reach an arbitrary tester.
 
 ## Expected test
 
