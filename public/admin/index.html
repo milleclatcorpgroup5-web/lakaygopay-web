@@ -189,6 +189,13 @@
         </div>
         <p class="muted admin-mfa-copy">Aksyon ki anba yo mande PIN Admin verifye, MFA TOTP (AAL2), ak tras audit. Pa gen aksyon ki voye lajan deyò.</p>
         <div class="admin-action-grid">
+          <form id="adminUserStatusForm" class="admin-action-card" hidden>
+            <h3>Estati kont kliyan oswa machann</h3>
+            <label>ID itilizatè<input id="adminUserId" required readonly></label>
+            <label>Nouvo estati<select id="adminUserStatus"><option value="active">Aktif</option><option value="suspended">Sispann</option></select></label>
+            <label>Rezon / nòt audit<input id="adminUserReason" maxlength="500" placeholder="Ekri rezon desizyon an"></label>
+            <button class="button button-primary full" type="submit">Sove estati kont lan</button>
+          </form>
           <form id="adminMerchantReviewForm" class="admin-action-card" hidden>
             <h3>Revize machann</h3>
             <label>ID machann<input id="adminMerchantId" required></label>
@@ -439,6 +446,6 @@
     <footer class="admin-footer"><span>LakayGoPay · Sant Kontwòl</span><span>Entèfas administrasyon prive · Rejim tès</span></footer>
   </main>
 
-  <script type="module" src="/admin/admin.js?v=20261116-08"></script>
+  <script type="module" src="/admin/admin.js?v=20261117-08"></script>
 </body>
 </html>
