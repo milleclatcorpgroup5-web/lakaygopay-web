@@ -55,13 +55,13 @@ async function readBrhRates() {
     fetchHtml(BRH_BANK_RATES).catch(() => "")
   ]);
 
-  const marketHeading = /march[ée] des changes\\s*\\(gourdes/i.exec(homeHtml);
+  const marketHeading = /march[ée] des changes\s*\(gourdes/i.exec(homeHtml);
   const marketIndex = marketHeading?.index ?? homeHtml.toLowerCase().indexOf("marché des changes");
   if (marketIndex < 0) throw new Error("FX_RATE_PARSE_FAILED");
   const homeMarketSection = homeHtml.slice(marketIndex, marketIndex + 8000);
   const homeText = cleanText(homeMarketSection);
   const today = localToday();
-  const homeDateMatch = homeText.match(/(\\d{1,2}\\s+[A-Za-zÀ-ÿ]+\\s+\\d{4})/);
+  const homeDateMatch = homeText.match(/(\d{1,2}\s+[A-Za-zÀ-ÿ]+\s+\d{4})/);
   const homeDate = parseFrenchDate(homeDateMatch?.[1]);
   if (!homeDate || homeDate !== today) {
     throw new Error("FX_RATES_NOT_CURRENT");
@@ -69,16 +69,16 @@ async function readBrhRates() {
 
   // Prefer the BUH row on the BRH bank-rate page only when that page carries
   // today's date. The BRH homepage sometimes updates before the bank table.
-  const bankDateMatch = bankHtml.match(/Taux affich[eé]s par les banques\\s*:\\s*([^<\\r\\n]+)/i);
+  const bankDateMatch = bankHtml.match(/Taux affich[eé]s par les banques\s*:\s*([^<\r\n]+)/i);
   const bankDate = parseFrenchDate(cleanText(bankDateMatch?.[1]));
   let usdBuy = null;
   let usdSell = null;
   let usdSource = "";
 
   if (bankDate === today) {
-    const rows = [...bankHtml.matchAll(/<tr\\b[^>]*>([\\s\\S]*?)<\\/tr>/gi)];
+    const rows = [...bankHtml.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
     for (const row of rows) {
-      const cells = [...row[1].matchAll(/<t[dh]\\b[^>]*>([\\s\\S]*?)<\\/t[dh]>/gi)]
+      const cells = [...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)]
         .map((cell) => cleanText(cell[1]));
       if (cells[0]?.toUpperCase() === "BUH") {
         usdBuy = numeric(cells[2]);
@@ -92,17 +92,17 @@ async function readBrhRates() {
   // Current BRH homepage fallback: use the published maximum bank purchase
   // and maximum bank sale rates for today's date, never yesterday's table.
   if (!usdBuy || !usdSell) {
-    const buyRange = homeText.match(/([0-9.]+)\\s*\\/\\s*([0-9.]+)\\s+Maximum\\s*\\/\\s*Minimum\\s+Taux d'achat affiché/i);
-    const sellRange = homeText.match(/([0-9.]+)\\s*\\/\\s*([0-9.]+)\\s+Maximum\\s*\\/\\s*Minimum\\s+Taux de vente affiché/i);
+    const buyRange = homeText.match(/([0-9.]+)\s*\/\s*([0-9.]+)\s+Maximum\s*\/\s*Minimum\s+Taux d'achat affiché/i);
+    const sellRange = homeText.match(/([0-9.]+)\s*\/\s*([0-9.]+)\s+Maximum\s*\/\s*Minimum\s+Taux de vente affiché/i);
     usdBuy = numeric(buyRange?.[1]);
     usdSell = numeric(sellRange?.[1]);
     if (usdBuy && usdSell) usdSource = "BRH · maximum des taux bancaires affichés";
   }
 
-  const euroMatch = homeText.match(/Euro\\s+Achat\\s*:\\s*([0-9.]+)\\s+Vente\\s*:\\s*([0-9.]+)/i);
+  const euroMatch = homeText.match(/Euro\s+Achat\s*:\s*([0-9.]+)\s+Vente\s*:\s*([0-9.]+)/i);
   const eurBuy = numeric(euroMatch?.[1]);
   const eurSell = numeric(euroMatch?.[2]);
-  const usdRefMatch = homeText.match(/([0-9.]+)\\s+Taux de Référence/i);
+  const usdRefMatch = homeText.match(/([0-9.]+)\s+Taux de Référence/i);
   const usdReference = numeric(usdRefMatch?.[1]);
 
   if (!usdBuy || !usdSell || !eurBuy || !eurSell || !usdReference) {
