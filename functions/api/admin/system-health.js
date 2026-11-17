@@ -91,6 +91,8 @@ async function checkAuth(url, publishableKey) {
     const settings = await response.json();
     const emailEnabled = settings?.external?.email;
     const signupDisabled = settings?.disable_signup === true;
+    const settingsKnown = typeof settings?.disable_signup === "boolean" && typeof emailEnabled === "boolean";
+    const signupEnabled = settingsKnown && settings.disable_signup === false && emailEnabled === true;
     let status = "ok";
     let diagnostic = "AUTH_REACHABLE";
     if (signupDisabled) {
@@ -99,7 +101,7 @@ async function checkAuth(url, publishableKey) {
     } else if (emailEnabled === false) {
       status = "warning";
       diagnostic = "EMAIL_SIGNUP_DISABLED_IN_SUPABASE";
-    } else if (settings?.disable_signup !== false || emailEnabled !== true) {
+    } else if (!settingsKnown) {
       status = "warning";
       diagnostic = "SIGNUP_SETTING_NOT_CONFIRMED";
     }
@@ -110,8 +112,10 @@ async function checkAuth(url, publishableKey) {
       stage: "SUPABASE_AUTH_SETTINGS",
       http_status: response.status,
       diagnostic,
-      signup_enabled: !signupDisabled && emailEnabled === true,
-      email_confirmation_required: settings?.mailer_autoconfirm === false
+      signup_enabled: settingsKnown ? signupEnabled : null,
+      email_confirmation_required: typeof settings?.mailer_autoconfirm === "boolean"
+        ? !settings.mailer_autoconfirm
+        : null
     };
   } catch (err) {
     return {
