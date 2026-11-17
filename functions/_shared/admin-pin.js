@@ -310,7 +310,7 @@ export async function setupAdminPin(request, env) {
     return error("ADMIN_PIN_SETUP_FAILED", 503, { diagnostic });
   }
 }
-export async function requireAdminPinSession(export async function requireAdminPinSession(request, env) {
+export async function requireAdminPinSession(request, env) {
   const access = await requireAdmin(request, env);
   if (access.error) return access;
   try {
