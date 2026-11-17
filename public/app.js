@@ -53,7 +53,7 @@ function translateError(code) {
   if (normalized === "invalid login credentials" ||
       normalized === "invalid_credentials" ||
       normalized === "invalid_grant") {
-    return "Supabase Production pa valide konbinezon imèl/modpas sa a. Verifye imèl la; si ou pa sonje modpas la, itilize “Mwen bliye modpas mwen”. Pa kreye yon lòt kont ak menm imèl la.";
+    return "Sa a se yon erè koneksyon, se pa yon erè enskripsyon. Verifye imèl ak modpas ou. Pou kreye kont, chwazi Kliyan oswa Machann epi peze bouton Kreye kont ki nan fòm lan.";
   }
   if (normalized === "email not confirmed" || normalized === "email_not_confirmed") {
     return "Ou dwe konfime imèl kont sa a anvan ou konekte. Verifye bwat resepsyon ak spam ou.";
@@ -68,7 +68,7 @@ function translateError(code) {
     AUTH_REQUIRED: "Konekte pou kontinye.",
     INVALID_OR_EXPIRED_SESSION: "Sesyon an ekspire. Konekte ankò.",
     MINIMUM_AGE_18: "Ou dwe gen omwen 18 an pou ouvri kont pèsonèl.",
-    EMAIL_ALREADY_REGISTERED: "Imèl sa a deja gen yon kont. Konekte pito.",
+    EMAIL_ALREADY_REGISTERED: "Imèl sa a deja gen yon kont oswa yon enskripsyon an kou. Verifye bwat imèl ou; si ou deja konfime kont lan, konekte pito.",
     ACCOUNT_SUSPENDED: "Aksè kont sa a sispann. Kontakte sipò LakayGoPay.",
     ACCOUNT_NOT_ACTIVE: "Kont sa a pa aktif. Kontakte sipò LakayGoPay.",
     VALID_PHONE_REQUIRED: "Antre yon nimewo telefòn ki valab.",
@@ -670,9 +670,6 @@ async function registerAccount(payload, emailField) {
   });
   const data = await response.json().catch(function () { return {}; });
   if (!response.ok) throw new Error(data.error || "SIGNUP_FAILED");
-  if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
-    throw new Error("EMAIL_ALREADY_REGISTERED");
-  }
   if (data.session && data.session.access_token && data.session.refresh_token) {
     const result = await supabase.auth.setSession({
       access_token: data.session.access_token,
@@ -792,10 +789,12 @@ function wireForms() {
     }
   });
 
-  $("#pendingReturnToLogin").addEventListener("click", function () {
-    pendingPersonalEmail = "";
-    pendingMerchantEmail = "";
-    setAuthMode("login");
+  ["#personalPendingReturnToLogin", "#merchantPendingReturnToLogin"].forEach(function (selector) {
+    $(selector).addEventListener("click", function () {
+      pendingPersonalEmail = "";
+      pendingMerchantEmail = "";
+      setAuthMode("login");
+    });
   });
 
   const dob = $("#personalDob");
