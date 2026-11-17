@@ -325,7 +325,14 @@ begin
   if to_regclass('public.payment_requests') is not null then
     execute 'revoke all on table public.payment_requests from public, anon, authenticated';
   end if;
-  if to_regclass('public.merchant_payment_requests') is not null then
+  if exists (
+    select 1
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public'
+       and c.relname = 'merchant_payment_requests'
+       and c.relkind in ('r','p')
+  ) then
     execute 'alter table public.merchant_payment_requests enable row level security';
     execute 'revoke all on table public.merchant_payment_requests from public, anon, authenticated';
   end if;
