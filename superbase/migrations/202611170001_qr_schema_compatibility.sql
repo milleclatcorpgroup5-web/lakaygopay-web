@@ -126,7 +126,7 @@ begin
   end if;
 
   if to_regclass('public.merchant_payment_requests') is not null
-     and to_regclass('public.merchant_payment_requests')::text = 'merchant_payment_requests' then
+  then
     insert into public.merchant_payment_requests(
       merchant_id, created_by_user_id, amount, currency, description,
       status, expires_at, idempotency_key
