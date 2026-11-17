@@ -145,3 +145,13 @@ input[readonly]{background:#f3f7f8;color:#718593}
 .exchange-quote-result .field-hint{margin-top:12px;font-size:10px;line-height:1.6}
 @media(max-width:700px){.exchange-quote-form{grid-template-columns:1fr 1fr}.exchange-quote-form label:nth-child(3){grid-column:1/-1}}
 @media(max-width:480px){.exchange-quote-form{grid-template-columns:1fr}.exchange-quote-form label:nth-child(3){grid-column:auto}.exchange-detail-grid{grid-template-columns:1fr 1fr}.exchange-quote-result{padding:13px}}
+
+
+/* Role-specific email confirmation screens. */
+.verification-pending{padding:16px 0 4px}
+.verification-pending h3{margin:0;color:var(--navy);font-size:21px;letter-spacing:-.4px}
+.verification-pending p{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
+.verification-icon{width:48px;height:48px;display:grid;place-items:center;border-radius:14px;background:#e8f4f5;color:var(--navy);font-size:23px}
+.verification-email{display:block;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#f6fafb;color:var(--navy);font-size:13px;overflow-wrap:anywhere}
+#merchantOtpCode{font-size:22px;letter-spacing:8px;text-align:center;font-weight:800}
+#merchantOtpCode::placeholder{letter-spacing:5px}
