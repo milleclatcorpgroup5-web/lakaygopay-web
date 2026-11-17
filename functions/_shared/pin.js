@@ -80,7 +80,7 @@ export async function assertTransactionPin(env, userId, pin) {
 
   // The database serializes attempts and returns the authoritative lock state.
   // Fail closed if the RPC response is missing or malformed.
-  const attemptResult = await callRpc(env, "record_pin_attempt", {
+  const attemptResult = await callRpc(env, "record_customer_pin_attempt", {
     p_user_id: userId,
     p_success: valid,
   });
