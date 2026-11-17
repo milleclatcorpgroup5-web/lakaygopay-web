@@ -63,7 +63,7 @@ select lt.id as unbalanced_transaction_id,
        coalesce(sum(le.amount) filter (where le.direction = 'debit'),0) as debits,
        coalesce(sum(le.amount) filter (where le.direction = 'credit'),0) as credits
 from public.ledger_transactions lt
-left join public.ledger_entries le on le.ledger_transaction_id = lt.id
+left join public.ledger_entries le on le.transaction_id = lt.id
 group by lt.id
 having count(le.id) < 2
    or coalesce(sum(le.amount) filter (where le.direction = 'debit'),0)
@@ -74,21 +74,17 @@ select wallet_id, balance
 from public.wallet_balances
 where balance < 0;
 
-select w.id as wallet_id,
-       coalesce(bal.balance,0) as ledger_balance,
+select wb.wallet_id,
+       wb.balance as ledger_balance,
        coalesce(res.reserved,0) as reserved_withdrawals
-from public.wallets w
-left join lateral (
-  select coalesce(sum(case when le.direction='credit' then le.amount else -le.amount end),0) balance
-  from public.ledger_entries le where le.wallet_id = w.id
-) bal on true
+from public.wallet_balances wb
 left join lateral (
   select coalesce(sum(wr.amount),0) reserved
-  from public.withdrawal_requests wr where wr.wallet_id=w.id
+  from public.withdrawal_requests wr
+  where wr.wallet_id = wb.wallet_id
     and wr.status in ('submitted','awaiting_second_approval','approved','processing')
 ) res on true
-where w.is_system = false
-  and coalesce(bal.balance,0) - coalesce(res.reserved,0) < 0;
+where coalesce(wb.balance,0) - coalesce(res.reserved,0) < 0;
 
 -- 6. Server-only financial/Admin RPCs must not be executable by anon/authenticated.
 select p.proname as function_name,
