@@ -104,10 +104,23 @@ export async function setupAdminPin(request, env) {
         pin_iterations: ITERATIONS
       })
     });
-    if (response.status === 409) return error("ADMIN_PIN_ALREADY_SET", 409);
-    if (!response.ok) return error("ADMIN_PIN_SETUP_FAILED", 503);
+    if (!response.ok) {
+      const rawError = await response.text();
+      if (response.status === 409) return error("ADMIN_PIN_ALREADY_SET", 409);
+      let dbError = {};
+      try { dbError = rawError ? JSON.parse(rawError) : {}; } catch {}
+      console.error("ADMIN_PIN_SETUP_INSERT_FAILED", JSON.stringify({
+        status: response.status,
+        code: typeof dbError.code === "string" ? dbError.code.slice(0, 80) : null,
+        message: typeof dbError.message === "string" ? dbError.message.slice(0, 300) : null,
+        details: typeof dbError.details === "string" ? dbError.details.slice(0, 300) : null,
+        hint: typeof dbError.hint === "string" ? dbError.hint.slice(0, 300) : null
+      }));
+      return error("ADMIN_PIN_SETUP_FAILED", 503);
+    }
     return json({ ok: true, pin_configured: true });
   } catch (err) {
+    console.error("ADMIN_PIN_SETUP_EXCEPTION", String(err?.message || "UNKNOWN").slice(0, 200));
     if (err?.message === "INVALID_JSON") return error("INVALID_JSON", 400);
     return error("ADMIN_PIN_SETUP_FAILED", 503);
   }
