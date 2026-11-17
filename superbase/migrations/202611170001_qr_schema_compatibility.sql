@@ -374,8 +374,7 @@ begin
      set status = 'paid', paid_ledger_transaction_id = v_ledger_id
    where id = v_request.id;
 
-  if to_regclass('public.merchant_payment_requests') is not null
-     and to_regclass('public.merchant_payment_requests')::text = 'merchant_payment_requests' then
+  if to_regclass('public.merchant_payment_requests') is not null then
     update public.merchant_payment_requests
        set paid_at = now(), updated_at = now()
      where id = v_request.id;
