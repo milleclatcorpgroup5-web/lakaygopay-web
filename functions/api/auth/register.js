@@ -96,9 +96,13 @@ export async function onRequestPost({ request, env }) {
       const upstream = String(data?.msg || data?.message || data?.error_description || data?.code || "");
       const normalized = /already registered|already been registered|user already/i.test(upstream)
         ? "EMAIL_ALREADY_REGISTERED"
-        : /password/i.test(upstream)
-          ? "PASSWORD_POLICY_REJECTED"
-          : "SIGNUP_FAILED";
+        : /email address not authorized|email not authorized/i.test(upstream)
+          ? "EMAIL_DELIVERY_NOT_CONFIGURED"
+          : /rate limit|too many requests|over_email_send_rate_limit/i.test(upstream)
+            ? "EMAIL_RATE_LIMITED"
+            : /password/i.test(upstream)
+              ? "PASSWORD_POLICY_REJECTED"
+              : "SIGNUP_FAILED";
       return json({ error: normalized }, response.status >= 500 ? 503 : 400);
     }
 
