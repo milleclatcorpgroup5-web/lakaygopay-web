@@ -12,7 +12,18 @@ function config(env) {
 }
 
 async function requireUser(request, env) {
-  const { url, publishableKey, secretKey } = config(env);
+  let backend;
+  try {
+    backend = config(env);
+  } catch (error) {
+    // Missing Cloudflare Pages bindings must produce a controlled API response,
+    // not an uncaught exception that Cloudflare renders as a generic 500.
+    if (error?.message === "BACKEND_NOT_CONFIGURED") {
+      return { error: json({ error: "BACKEND_NOT_CONFIGURED" }, 503) };
+    }
+    return { error: json({ error: "BACKEND_CONFIGURATION_UNAVAILABLE" }, 503) };
+  }
+  const { url, publishableKey, secretKey } = backend;
   const authorization = request.headers.get("authorization") || "";
   const match = authorization.match(/^Bearer\s+(.+)$/i);
   if (!match) return { error: json({ error: "AUTH_REQUIRED" }, 401) };
