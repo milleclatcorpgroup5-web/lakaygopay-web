@@ -14,7 +14,7 @@ language sql
 stable
 security definer
 set search_path = ''
-as $
+as $role_check$
   select
     exists (
       select 1 from public.user_roles ur
@@ -23,9 +23,8 @@ as $
     or exists (
       select 1 from public.user_roles ur
        where ur.user_id = p_user_id and ur.role = 'super_admin'
-
     );
-$;
+$role_check$;
 revoke all on function public.has_role_for_user(uuid,text) from public, anon, authenticated;
 grant execute on function public.has_role_for_user(uuid,text) to service_role;
 
