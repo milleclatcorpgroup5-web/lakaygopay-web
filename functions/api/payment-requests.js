@@ -1,4 +1,5 @@
-import { json, requireUser, callRpc, readJson, validUuid, validAmount, idempotencyKey, fail } from "../_shared/supabase.js";
+import { json, requireUser, callRpc, readJson, validUuid, validAmount, idempotencyKey } from "../_shared/supabase.js";
+import { financialFail } from "../_shared/financial-errors.js";
 
 export async function onRequestPost({ request, env }) {
   try {
@@ -31,6 +32,6 @@ export async function onRequestPost({ request, env }) {
       note: "This QR identifies a payment request; it is not payment confirmation.",
     }, 201);
   } catch (error) {
-    return fail(error);
+    return financialFail(error);
   }
 }
