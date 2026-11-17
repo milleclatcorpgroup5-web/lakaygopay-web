@@ -99,5 +99,7 @@ export async function assertTransactionPin(env, userId, pin) {
   }
 
   if (!valid) fail("PIN_INVALID", 401);
-  return true;
+  // Return the verified hash only to trusted server-side callers (never to the browser)
+  // so optimistic PIN rotation cannot overwrite a newer concurrent change.
+  return record.pin_hash;
 }
