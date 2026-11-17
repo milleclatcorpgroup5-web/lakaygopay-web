@@ -233,7 +233,7 @@ export async function setupAdminPin(request, env) {
     const pinHash = typeof body?.pin_hash === "string" ? body.pin_hash : "";
     const challengeToken = typeof body?.challenge === "string" ? body.challenge : "";
     if (!PIN_PATTERN.test(pin)) return error("ADMIN_PIN_MUST_BE_6_DIGITS", 400);
-    if (WEAK_PINS.has(pin) || /^([0-9])\\1{5}$/.test(pin)) return error("ADMIN_PIN_TOO_WEAK", 400);
+    if (WEAK_PINS.has(pin) || /^([0-9])\1{5}$/.test(pin)) return error("ADMIN_PIN_TOO_WEAK", 400);
     if (!/^[a-f0-9]{64}$/.test(pinHash)) return error("ADMIN_PIN_HASH_INVALID", 400);
 
     const challenge = await verifyChallenge(challengeToken, env);
