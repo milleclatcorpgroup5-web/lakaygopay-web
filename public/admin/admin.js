@@ -372,7 +372,7 @@ function renderAdminRecords(type, rows) {
   if (!rows.length) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
-    td.colSpan = columns.length + (["merchants","withdrawals","agents"].includes(type) ? 1 : 0);
+    td.colSpan = columns.length + (["users","merchants","withdrawals","agents"].includes(type) ? 1 : 0);
     td.textContent = "Pa gen dosye nan kategori sa a.";
     tr.append(td);
     body.append(tr);
@@ -385,7 +385,7 @@ function renderAdminRecords(type, rows) {
       td.textContent = recordValue(type, row, key);
       tr.append(td);
     });
-    if (["merchants","withdrawals","agents"].includes(type)) {
+    if (["users","merchants","withdrawals","agents"].includes(type)) {
       const td = document.createElement("td");
       const button = document.createElement("button");
       button.type = "button";
