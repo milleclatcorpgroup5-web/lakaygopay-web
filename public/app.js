@@ -50,6 +50,12 @@ function statusText(value) {
 }
 function translateError(code) {
   const normalized = String(code || "").trim().toLowerCase();
+  if (normalized.includes("email address not authorized") || normalized.includes("email not authorized")) {
+    return "Supabase pa otorize voye mesaj nan imèl sa a. Fòk nou mete yon sèvis SMTP pèsonalize an plas pou teste ak tout nouvo itilizatè yo.";
+  }
+  if (normalized.includes("too many requests") || normalized.includes("rate limit") || normalized.includes("over_email_send_rate_limit")) {
+    return "Limit voye imèl la rive. Tann yon ti tan anvan ou mande yon lòt mesaj konfimasyon.";
+  }
   if (normalized === "invalid login credentials" ||
       normalized === "invalid_credentials" ||
       normalized === "invalid_grant") {
@@ -791,14 +797,6 @@ function wireForms() {
     } finally {
       button.disabled = false;
     }
-  });
-
-  ["#personalPendingReturnToLogin", "#merchantPendingReturnToLogin"].forEach(function (selector) {
-    $(selector).addEventListener("click", function () {
-      pendingPersonalEmail = "";
-      pendingMerchantEmail = "";
-      setAuthMode("login");
-    });
   });
 
   const dob = $("#personalDob");
