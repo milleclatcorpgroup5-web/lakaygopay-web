@@ -38,7 +38,7 @@ begin
 end;
 $$;
 
-do $$
+do $
 begin
   if to_regclass('public.merchant_payment_records') is null then
     raise exception 'MERCHANT_PAYMENT_RECORDS_TABLE_NOT_FOUND';
@@ -54,7 +54,26 @@ begin
     on public.merchant_payment_records(ledger_transaction_id)
     where ledger_transaction_id is not null;
 end;
-$$;
+$;
+
+-- QR tokens and request internals are served only through authenticated Worker
+-- endpoints and service-role RPCs; do not expose the request table/view directly.
+revoke all on table public.payment_requests from public, anon, authenticated;
+do $qr_private$
+begin
+  if exists (
+    select 1
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public'
+       and c.relname = 'merchant_payment_requests'
+       and c.relkind in ('r','p')
+  ) then
+    execute 'alter table public.merchant_payment_requests enable row level security';
+    execute 'revoke all on table public.merchant_payment_requests from public, anon, authenticated';
+  end if;
+end;
+$qr_private$;
 
 create or replace function public.create_merchant_payment_request(
   p_actor_user_id uuid,
