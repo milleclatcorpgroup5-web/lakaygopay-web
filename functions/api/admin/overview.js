@@ -1,9 +1,9 @@
 import { json, config } from "../../_shared/superbase.js";
 import { requireAdminPinSession } from "../../_shared/admin-pin.js";
 
-async function countRows(url, secretKey, table) {
+async function countRows(url, secretKey, table, column = "id") {
   try {
-    const response = await fetch(url + "/rest/v1/" + table + "?select=id", {
+    const response = await fetch(url + "/rest/v1/" + table + "?select=" + encodeURIComponent(column), {
       headers: {
         apikey: secretKey,
         authorization: "Bearer " + secretKey,
@@ -28,17 +28,16 @@ export async function onRequestGet({ request, env }) {
   try {
     const { url, secretKey } = config(env);
     const tables = [
-      ["users", "profiles"],
-      ["merchants", "merchants"],
-      ["wallets", "wallets"],
-      ["transactions", "ledger_transactions"],
-      ["withdrawals", "withdrawal_requests"],
-      ["audit_events", "audit_logs"],
-      ["security_events", "security_events"],
+      ["users", "profiles", "id"],
+      ["merchants", "merchants", "id"],
+      ["wallets", "wallet_balances", "wallet_id"],
+      ["transactions", "ledger_transactions", "id"],
+      ["withdrawals", "withdrawal_requests", "id"],
+      ["audit_events", "audit_logs", "id"],
     ];
 
     const values = await Promise.all(
-      tables.map(async ([key, table]) => [key, await countRows(url, secretKey, table)])
+      tables.map(async ([key, table, column]) => [key, await countRows(url, secretKey, table, column)])
     );
     const counts = Object.fromEntries(values);
 
