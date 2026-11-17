@@ -625,6 +625,7 @@ async function boot() {
       }
       await adminRequest("/api/admin/pin/setup", pinGateSession, {
         challenge: challenge.challenge,
+        pin,
         pin_hash: pinHash
       });
       await completePinVerification(pinGateSession, pin);
