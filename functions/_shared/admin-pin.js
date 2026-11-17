@@ -4,6 +4,10 @@ import { requireAdmin } from "./admin-auth.js";
 
 const PIN_PATTERN = /^\d{6}$/;
 const ITERATIONS = 600000;
+// Cloudflare Workers rejects a single Web Crypto PBKDF2 call above 100,000 rounds.
+// Keep the full 600,000-round work factor by chaining six independently salted
+// PBKDF2-SHA-256 stages. Each stage stays within the Workers runtime ceiling.
+const WORKERS_PBKDF2_MAX_ITERATIONS = 100000;
 const WEAK_PINS = new Set([
   "000000","111111","222222","333333","444444","555555","666666","777777","888888","999999",
   "123456","234567","345678","456789","654321","543210","432109","987654","121212","112233","123123"
@@ -33,7 +37,13 @@ function setupFailureDiagnostic(stage, err) {
     return "CHECK_EXISTING_PIN_INTERNAL_ERROR";
   }
   if (stage === "GENERATE_SALT") return "SALT_GENERATION_FAILED";
-  if (stage === "DERIVE_PIN_HASH") return "PIN_HASH_DERIVATION_FAILED";
+  if (stage === "DERIVE_PIN_HASH") {
+    if (message === "PIN_KDF_PARAMETERS_INVALID") return "PIN_KDF_PARAMETERS_INVALID";
+    if (err?.name === "NotSupportedError") return "PBKDF2_RUNTIME_LIMIT";
+    if (err?.name === "OperationError") return "PBKDF2_OPERATION_FAILED";
+    if (err?.name === "TypeError") return "PBKDF2_ARGUMENT_INVALID";
+    return "PIN_HASH_DERIVATION_FAILED";
+  }
   if (stage === "LOAD_INSERT_CONFIG") return "INSERT_CONFIG_LOAD_FAILED";
   if (stage === "INSERT_PIN" && err?.name === "TypeError") return "INSERT_PIN_NETWORK_ERROR";
   if (stage === "INSERT_PIN") return "INSERT_PIN_INTERNAL_ERROR";
@@ -64,13 +74,48 @@ function constantTimeEqual(a, b) {
   return diff === 0;
 }
 async function deriveHash(pin, saltHex, iterations) {
-  const material = await crypto.subtle.importKey(
-    "raw", new TextEncoder().encode(pin), "PBKDF2", false, ["deriveBits"]
-  );
-  const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt: fromHex(saltHex), iterations }, material, 256
-  );
-  return toHex(new Uint8Array(bits));
+  if (
+    !Number.isInteger(iterations) ||
+    iterations < 600000 ||
+    iterations > 1000000 ||
+    iterations % WORKERS_PBKDF2_MAX_ITERATIONS !== 0
+  ) {
+    throw new Error("PIN_KDF_PARAMETERS_INVALID");
+  }
+
+  const baseSalt = fromHex(saltHex);
+  if (baseSalt.length !== 16) throw new Error("PIN_KDF_PARAMETERS_INVALID");
+
+  const encoder = new TextEncoder();
+  let materialBytes = encoder.encode(pin);
+  const stageCount = iterations / WORKERS_PBKDF2_MAX_ITERATIONS;
+
+  // This is a staged PBKDF2 construction for Workers, not one oversized
+  // PBKDF2 call. Each stage costs 100,000 PBKDF2-SHA-256 rounds and feeds
+  // its 256-bit output into the next domain-separated stage.
+  for (let stage = 0; stage < stageCount; stage++) {
+    const context = encoder.encode("LakayGoPay-AdminPIN-PBKDF2-SHA256-v1:" + stage);
+    const stageSalt = new Uint8Array(baseSalt.length + context.length);
+    stageSalt.set(baseSalt, 0);
+    stageSalt.set(context, baseSalt.length);
+
+    const material = await crypto.subtle.importKey(
+      "raw", materialBytes, "PBKDF2", false, ["deriveBits"]
+    );
+    const bits = await crypto.subtle.deriveBits(
+      {
+        name: "PBKDF2",
+        hash: "SHA-256",
+        salt: stageSalt,
+        iterations: WORKERS_PBKDF2_MAX_ITERATIONS
+      },
+      material,
+      256
+    );
+    materialBytes = new Uint8Array(bits);
+  }
+
+  return toHex(materialBytes);
 }
 async function readAdminPin(env, userId) {
   const { url, secretKey } = config(env);
@@ -235,6 +280,7 @@ export async function verifyAdminPin(request, env) {
     const iterations = Number(record.pin_iterations);
     if (
       !Number.isInteger(iterations) || iterations < 600000 || iterations > 1000000 ||
+      iterations % WORKERS_PBKDF2_MAX_ITERATIONS !== 0 ||
       !/^[a-f0-9]{32}$/.test(record.pin_salt) || !/^[a-f0-9]{64}$/.test(record.pin_hash)
     ) return error("ADMIN_PIN_CONFIGURATION_INVALID", 503);
 
