@@ -55,7 +55,8 @@ async function readBrhRates() {
     fetchHtml(BRH_BANK_RATES).catch(() => "")
   ]);
 
-  const marketIndex = homeHtml.toLowerCase().indexOf("marché des changes");
+  const marketHeading = /march[ée] des changes\\s*\\(gourdes/i.exec(homeHtml);
+  const marketIndex = marketHeading?.index ?? homeHtml.toLowerCase().indexOf("marché des changes");
   if (marketIndex < 0) throw new Error("FX_RATE_PARSE_FAILED");
   const homeMarketSection = homeHtml.slice(marketIndex, marketIndex + 8000);
   const homeText = cleanText(homeMarketSection);
