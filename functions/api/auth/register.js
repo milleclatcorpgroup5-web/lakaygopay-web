@@ -89,6 +89,9 @@ export async function onRequestPost({ request, env }) {
     });
 
     const data = await response.json().catch(() => ({}));
+    if (response.ok && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      return json({ error: "EMAIL_ALREADY_REGISTERED" }, 409);
+    }
     if (!response.ok) {
       const upstream = String(data?.msg || data?.message || data?.error_description || data?.code || "");
       const normalized = /already registered|already been registered|user already/i.test(upstream)
@@ -105,6 +108,7 @@ export async function onRequestPost({ request, env }) {
       user: data.user ? { id: data.user.id, email: data.user.email } : null,
       session: data.session || null,
       needs_email_confirmation: !data.session,
+      verification_method: accountType === "merchant" ? "email_otp" : "email_link",
     }, 201);
   } catch (error) {
     const status = Number(error?.status) || 503;
