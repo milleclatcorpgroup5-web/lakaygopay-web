@@ -70,7 +70,7 @@ export async function onRequestPost({ request, env }) {
     const candidate = await derivePinHash(body.pin, record.pin_salt, iterations);
     const valid = constantTimeEqual(candidate, record.pin_hash);
 
-    const attempt = await callRpc(env, "record_pin_attempt", {
+    const attempt = await callRpc(env, "record_customer_pin_attempt", {
       p_user_id: auth.user.id,
       p_success: valid,
     });
