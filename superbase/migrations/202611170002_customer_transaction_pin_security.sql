@@ -102,7 +102,7 @@ grant execute on function public.store_user_pin_hash(uuid,text,text,integer,text
 
 -- The row lock serializes PIN attempts. Once the third consecutive failure
 -- occurs, even a correct PIN is rejected until the 15-minute lock expires.
-create or replace function public.record_pin_attempt(
+create or replace function public.record_customer_pin_attempt(
   p_user_id uuid,
   p_success boolean
 )
@@ -165,9 +165,9 @@ begin
 end;
 $record_pin_attempt$;
 
-revoke all on function public.record_pin_attempt(uuid,boolean)
+revoke all on function public.record_customer_pin_attempt(uuid,boolean)
   from public, anon, authenticated;
-grant execute on function public.record_pin_attempt(uuid,boolean)
+grant execute on function public.record_customer_pin_attempt(uuid,boolean)
   to service_role;
 
 commit;
