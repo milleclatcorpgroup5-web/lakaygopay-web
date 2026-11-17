@@ -1,5 +1,5 @@
 
-import { config, json, requireUser, readJson, callRpc } from "./superbase.js";
+import { config, json, readJson, callRpc } from "./superbase.js";
 import { requireAdmin } from "./admin-auth.js";
 
 const PIN_PATTERN = /^\d{6}$/;
@@ -50,12 +50,6 @@ function decodeJwtPayload(token) {
   } catch {
     return null;
   }
-}
-function constantTimeEqual(a, b) {
-  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
 }
 function base64UrlEncode(bytes) {
   let binary = "";
