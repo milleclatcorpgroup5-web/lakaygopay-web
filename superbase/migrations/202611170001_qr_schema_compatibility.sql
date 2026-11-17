@@ -76,7 +76,7 @@ declare
   v_fingerprint text;
   v_status text;
   v_request_id uuid;
-  v_token uuid;
+  v_token text;
   v_response jsonb;
 begin
   if p_actor_user_id is null or p_merchant_id is null then
@@ -137,7 +137,7 @@ begin
       'pending', now() + make_interval(mins => p_expires_in_minutes),
       p_idempotency_key
     )
-    returning id, qr_token into v_request_id, v_token;
+    returning id, qr_token::text into v_request_id, v_token;
   else
     insert into public.payment_requests(
       merchant_id, created_by, amount, currency, description, expires_at
@@ -147,7 +147,7 @@ begin
       nullif(trim(coalesce(p_description,'')),''),
       now() + make_interval(mins => p_expires_in_minutes)
     )
-    returning id, public_token into v_request_id, v_token;
+    returning id, public_token::text into v_request_id, v_token;
   end if;
 
   v_response := jsonb_build_object(
@@ -186,7 +186,7 @@ begin
 
   select * into v_request
     from public.payment_requests
-   where public_token = p_public_token;
+   where public_token::text = p_public_token::text;
   if v_request.id is null then raise exception 'PAYMENT_REQUEST_NOT_FOUND'; end if;
 
   select * into v_merchant
@@ -284,7 +284,7 @@ begin
 
   select * into v_request
     from public.payment_requests
-   where public_token = p_public_token
+   where public_token::text = p_public_token::text
    for update;
   if v_request.id is null then raise exception 'PAYMENT_REQUEST_NOT_FOUND'; end if;
   if v_request.status <> 'pending' then raise exception 'PAYMENT_REQUEST_NOT_PAYABLE'; end if;
