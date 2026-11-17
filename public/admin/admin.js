@@ -46,6 +46,11 @@ function explainError(code) {
     ADMIN_PIN_SETUP_FAILED: "Nou pa t kapab anrejistre PIN Admin lan.",
     ADMIN_PIN_SECURITY_UNAVAILABLE: "Verifikasyon PIN Admin lan pa disponib kounye a.",
     ADMIN_PIN_CONFIGURATION_INVALID: "Konfigirasyon PIN Admin lan pa valab.",
+    ADMIN_PIN_CHALLENGE_INVALID: "Demann sekirite a pa valab. Rekòmanse verifikasyon an.",
+    ADMIN_PIN_CHALLENGE_EXPIRED: "Demann sekirite a ekspire oswa li deja itilize. Eseye ankò.",
+    ADMIN_PIN_HASH_INVALID: "Kalkil hash PIN lan pa pwodwi yon rezilta valab.",
+    ADMIN_PIN_RESPONSE_INVALID: "Repons kriptografik la pa valab.",
+    PIN_HASH_DERIVATION_FAILED: "Navigatè a pa t kapab kalkile hash PIN lan. Mete navigatè a ajou epi eseye ankò.",
     ADMIN_PIN_REQUIRED: "Pou pwoteje sesyon an, antre PIN Admin 6 chif ou ankò.",
     AUTH_REQUIRED: "Konekte pou kontinye.",
     INVALID_OR_EXPIRED_SESSION: "Sesyon an ekspire. Konekte ankò.",
@@ -184,8 +189,76 @@ async function loadOverview(session) {
   await updateMfaStatus().catch(() => {});
   await loadAdminRecords("users");
 }
+function pinHexToBytes(value) {
+  if (typeof value !== "string" || !/^[a-f0-9]{32,64}$/.test(value) || value.length % 2 !== 0) {
+    throw new Error("ADMIN_PIN_HASH_INVALID");
+  }
+  return Uint8Array.from(value.match(/.{2}/g), (part) => parseInt(part, 16));
+}
+function pinBytesToHex(bytes) {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+async function deriveAdminPinHashBytes(pin, saltHex, iterations) {
+  if (
+    !/^\d{6}$/.test(pin) ||
+    !/^[a-f0-9]{32}$/.test(saltHex) ||
+    Number(iterations) !== 600000
+  ) throw new Error("ADMIN_PIN_CONFIGURATION_INVALID");
+
+  try {
+    const material = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(pin),
+      "PBKDF2",
+      false,
+      ["deriveBits"]
+    );
+    const result = await crypto.subtle.deriveBits(
+      {
+        name: "PBKDF2",
+        hash: "SHA-256",
+        salt: pinHexToBytes(saltHex),
+        iterations: Number(iterations)
+      },
+      material,
+      256
+    );
+    return new Uint8Array(result);
+  } catch {
+    throw new Error("PIN_HASH_DERIVATION_FAILED");
+  }
+}
+async function signAdminPinChallenge(pin, challengeData) {
+  const derivedBytes = await deriveAdminPinHashBytes(
+    pin,
+    challengeData.salt,
+    challengeData.iterations
+  );
+  try {
+    const key = await crypto.subtle.importKey(
+      "raw",
+      derivedBytes,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const signature = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      new TextEncoder().encode(challengeData.challenge)
+    );
+    return pinBytesToHex(new Uint8Array(signature));
+  } finally {
+    derivedBytes.fill(0);
+  }
+}
 async function completePinVerification(session, pin) {
-  await adminRequest("/api/admin/pin/verify", session, { pin });
+  const challenge = await adminRequest("/api/admin/pin/challenge", session);
+  const response = await signAdminPinChallenge(pin, challenge);
+  await adminRequest("/api/admin/pin/verify", session, {
+    challenge: challenge.challenge,
+    response
+  });
   adminPinVerifiedUserId = session.user.id;
   $("#adminPinInput").value = "";
   $("#adminPinNew").value = "";
@@ -538,9 +611,21 @@ async function boot() {
     }
     button.disabled = true;
     try {
-      await adminRequest("/api/admin/pin/setup", pinGateSession, {
+      const challenge = await adminRequest("/api/admin/pin/setup-challenge", pinGateSession);
+      const derivedBytes = await deriveAdminPinHashBytes(
         pin,
-        pin_confirmation: confirmation
+        challenge.salt,
+        challenge.iterations
+      );
+      let pinHash;
+      try {
+        pinHash = pinBytesToHex(derivedBytes);
+      } finally {
+        derivedBytes.fill(0);
+      }
+      await adminRequest("/api/admin/pin/setup", pinGateSession, {
+        challenge: challenge.challenge,
+        pin_hash: pinHash
       });
       await completePinVerification(pinGateSession, pin);
     } catch (error) {
@@ -553,7 +638,6 @@ async function boot() {
       button.disabled = false;
     }
   });
-
 
   $("#adminMfaEnrollButton").addEventListener("click", async () => {
     const button = $("#adminMfaEnrollButton");
