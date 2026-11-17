@@ -87,6 +87,7 @@ async function adminRequest(path, session, body) {
     error.code = data.error;
     error.status = response.status;
     error.lockedUntil = data.locked_until || null;
+    error.diagnostic = typeof data.diagnostic === "string" ? data.diagnostic : null;
     throw error;
   }
   return data;
@@ -537,7 +538,9 @@ async function boot() {
       });
       await completePinVerification(pinGateSession, pin);
     } catch (error) {
-      setNotice("#pinNotice", explainError(error.code || error.message), "error");
+      const baseMessage = explainError(error.code || error.message);
+      const diagnosticMessage = error.diagnostic ? " (Dyagnostik: " + error.diagnostic + ")" : "";
+      setNotice("#pinNotice", baseMessage + diagnosticMessage, "error");
       $("#adminPinNew").value = "";
       $("#adminPinConfirm").value = "";
     } finally {

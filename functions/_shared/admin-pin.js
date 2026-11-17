@@ -9,8 +9,8 @@ const WEAK_PINS = new Set([
   "123456","234567","345678","456789","654321","543210","432109","987654","121212","112233","123123"
 ]);
 
-function error(code, status) {
-  return json({ error: code }, status);
+function error(code, status, extra = {}) {
+  return json({ error: code, ...extra }, status);
 }
 function toHex(bytes) {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -52,7 +52,11 @@ async function readAdminPin(env, userId) {
       "&select=user_id,pin_hash,pin_salt,pin_iterations,failed_attempts,locked_until,last_verified_at,last_verified_session_id&limit=1",
     { headers: { apikey: secretKey, authorization: "Bearer " + secretKey, accept: "application/json" } }
   );
-  if (!response.ok) throw new Error("ADMIN_PIN_DATABASE_UNAVAILABLE");
+  if (!response.ok) {
+    const err = new Error("ADMIN_PIN_DATABASE_UNAVAILABLE");
+    err.httpStatus = response.status;
+    throw err;
+  }
   const rows = await response.json();
   return rows?.[0] || null;
 }
@@ -73,6 +77,7 @@ export async function adminPinStatus(request, env) {
 export async function setupAdminPin(request, env) {
   const access = await requireAdmin(request, env);
   if (access.error) return access.error;
+  let stage = "READ_REQUEST";
   try {
     const body = await readJson(request, 2000);
     const pin = typeof body?.pin === "string" ? body.pin : "";
@@ -81,12 +86,14 @@ export async function setupAdminPin(request, env) {
     if (pin !== confirmation) return error("ADMIN_PIN_CONFIRMATION_MISMATCH", 400);
     if (WEAK_PINS.has(pin) || /^([0-9])\1{5}$/.test(pin)) return error("ADMIN_PIN_TOO_WEAK", 400);
 
+    stage = "CHECK_EXISTING_PIN";
     const existing = await readAdminPin(env, access.user.id);
     if (existing) return error("ADMIN_PIN_ALREADY_SET", 409);
 
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const saltHex = toHex(salt);
     const hash = await deriveHash(pin, saltHex, ITERATIONS);
+    stage = "INSERT_PIN";
     const { url, secretKey } = config(env);
     const response = await fetch(url + "/rest/v1/admin_security", {
       method: "POST",
@@ -109,20 +116,32 @@ export async function setupAdminPin(request, env) {
       if (response.status === 409) return error("ADMIN_PIN_ALREADY_SET", 409);
       let dbError = {};
       try { dbError = rawError ? JSON.parse(rawError) : {}; } catch {}
+      const rawCode = typeof dbError.code === "string" ? dbError.code : "";
+      const safeCode = ({
+        "23505": "UNIQUE_CONSTRAINT",
+        "23503": "FOREIGN_KEY_CONSTRAINT",
+        "23514": "CHECK_CONSTRAINT",
+        "42501": "PERMISSION_DENIED",
+        "PGRST116": "POSTGREST_RESPONSE",
+        "PGRST204": "POSTGREST_SCHEMA_CACHE"
+      })[rawCode] || "DATABASE_REJECTED_INSERT";
+      const diagnostic = "INSERT_HTTP_" + response.status + "_" + safeCode;
       console.error("ADMIN_PIN_SETUP_INSERT_FAILED", JSON.stringify({
         status: response.status,
-        code: typeof dbError.code === "string" ? dbError.code.slice(0, 80) : null,
-        message: typeof dbError.message === "string" ? dbError.message.slice(0, 300) : null,
-        details: typeof dbError.details === "string" ? dbError.details.slice(0, 300) : null,
-        hint: typeof dbError.hint === "string" ? dbError.hint.slice(0, 300) : null
+        code: safeCode
       }));
-      return error("ADMIN_PIN_SETUP_FAILED", 503);
+      return error("ADMIN_PIN_SETUP_FAILED", 503, { diagnostic });
     }
     return json({ ok: true, pin_configured: true });
   } catch (err) {
-    console.error("ADMIN_PIN_SETUP_EXCEPTION", String(err?.message || "UNKNOWN").slice(0, 200));
     if (err?.message === "INVALID_JSON") return error("INVALID_JSON", 400);
-    return error("ADMIN_PIN_SETUP_FAILED", 503);
+    let diagnostic = "SETUP_INTERNAL_ERROR";
+    if (err?.message === "BACKEND_NOT_CONFIGURED") diagnostic = "BACKEND_NOT_CONFIGURED";
+    else if (err?.message === "ADMIN_PIN_DATABASE_UNAVAILABLE") {
+      diagnostic = "CHECK_EXISTING_PIN_HTTP_" + (Number(err.httpStatus) || "UNKNOWN");
+    } else if (stage === "READ_REQUEST") diagnostic = "REQUEST_READ_FAILED";
+    console.error("ADMIN_PIN_SETUP_EXCEPTION", JSON.stringify({ stage, diagnostic }));
+    return error("ADMIN_PIN_SETUP_FAILED", 503, { diagnostic });
   }
 }
 
