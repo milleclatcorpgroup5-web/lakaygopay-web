@@ -314,6 +314,7 @@ $active_guard$;
 -- Never allow clients to change their own access state or directly approve
 -- their merchant account. Profile editing is limited to fields used by the UI.
 revoke update on table public.profiles from public, anon, authenticated;
+revoke update (account_status) on table public.profiles from public, anon, authenticated;
 grant update (full_name, preferred_language) on table public.profiles to authenticated;
 revoke insert, update, delete on table public.merchants from public, anon, authenticated;
 
