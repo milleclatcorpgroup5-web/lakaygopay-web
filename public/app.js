@@ -17,6 +17,8 @@ let qrScannerStream = null;
 let qrScannerFrame = null;
 let pinConfigured = false;
 let pinSetupPendingAfterSignup = false;
+let pendingPersonalEmail = "";
+let pendingMerchantEmail = "";
 let recoveryMode = false;
 let deferredInstallPrompt = null;
 
@@ -48,19 +50,35 @@ function statusText(value) {
 }
 function translateError(code) {
   const normalized = String(code || "").trim().toLowerCase();
+  if (normalized.includes("email address not authorized") || normalized.includes("email not authorized")) {
+    return "Supabase pa otorize voye mesaj nan imèl sa a. Fòk nou mete yon sèvis SMTP pèsonalize an plas pou teste ak tout nouvo itilizatè yo.";
+  }
+  if (normalized.includes("too many requests") || normalized.includes("rate limit") || normalized.includes("over_email_send_rate_limit")) {
+    return "Limit voye imèl la rive. Tann yon ti tan anvan ou mande yon lòt mesaj konfimasyon.";
+  }
   if (normalized === "invalid login credentials" ||
       normalized === "invalid_credentials" ||
       normalized === "invalid_grant") {
-    return "Supabase Production pa valide konbinezon imèl/modpas sa a. Verifye imèl la; si ou pa sonje modpas la, itilize “Mwen bliye modpas mwen”. Pa kreye yon lòt kont ak menm imèl la.";
+    return "Sa a se yon erè koneksyon, se pa yon erè enskripsyon. Verifye imèl ak modpas ou. Pou kreye kont, chwazi Kliyan oswa Machann epi peze bouton Kreye kont ki nan fòm lan.";
   }
   if (normalized === "email not confirmed" || normalized === "email_not_confirmed") {
     return "Ou dwe konfime imèl kont sa a anvan ou konekte. Verifye bwat resepsyon ak spam ou.";
+  }
+  if (normalized.includes("token has expired") || normalized.includes("otp_expired")) {
+    return "Kòd oswa lyen konfimasyon an ekspire. Mande yon lòt kòd oswa yon lòt lyen.";
+  }
+  if (normalized.includes("invalid token") || normalized.includes("otp")) {
+    return "Kòd konfimasyon an pa valab. Verifye 6 chif yo epi eseye ankò.";
   }
   const map = {
     AUTH_REQUIRED: "Konekte pou kontinye.",
     INVALID_OR_EXPIRED_SESSION: "Sesyon an ekspire. Konekte ankò.",
     MINIMUM_AGE_18: "Ou dwe gen omwen 18 an pou ouvri kont pèsonèl.",
-    EMAIL_ALREADY_REGISTERED: "Imèl sa a deja gen yon kont. Konekte pito.",
+    EMAIL_ALREADY_REGISTERED: "Imèl sa a deja gen yon kont oswa yon enskripsyon an kou. Verifye bwat imèl ou; si ou deja konfime kont lan, konekte pito.",
+    EMAIL_DELIVERY_NOT_CONFIGURED: "Supabase pa otorize voye imèl nan adrès sa a. Pou ouvri tès piblik yo, fòk nou konfigire yon sèvis SMTP pèsonalize nan Supabase.",
+    EMAIL_RATE_LIMITED: "Limit voye imèl la rive. Tann yon ti tan anvan ou mande yon lòt mesaj konfimasyon.",
+    SIGNUP_RESPONSE_INCOMPLETE: "Supabase pa retounen konfimasyon ki nesesè pou fini enskripsyon an. Pa eseye kreye menm kont lan plizyè fwa; kontakte ekip LakayGoPay.",
+
     ACCOUNT_SUSPENDED: "Aksè kont sa a sispann. Kontakte sipò LakayGoPay.",
     ACCOUNT_NOT_ACTIVE: "Kont sa a pa aktif. Kontakte sipò LakayGoPay.",
     VALID_PHONE_REQUIRED: "Antre yon nimewo telefòn ki valab.",
@@ -628,11 +646,18 @@ function setAuthMode(mode) {
     login: "#loginForm",
     personal: "#personalForm",
     merchant: "#merchantForm",
-    recover: "#recoverForm"
+    recover: "#recoverForm",
+    personalPending: "#personalEmailPending",
+    merchantOtp: "#merchantOtpForm"
   };
-  Object.keys(forms).forEach(function (key) { $(forms[key]).hidden = key !== mode; });
+  Object.keys(forms).forEach(function (key) {
+    const node = $(forms[key]);
+    if (node) node.hidden = key !== mode;
+  });
   $("#newPasswordForm").hidden = mode !== "newpassword";
-  $$("[data-auth-mode]").forEach(function (button) {
+  const verificationPending = mode === "personalPending" || mode === "merchantOtp";
+  $("#authTabs").hidden = verificationPending;
+  $("[data-auth-mode]").forEach(function (button) {
     button.classList.toggle("active", button.dataset.authMode === mode);
   });
   message("#authNotice", "", "");
@@ -641,6 +666,8 @@ async function registerAccount(payload, emailField) {
   const registration = Object.assign({}, payload);
   const registrationPin = String(registration.pin || "");
   const pinConfirmation = String(registration.pin_confirmation || "");
+  const accountType = registration.account_type;
+  const email = String(registration.email || emailField || "").trim().toLowerCase();
   delete registration.pin;
   delete registration.pin_confirmation;
   if (!/^[0-9]{4}$/.test(registrationPin) || registrationPin !== pinConfirmation) {
@@ -652,7 +679,7 @@ async function registerAccount(payload, emailField) {
     body: JSON.stringify(registration)
   });
   const data = await response.json().catch(function () { return {}; });
-  if (!response.ok) throw new Error(translateError(data.error || "SIGNUP_FAILED"));
+  if (!response.ok) throw new Error(data.error || "SIGNUP_FAILED");
   if (data.session && data.session.access_token && data.session.refresh_token) {
     const result = await supabase.auth.setSession({
       access_token: data.session.access_token,
@@ -673,14 +700,103 @@ async function registerAccount(payload, emailField) {
     await syncSession(await sessionNow());
     return;
   }
-  setAuthMode("login");
-  $("#loginEmail").value = emailField;
-  message("#authNotice", "Kont lan kreye. Verifye imèl ou; apre koneksyon, ouvri Paramèt pou kreye PIN lan si li poko anrejistre.",
+
+  if (data.needs_email_confirmation !== true || !email) {
+    throw new Error("SIGNUP_RESPONSE_INCOMPLETE");
+  }
+  if (accountType === "merchant") {
+    pendingMerchantEmail = email;
+    $("#merchantOtpEmail").textContent = email;
+    setAuthMode("merchantOtp");
+    message("#authNotice", "Kont machann lan kreye. Nou voye yon kòd 6 chif nan imèl biznis ou. Antre kòd la anba a; ou pa bezwen retounen antre modpas ou.",
+      "success");
+    $("#merchantOtpCode").focus();
+    return;
+  }
+
+  pendingPersonalEmail = email;
+  $("#personalPendingEmail").textContent = email;
+  setAuthMode("personalPending");
+  message("#authNotice", "Kont kliyan an kreye. Nou voye yon lyen konfimasyon nan imèl ou. Lè ou klike lyen an, LakayGoPay ap ouvri kont ou otomatikman; ou pap bezwen antre imèl ak modpas ankò.",
     "success");
 }
 function wireForms() {
-  $$("[data-auth-mode]").forEach(function (button) {
+  $("[data-auth-mode]").forEach(function (button) {
     button.addEventListener("click", function () { setAuthMode(button.dataset.authMode); });
+  });
+
+  $("#merchantOtpForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const button = $("#merchantOtpVerifyButton");
+    const token = $("#merchantOtpCode").value.trim();
+    if (!pendingMerchantEmail) {
+      message("#authNotice", "Sesyon verifikasyon an fini. Rekòmanse enskripsyon an.", "error");
+      return;
+    }
+    if (!/^\d{6}$/.test(token)) {
+      message("#authNotice", "Kòd konfimasyon an dwe gen 6 chif.", "error");
+      return;
+    }
+    button.disabled = true;
+    message("#authNotice", "Ap verifye kòd konfimasyon biznis la…", "");
+    try {
+      const result = await supabase.auth.verifyOtp({
+        email: pendingMerchantEmail,
+        token,
+        type: "email"
+      });
+      if (result.error) throw result.error;
+      const session = result.data && result.data.session;
+      if (!session) throw new Error("EMAIL_VERIFICATION_SESSION_MISSING");
+      pendingMerchantEmail = "";
+      $("#merchantOtpCode").value = "";
+      pinSetupPendingAfterSignup = true;
+      activeUserId = null;
+      dashboardPromise = null;
+      await syncSession(session);
+    } catch (error) {
+      message("#authNotice", translateError(error.message || "EMAIL_OTP_INVALID"), "error");
+      $("#merchantOtpCode").value = "";
+      $("#merchantOtpCode").focus();
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  $("#merchantOtpResendButton").addEventListener("click", async function () {
+    if (!pendingMerchantEmail) {
+      message("#authNotice", "Sesyon verifikasyon an fini. Rekòmanse enskripsyon an.", "error");
+      return;
+    }
+    const button = $("#merchantOtpResendButton");
+    button.disabled = true;
+    try {
+      const result = await supabase.auth.resend({ type: "signup", email: pendingMerchantEmail });
+      if (result.error) throw result.error;
+      message("#authNotice", "Nou voye yon lòt kòd konfimasyon. Verifye bwat resepsyon ak spam ou.", "success");
+    } catch (error) {
+      message("#authNotice", "Nou pa kapab voye yon lòt kòd kounye a: " + translateError(error.message), "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  $("#personalResendButton").addEventListener("click", async function () {
+    if (!pendingPersonalEmail) {
+      message("#authNotice", "Sesyon verifikasyon an fini. Rekòmanse enskripsyon an.", "error");
+      return;
+    }
+    const button = $("#personalResendButton");
+    button.disabled = true;
+    try {
+      const result = await supabase.auth.resend({ type: "signup", email: pendingPersonalEmail });
+      if (result.error) throw result.error;
+      message("#authNotice", "Nou voye yon lòt lyen konfimasyon. Verifye bwat resepsyon ak spam ou.", "success");
+    } catch (error) {
+      message("#authNotice", "Nou pa kapab voye yon lòt lyen kounye a: " + translateError(error.message), "error");
+    } finally {
+      button.disabled = false;
+    }
   });
 
   const dob = $("#personalDob");

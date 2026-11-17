@@ -10,7 +10,7 @@
   <title>LakayGoPay — Peman senp, lavi senp</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="stylesheet" href="/styles.css?v=20261116-08">
+  <link rel="stylesheet" href="/styles.css?v=20261117-02">
 </head>
 <body>
   <header class="topbar">
@@ -44,7 +44,7 @@
         <h2>Byenveni</h2>
         <p>Konekte oswa kreye kont ou.</p>
       </div>
-      <div class="auth-tabs" role="tablist" aria-label="Kalite kont">
+      <div id="authTabs" class="auth-tabs" role="tablist" aria-label="Kalite kont">
         <button type="button" class="auth-tab active" data-auth-mode="login">Konekte</button>
         <button type="button" class="auth-tab" data-auth-mode="personal">Kliyan</button>
         <button type="button" class="auth-tab" data-auth-mode="merchant">Machann</button>
@@ -100,6 +100,28 @@
       <form id="newPasswordForm" class="form-stack" hidden>
         <label>Nouvo modpas<input id="newPassword" type="password" autocomplete="new-password" minlength="8" required></label>
         <button class="button button-primary full" type="submit">Sove nouvo modpas</button>
+      </form>
+
+      <section id="personalEmailPending" class="form-stack verification-pending" hidden>
+        <div class="verification-icon">✉</div>
+        <h3>Konfime imèl kont kliyan ou</h3>
+        <p>Nou voye yon lyen konfimasyon bay:</p>
+        <strong id="personalPendingEmail" class="verification-email"></strong>
+        <p>Lè ou klike lyen an nan imèl la, LakayGoPay ap louvri kont ou otomatikman. Ou pa bezwen antre imèl oswa modpas ankò.</p>
+        <button id="personalResendButton" class="button button-secondary full" type="button">Voye lyen an ankò</button>
+      </section>
+
+      <form id="merchantOtpForm" class="form-stack verification-pending" hidden>
+        <div class="verification-icon">✉</div>
+        <h3>Konfime imèl biznis ou</h3>
+        <p>Nou voye yon kòd 6 chif bay:</p>
+        <strong id="merchantOtpEmail" class="verification-email"></strong>
+        <label>Kòd konfimasyon 6 chif
+          <input id="merchantOtpCode" type="text" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required>
+        </label>
+        <p class="field-hint">Antre kòd ki nan imèl la. Ou pa bezwen antre modpas ou ankò.</p>
+        <button id="merchantOtpVerifyButton" class="button button-primary full" type="submit">Verifye kòd la</button>
+        <button id="merchantOtpResendButton" class="button button-secondary full" type="button">Voye yon lòt kòd</button>
       </form>
       <div id="authNotice" class="notice" role="status" aria-live="polite"></div>
     </section>
@@ -347,6 +369,6 @@
     </footer>
   </main>
 
-  <script type="module" src="/app.js?v=20261117-01"></script>
+  <script type="module" src="/app.js?v=20261117-02"></script>
 </body>
 </html>
