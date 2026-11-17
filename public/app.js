@@ -657,7 +657,7 @@ function setAuthMode(mode) {
   $("#newPasswordForm").hidden = mode !== "newpassword";
   const verificationPending = mode === "personalPending" || mode === "merchantOtp";
   $("#authTabs").hidden = verificationPending;
-  $("[data-auth-mode]").forEach(function (button) {
+  $$("[data-auth-mode]").forEach(function (button) {
     button.classList.toggle("active", button.dataset.authMode === mode);
   });
   message("#authNotice", "", "");
@@ -721,7 +721,7 @@ async function registerAccount(payload, emailField) {
     "success");
 }
 function wireForms() {
-  $("[data-auth-mode]").forEach(function (button) {
+  $$("[data-auth-mode]").forEach(function (button) {
     button.addEventListener("click", function () { setAuthMode(button.dataset.authMode); });
   });
 
