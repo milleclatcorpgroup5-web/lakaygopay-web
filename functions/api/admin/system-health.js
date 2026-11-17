@@ -10,11 +10,11 @@ const TABLE_CHECKS = [
     resource: "admin_security?select=user_id,pin_hash,pin_salt,pin_iterations,failed_attempts,locked_until,last_verified_at,last_verified_session_id&limit=0"
   },
   { id: "merchants", label: "Pwofil machann", resource: "merchants?select=id&limit=0" },
-  { id: "wallets", label: "Bous", resource: "wallets?select=id,owner_user_id,merchant_id,currency,balance&limit=0" },
+  { id: "wallets", label: "Bous", resource: "wallet_balances?select=wallet_id,owner_user_id,merchant_id,currency,balance,created_at&limit=0" },
   { id: "ledger", label: "Ledger tranzaksyon", resource: "ledger_transactions?select=id&limit=0" },
   { id: "withdrawals", label: "Demann retrè", resource: "withdrawal_requests?select=id&limit=0" },
   { id: "audit_logs", label: "Jounal audit", resource: "audit_logs?select=id&limit=0" },
-  { id: "security_events", label: "Evènman sekirite", resource: "security_events?select=id&limit=0" }
+  { id: "security_events", label: "Jounal evènman sekirite (si konfigire)", optional: true, resource: "security_events?select=id&limit=0" }
 ];
 
 function safeDatabaseDiagnostic(status, code) {
@@ -53,6 +53,16 @@ async function checkTable(url, secretKey, item) {
       const body = await response.json();
       code = String(body?.code || "");
     } catch {}
+    if (item.optional && ["PGRST205", "42P01"].includes(code)) {
+      return {
+        id: item.id,
+        label: item.label,
+        status: "disabled",
+        stage: "SUPABASE_REST",
+        http_status: response.status,
+        diagnostic: "OPTIONAL_TABLE_NOT_CONFIGURED"
+      };
+    }
     return {
       id: item.id,
       label: item.label,
