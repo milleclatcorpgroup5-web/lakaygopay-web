@@ -69,6 +69,10 @@ function translateError(code) {
     INVALID_OR_EXPIRED_SESSION: "Sesyon an ekspire. Konekte ankò.",
     MINIMUM_AGE_18: "Ou dwe gen omwen 18 an pou ouvri kont pèsonèl.",
     EMAIL_ALREADY_REGISTERED: "Imèl sa a deja gen yon kont oswa yon enskripsyon an kou. Verifye bwat imèl ou; si ou deja konfime kont lan, konekte pito.",
+    EMAIL_DELIVERY_NOT_CONFIGURED: "Supabase pa otorize voye imèl nan adrès sa a. Pou ouvri tès piblik yo, fòk nou konfigire yon sèvis SMTP pèsonalize nan Supabase.",
+    EMAIL_RATE_LIMITED: "Limit voye imèl la rive. Tann yon ti tan anvan ou mande yon lòt mesaj konfimasyon.",
+    SIGNUP_RESPONSE_INCOMPLETE: "Supabase pa retounen konfimasyon ki nesesè pou fini enskripsyon an. Pa eseye kreye menm kont lan plizyè fwa; kontakte ekip LakayGoPay.",
+
     ACCOUNT_SUSPENDED: "Aksè kont sa a sispann. Kontakte sipò LakayGoPay.",
     ACCOUNT_NOT_ACTIVE: "Kont sa a pa aktif. Kontakte sipò LakayGoPay.",
     VALID_PHONE_REQUIRED: "Antre yon nimewo telefòn ki valab.",
