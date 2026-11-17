@@ -49,7 +49,13 @@ function explainError(code) {
     ADMIN_RECORD_TYPE_INVALID: "Kategori dosye sa a pa valab.",
     MFA_REQUIRED: "Aksyon sa a mande verifikasyon TOTP. Verifye kòd authenticator ou a.",
     MFA_CODE_MUST_BE_6_DIGITS: "Kòd authenticator lan dwe gen 6 chif.",
-    MFA_FACTOR_NOT_ENROLLED: "Pa gen faktè authenticator. Klike Kreye / aktive MFA an premye."
+    MFA_FACTOR_NOT_ENROLLED: "Pa gen faktè authenticator. Klike Kreye / aktive MFA an premye.",
+    USER_STATUS_INVALID: "Estati kont lan pa valab.",
+    ADMIN_CANNOT_SUSPEND_SELF: "Ou pa kapab sispann pwòp kont administratè ou.",
+    LAST_SUPER_ADMIN_PROTECTED: "Ou pa kapab sispann dènye Super administratè aktif la.",
+    SUPER_ADMIN_ACCOUNT_PROTECTED: "Se sèlman yon Super administratè ki ka chanje estati yon lòt Super administratè.",
+    USER_NOT_FOUND: "Kont itilizatè sa a pa egziste.",
+    ADMIN_SESSION_MISMATCH: "Sesyon administratè a pa koresponn. Konekte ankò."
   };
   return messages[code] || "Yon erè rive. Kòd: " + (code || "UNKNOWN");
 }
@@ -322,10 +328,15 @@ function recordValue(type, row, key) {
   return row[key] == null || row[key] === "" ? "—" : String(row[key]);
 }
 function openAdminAction(type, row) {
+  $("#adminUserStatusForm").hidden = type !== "users";
   $("#adminMerchantReviewForm").hidden = type !== "merchants";
   $("#adminWithdrawalReviewForm").hidden = type !== "withdrawals";
   $("#adminAgentReviewForm").hidden = type !== "agents";
-  if (type === "merchants") {
+  if (type === "users") {
+    $("#adminUserId").value = row.id || "";
+    $("#adminUserStatus").value = row.account_status === "suspended" ? "active" : "suspended";
+    $("#adminUserReason").value = "";
+  } else if (type === "merchants") {
     $("#adminMerchantId").value = row.id || "";
     $("#adminMerchantStatus").value = row.status === "pending" ? "under_review" : "active";
     $("#adminMerchantComment").value = "";
@@ -352,7 +363,7 @@ function renderAdminRecords(type, rows) {
     th.textContent = label;
     headerRow.append(th);
   });
-  if (["merchants","withdrawals","agents"].includes(type)) {
+  if (["users","merchants","withdrawals","agents"].includes(type)) {
     const th = document.createElement("th");
     th.textContent = "Aksyon";
     headerRow.append(th);
@@ -565,6 +576,18 @@ async function boot() {
   $("#adminRecordsRefresh").addEventListener("click", () => {
     const active = document.querySelector("[data-record-type].active");
     loadAdminRecords(active?.dataset.recordType || "users");
+  });
+
+  $("#adminUserStatusForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const status = $("#adminUserStatus").value;
+    const action = status === "suspended" ? "sispann" : "reyaktive";
+    if (!window.confirm("Ou vle " + action + " kont itilizatè sa a?")) return;
+    await submitAdminAction("/api/admin/users/status", {
+      user_id: $("#adminUserId").value.trim(),
+      status,
+      reason: $("#adminUserReason").value.trim()
+    }, "Estati kont itilizatè a mete ajou avèk tras audit.", "users");
   });
 
   $("#adminMerchantReviewForm").addEventListener("submit", async (event) => {
