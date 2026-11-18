@@ -1,5 +1,5 @@
 import { json, config } from "../../_shared/superbase.js";
-import { requireAdminPinSession } from "../../_shared/admin-pin.js";
+import { requireAdminRoles } from "../../_shared/security.js";
 
 const TABLE_CHECKS = [
   { id: "profiles", label: "Supabase DB / pwofil itilizatè", resource: "profiles?select=id,account_status&limit=0" },
@@ -157,7 +157,7 @@ async function checkAuth(url, publishableKey) {
 }
 
 export async function onRequestGet({ request, env }) {
-  const access = await requireAdminPinSession(request, env);
+  const access = await requireAdminRoles(request, env, ["admin"]);
   if (access.error) return access.error;
 
   try {
