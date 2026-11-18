@@ -38,21 +38,29 @@ alter table public.user_roles
 alter table public.wallets
   add column if not exists system_account_code text;
 
--- Treasury wallet shells may be denominated in HTG, USD, or EUR. This does not
--- enable foreign-currency customer wallets or ledger postings: ledger_entries,
--- transfers and payout records remain HTG-only until FX controls are delivered.
-alter table public.wallets
-  drop constraint if exists wallets_currency_check;
+-- Preserve the HTG/USD/EUR wallet architecture introduced by the earlier
+-- multicurrency migration. Each currency remains an independent ledger unit:
+-- transfers must match currency, and no FX conversion or external settlement
+-- is introduced by this Admin Control Center migration.
+do $wallet_currency$
+declare
+  v_constraint record;
+begin
+  for v_constraint in
+    select conname
+      from pg_constraint
+     where conrelid = 'public.wallets'::regclass
+       and contype = 'c'
+       and pg_get_constraintdef(oid) ilike '%currency%'
+  loop
+    execute format('alter table public.wallets drop constraint %I', v_constraint.conname);
+  end loop;
+end;
+$wallet_currency$;
+
 alter table public.wallets
   add constraint wallets_currency_supported_check
-  check (
-    currency = 'HTG'
-    or (
-      is_system = true
-      and system_account_code = 'platform_revenue'
-      and currency in ('USD','EUR')
-    )
-  );
+  check (currency in ('HTG','USD','EUR'));
 
 update public.wallets
    set system_account_code = 'clearing'
