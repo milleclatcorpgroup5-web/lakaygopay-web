@@ -396,9 +396,13 @@ declare
   v_id uuid;
 begin
   if not exists (
-    select 1 from public.user_roles
-     where user_id = p_actor_user_id and role = 'finance_admin'
-  ) then
+       select 1 from public.user_roles
+        where user_id = p_actor_user_id and role = 'finance_admin'
+     )
+     or exists (
+       select 1 from public.user_roles
+        where user_id = p_actor_user_id and role = 'super_admin'
+     ) then
     raise exception 'FINANCE_ROLE_REQUIRED';
   end if;
   if p_service_code is null or p_service_code not in ('internal_transfer','merchant_qr','fx_conversion','cash_in','cash_out','bill_payment') then
