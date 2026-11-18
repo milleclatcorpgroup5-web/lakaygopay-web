@@ -727,54 +727,169 @@ function renderAnalyticsBreakdown(selector, rows, emptyLabel) {
   });
 }
 
-function renderGrowthChart(rows) {
+function renderGrowthChart(rows, emptyMessage = "") {
   const svg = $("#adminGrowthChart");
-  if (!svg) return;
+  if (!svg) return false;
+
   const ns = "http://www.w3.org/2000/svg";
+  const width = 900;
+  const height = 280;
+  const left = 52;
+  const right = 24;
+  const top = 22;
+  const bottom = 44;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
+
+  // Give the SVG its own reliable dimensions and dark background. This keeps
+  // the chart readable even if a browser or CDN serves stale/incomplete CSS.
+  svg.replaceChildren();
+  svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+  svg.setAttribute("width", String(width));
+  svg.setAttribute("height", String(height));
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  svg.setAttribute("role", "img");
+  svg.style.display = "block";
+  svg.style.width = "100%";
+  svg.style.height = "auto";
+  svg.style.minHeight = "190px";
+  svg.style.backgroundColor = "#071b2a";
+  svg.style.borderRadius = "12px";
+
   const make = (tag, attrs, parent = svg) => {
     const node = document.createElementNS(ns, tag);
-    Object.entries(attrs || {}).forEach(([key, value]) => node.setAttribute(key, String(value)));
+    Object.entries(attrs || {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) node.setAttribute(key, String(value));
+    });
     parent.append(node);
     return node;
   };
-  svg.replaceChildren();
-  if (!rows.length) {
-    make("text", { x: 450, y: 135, "text-anchor": "middle", class: "chart-empty" }).textContent = "Pa gen done pou peryòd sa a.";
-    return;
-  }
-  const width = 900, height = 280;
-  const left = 48, right = 22, top = 18, bottom = 42;
-  const plotWidth = width - left - right;
-  const plotHeight = height - top - bottom;
+
+  make("rect", {
+    x: 0, y: 0, width, height, rx: 12,
+    fill: "#071b2a"
+  });
+
+  const title = make("title", {});
+  title.textContent = "Evolisyon itilizatè ak aktivite sèvis";
+  const description = make("desc", {});
+  description.textContent = "Grafik sou nouvo kont, itilizatè sèvis aktif ak kont san aktivite sèvis.";
+
   const series = [
-    { key: "registrations", label: "Nouvo kont", className: "chart-line-registrations" },
-    { key: "active_users", label: "Itilizatè sèvis aktif", className: "chart-line-active" },
-    { key: "inactive_users", label: "San aktivite sèvis", className: "chart-line-inactive" }
+    { key: "registrations", label: "Nouvo kont", color: "#f0c276" },
+    { key: "active_users", label: "Itilizatè sèvis aktif", color: "#63d8c5" },
+    { key: "inactive_users", label: "San aktivite sèvis", color: "#73aef1" }
   ];
-  const maxValue = Math.max(1, ...rows.flatMap((row) => series.map((item) => Number(row[item.key] || 0))));
+
+  const sourceRows = Array.isArray(rows) ? rows : [];
+  const cleanRows = sourceRows
+    .filter((row) => row && typeof row === "object")
+    .map((row) => {
+      const clean = { date: String(row.date || "") };
+      series.forEach((item) => {
+        const value = Number(row[item.key]);
+        clean[item.key] = Number.isFinite(value) && value > 0 ? value : 0;
+      });
+      return clean;
+    });
+
+  if (!cleanRows.length) {
+    const message = make("text", {
+      x: width / 2,
+      y: height / 2,
+      "text-anchor": "middle",
+      "dominant-baseline": "middle",
+      fill: "#c3d6e2",
+      "font-size": 15,
+      "font-family": "Inter, system-ui, sans-serif"
+    });
+    message.textContent = emptyMessage || "Pa gen done pou peryòd sa a.";
+    return true;
+  }
+
+  const maxValue = Math.max(
+    1,
+    ...cleanRows.flatMap((row) => series.map((item) => row[item.key]))
+  );
+
   for (let tick = 0; tick <= 4; tick += 1) {
     const y = top + (plotHeight * tick / 4);
-    make("line", { x1: left, y1: y, x2: width - right, y2: y, class: "chart-grid-line" });
-    const label = make("text", { x: left - 9, y: y + 4, "text-anchor": "end", class: "chart-axis-label" });
+    make("line", {
+      x1: left, y1: y, x2: width - right, y2: y,
+      stroke: "rgba(169,203,222,0.22)",
+      "stroke-width": 1
+    });
+    const label = make("text", {
+      x: left - 10,
+      y: y + 4,
+      "text-anchor": "end",
+      fill: "#a9c0cf",
+      "font-size": 11,
+      "font-family": "Inter, system-ui, sans-serif"
+    });
     label.textContent = Math.round(maxValue * (4 - tick) / 4).toLocaleString("fr-HT");
   }
-  const xFor = (index) => left + (rows.length === 1 ? plotWidth / 2 : (plotWidth * index / (rows.length - 1)));
-  const yFor = (value) => top + plotHeight - (Number(value || 0) / maxValue) * plotHeight;
+
+  const xFor = (index) => left + (
+    cleanRows.length === 1
+      ? plotWidth / 2
+      : plotWidth * index / (cleanRows.length - 1)
+  );
+  const yFor = (value) => top + plotHeight - (value / maxValue) * plotHeight;
+
   series.forEach((item) => {
-    const points = rows.map((row, index) => xFor(index) + "," + yFor(row[item.key])).join(" ");
-    make("polyline", { points, class: "chart-line " + item.className });
-    rows.forEach((row, index) => {
-      if (rows.length <= 30 || index % Math.ceil(rows.length / 30) === 0) {
-        make("circle", { cx: xFor(index), cy: yFor(row[item.key]), r: 2.8, class: "chart-point " + item.className });
+    const points = cleanRows
+      .map((row, index) => xFor(index) + "," + yFor(row[item.key]))
+      .join(" ");
+
+    make("polyline", {
+      points,
+      fill: "none",
+      stroke: item.color,
+      "stroke-width": 3,
+      "stroke-linejoin": "round",
+      "stroke-linecap": "round",
+      "vector-effect": "non-scaling-stroke"
+    });
+
+    cleanRows.forEach((row, index) => {
+      if (cleanRows.length <= 30 || index % Math.ceil(cleanRows.length / 30) === 0) {
+        const point = make("circle", {
+          cx: xFor(index),
+          cy: yFor(row[item.key]),
+          r: 3.4,
+          fill: item.color,
+          stroke: "#071b2a",
+          "stroke-width": 1.5
+        });
+        const tooltip = make("title", {}, point);
+        tooltip.textContent = item.label + " · " +
+          (row.date || "Dat san dat") + " · " +
+          row[item.key].toLocaleString("fr-HT");
       }
     });
   });
-  const labelCount = Math.min(6, rows.length);
+
+  const labelCount = Math.min(6, cleanRows.length);
   for (let index = 0; index < labelCount; index += 1) {
-    const rowIndex = labelCount === 1 ? 0 : Math.round(index * (rows.length - 1) / (labelCount - 1));
-    const label = make("text", { x: xFor(rowIndex), y: height - 13, "text-anchor": "middle", class: "chart-axis-label" });
-    label.textContent = rows[rowIndex].date.slice(5).replace("-", "/");
+    const rowIndex = labelCount === 1
+      ? 0
+      : Math.round(index * (cleanRows.length - 1) / (labelCount - 1));
+    const date = cleanRows[rowIndex].date;
+    const label = make("text", {
+      x: xFor(rowIndex),
+      y: height - 14,
+      "text-anchor": "middle",
+      fill: "#a9c0cf",
+      "font-size": 10,
+      "font-family": "Inter, system-ui, sans-serif"
+    });
+    label.textContent = /^\d{4}-\d{2}-\d{2}$/.test(date)
+      ? date.slice(5).replace("-", "/")
+      : (date || "—");
   }
+
+  return true;
 }
 
 async function loadAdminAnalytics(session) {
@@ -783,7 +898,11 @@ async function loadAdminAnalytics(session) {
   try {
     const data = await adminRequest("/api/admin/analytics?days=" + days, session);
     const summary = data.summary || {};
-    const format = (value) => Number(value || 0).toLocaleString("fr-HT");
+    const format = (value) => {
+      const number = Number(value);
+      return Number.isFinite(number) ? number.toLocaleString("fr-HT") : "0";
+    };
+
     $("#analyticsRegistered").textContent = format(summary.registered_users);
     $("#analyticsNewUsers").textContent = format(summary.new_registrations);
     $("#analyticsActiveAccounts").textContent = format(summary.active_accounts);
@@ -792,31 +911,46 @@ async function loadAdminAnalytics(session) {
     $("#analyticsServiceTransactions").textContent = format(summary.service_transactions);
     $("#analyticsMerchants").textContent = format(summary.merchants_total);
     $("#analyticsActiveMerchants").textContent = format(summary.active_merchants);
-    renderGrowthChart(data.timeline || []);
+
+    renderGrowthChart(data.timeline, "Pa gen done pou peryòd sa a.");
     renderAnalyticsBreakdown("#analyticsAccountStatuses", [
       { label: "Aktif", count: summary.active_accounts },
       { label: "Limite", count: summary.restricted_accounts },
       { label: "Sispann", count: summary.suspended_accounts },
       { label: "Fèmen", count: summary.closed_accounts }
     ]);
-    renderAnalyticsBreakdown("#analyticsServiceBreakdown", data.service_breakdown || [], "Pa gen tranzaksyon sèvis ki poste nan peryòd la.");
+    renderAnalyticsBreakdown(
+      "#analyticsServiceBreakdown",
+      Array.isArray(data.service_breakdown) ? data.service_breakdown : [],
+      "Pa gen tranzaksyon sèvis ki poste nan peryòd la."
+    );
+
     $("#analyticsGeneratedAt").textContent = data.generated_at
       ? "Dènye kalkil: " + new Date(data.generated_at).toLocaleString("fr-HT") + " · Zòn lè: Ayiti"
       : "";
+
     const note = data.notes?.truncated
       ? "Done yo chaje an pati (limit sekirite 10 000 liy). Peryòd la ka mande yon rapò agregasyon SQL lè platfòm lan grandi."
       : "Analiz " + days + " jou chaje. Itilizatè aktif = omwen yon tranzaksyon ki deja poste nan jounen an; inaktif = pa gen tranzaksyon poste nan jounen an.";
     setNotice("#analyticsNotice", note, data.notes?.truncated ? "error" : "success");
   } catch (error) {
-    setNotice("#analyticsNotice", explainError(error.code || error.message), "error");
-    ["#analyticsRegistered","#analyticsNewUsers","#analyticsActiveAccounts","#analyticsInactiveAccounts",
-      "#analyticsServiceUsers","#analyticsServiceTransactions","#analyticsMerchants","#analyticsActiveMerchants"]
-      .forEach((selector) => { $(selector).textContent = "N/D"; });
-    $("#adminGrowthChart").replaceChildren();
+    const message = explainError(error.code || error.message);
+    setNotice("#analyticsNotice", message, "error");
+    [
+      "#analyticsRegistered", "#analyticsNewUsers", "#analyticsActiveAccounts",
+      "#analyticsInactiveAccounts", "#analyticsServiceUsers",
+      "#analyticsServiceTransactions", "#analyticsMerchants",
+      "#analyticsActiveMerchants"
+    ].forEach((selector) => {
+      const element = $(selector);
+      if (element) element.textContent = "N/D";
+    });
+    renderGrowthChart([], "Grafik la pa disponib kounye a. Rafrechi paj la oswa verifye sèvis analiz la.");
     renderAnalyticsBreakdown("#analyticsAccountStatuses", [], "Done estati pa disponib.");
     renderAnalyticsBreakdown("#analyticsServiceBreakdown", [], "Done sèvis pa disponib.");
   }
 }
+
 
 async function loadFinanceOverview(session) {
   setNotice("#financeNotice", "Ap chaje kont trezò antrepriz la…", "");
