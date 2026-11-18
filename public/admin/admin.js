@@ -547,6 +547,102 @@ async function loadFinanceOverview(session) {
   }
 }
 
+function feeServiceLabel(code) {
+  const labels = {
+    internal_transfer: "Transfè entèn",
+    merchant_qr: "Peman machann QR",
+    fx_conversion: "Konvèsyon lajan",
+    cash_in: "Depo / Cash In",
+    cash_out: "Retrè / Cash Out",
+    bill_payment: "Peman fakti / rechaj"
+  };
+  return labels[code] || code;
+}
+
+function renderFeeProposals(proposals, canApprove) {
+  const list = $("#feeProposalsList");
+  list.replaceChildren();
+  if (!proposals.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "Pa gen pwopozisyon tarif pou kounye a.";
+    list.append(empty);
+    return;
+  }
+  proposals.forEach((proposal) => {
+    const card = document.createElement("article");
+    card.className = "fee-proposal-card";
+    const main = document.createElement("div");
+    main.className = "fee-proposal-main";
+    const title = document.createElement("strong");
+    title.textContent = feeServiceLabel(proposal.service_code) + " · " + proposal.currency + " · v" + proposal.version;
+    const value = document.createElement("b");
+    const feeText = proposal.fee_kind === "percentage"
+      ? Number(proposal.fee_value).toLocaleString("fr-HT") + "%"
+      : Number(proposal.fee_value).toLocaleString("fr-HT") + " " + proposal.currency;
+    value.textContent = feeText;
+    const meta = document.createElement("small");
+    meta.textContent = [
+      "Estati: " + proposal.status,
+      "Aplikasyon: " + new Date(proposal.effective_at).toLocaleString("fr-HT"),
+      proposal.minimum_fee != null ? "Min: " + proposal.minimum_fee : "",
+      proposal.maximum_fee != null ? "Max: " + proposal.maximum_fee : ""
+    ].filter(Boolean).join(" · ");
+    const note = document.createElement("p");
+    note.textContent = proposal.proposal_note || "";
+    main.append(title,value,meta,note);
+    card.append(main);
+
+    if (canApprove && proposal.status === "proposed") {
+      const actions = document.createElement("div");
+      actions.className = "fee-proposal-actions";
+      for (const [decision,label] of [["approve","Apwouve"],["reject","Rejte"]]) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = decision === "approve" ? "button button-primary" : "button button-quiet";
+        button.textContent = label;
+        button.addEventListener("click", () => reviewFeeProposal(proposal.id, decision));
+        actions.append(button);
+      }
+      card.append(actions);
+    }
+    list.append(card);
+  });
+}
+
+async function loadFeeProposals(session) {
+  setNotice("#feeProposalsNotice", "Ap chaje istwa pwopozisyon tarif yo…", "");
+  try {
+    const data = await adminRequest("/api/admin/finance/fees", session);
+    renderFeeProposals(data.proposals || [], data.can_approve === true);
+    setNotice("#feeProposalsNotice",
+      (data.proposals || []).length + " vèsyon tarif nan istorik la. Motè frè a rete dezaktive.",
+      "success");
+    $("#feeProposalForm").hidden = data.can_propose !== true;
+  } catch (error) {
+    setNotice("#feeProposalsNotice", explainError(error.code || error.message), "error");
+    $("#feeProposalsList").replaceChildren();
+  }
+}
+
+async function reviewFeeProposal(proposalId, decision) {
+  const verb = decision === "approve" ? "apwouve" : "rejte";
+  if (!window.confirm("Ou vle " + verb + " pwopozisyon tarif sa a? Sa pap aktive koleksyon frè.")) return;
+  const note = window.prompt("Nòt Super Administratè (opsyonèl):") || "";
+  const buttonSession = await currentSession();
+  try {
+    await adminRequest("/api/admin/finance/fees", buttonSession, {
+      proposal_id: proposalId,
+      decision,
+      decision_note: note
+    }, "PATCH");
+    setNotice("#feeProposalsNotice", "Desizyon Super Administratè a anrejistre ak tras audit.", "success");
+    await loadFeeProposals(buttonSession);
+  } catch (error) {
+    setNotice("#feeProposalsNotice", explainError(error.code || error.message), "error");
+  }
+}
+
 async function loadTeamRoles(session) {
   setNotice("#teamRolesNotice", "Ap chaje lis ekip la…", "");
   try {
@@ -994,6 +1090,39 @@ async function boot() {
     } catch (error) {
       setNotice("#adminActionNotice", explainError(error.code || error.message), "error");
       $("#adminLedgerAuditResult").textContent = error.message;
+    }
+  });
+
+  $("#feeProposalForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const effectiveValue = $("#feeEffectiveAt").value;
+    if (!effectiveValue) {
+      setNotice("#feeProposalsNotice", "Chwazi dat ak lè tarif la ta dwe antre an aplikasyon.", "error");
+      return;
+    }
+    const button = event.submitter;
+    button.disabled = true;
+    try {
+      const session = await currentSession();
+      await adminRequest("/api/admin/finance/fees", session, {
+        service_code: $("#feeServiceCode").value,
+        currency: $("#feeCurrency").value,
+        fee_kind: $("#feeKind").value,
+        fee_value: $("#feeValue").value,
+        minimum_fee: $("#feeMinimum").value,
+        maximum_fee: $("#feeMaximum").value || null,
+        effective_at: new Date(effectiveValue).toISOString(),
+        note: $("#feeProposalNote").value.trim()
+      });
+      $("#feeValue").value = "";
+      $("#feeMaximum").value = "";
+      $("#feeProposalNote").value = "";
+      setNotice("#feeProposalsNotice", "Pwopozisyon an soumèt. Li ap tann desizyon Super Administratè a; okenn frè pa kolekte.", "success");
+      await loadFeeProposals(session);
+    } catch (error) {
+      setNotice("#feeProposalsNotice", explainError(error.code || error.message), "error");
+    } finally {
+      button.disabled = false;
     }
   });
 
