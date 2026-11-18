@@ -4,7 +4,7 @@ import { financialFail } from "../../../_shared/financial-errors.js";
 
 export async function onRequestGet({ request, env }) {
   const access = await requireAdminRoles(
-    request, env, ["admin","finance_admin","risk_admin","accountant","auditor"]
+    request, env, ["finance_admin","accountant","auditor"]
   );
   if (access.error) return access.error;
 
