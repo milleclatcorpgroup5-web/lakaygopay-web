@@ -281,11 +281,21 @@ async function loadOverview(session) {
 
   $("#adminMfaPanel").classList.remove("mfa-needs-action");
   setProtectedAdminControls(true);
-  if (canSeeSystemHealth) await loadSystemHealth(session);
-  if (canSeeAnalytics) await loadAdminAnalytics(session);
-  if (canSeeFinance) await loadFinanceOverview(session);
-  if (isSuper) await loadTeamRoles(session);
-  if (canSeeSecretariat) await loadSecretariatItems(session);
+  // Load each authorized module independently. Finance overview, fee history,
+  // and the daily ledger report are separate APIs and must all be initialized
+  // on first entry (not only after the user submits a fee proposal or clicks
+  // the report refresh button).
+  const moduleLoads = [];
+  if (canSeeSystemHealth) moduleLoads.push(loadSystemHealth(session));
+  if (canSeeAnalytics) moduleLoads.push(loadAdminAnalytics(session));
+  if (canSeeFinance) {
+    moduleLoads.push(loadFinanceOverview(session));
+    moduleLoads.push(loadFeeProposals(session));
+    moduleLoads.push(loadDailyFinancialSummary(session));
+  }
+  if (isSuper) moduleLoads.push(loadTeamRoles(session));
+  if (canSeeSecretariat) moduleLoads.push(loadSecretariatItems(session));
+  await Promise.allSettled(moduleLoads);
 
   if (canSeeOperations) {
     const allowedRecords = new Set();
