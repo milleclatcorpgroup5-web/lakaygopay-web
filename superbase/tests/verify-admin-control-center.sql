@@ -193,4 +193,24 @@ select
   count(*) filter (where status = 'approved') as approved_proposals_do_not_activate_engine
 from public.platform_fee_proposals;
 
+-- 13. The Admin Control Center must retain separate HTG/USD/EUR wallets.
+-- It must not add an is_system-only currency restriction to customer wallets.
+with wallet_currency_constraint as (
+  select pg_get_constraintdef(oid) as definition
+    from pg_constraint
+   where conrelid = 'public.wallets'::regclass
+     and conname = 'wallets_currency_supported_check'
+)
+select
+  'three_currency_wallet_model' as check_name,
+  coalesce(
+    bool_and(
+      definition ilike '%HTG%'
+      and definition ilike '%USD%'
+      and definition ilike '%EUR%'
+      and definition not ilike '%is_system%'
+    ), false
+  ) as passed
+from wallet_currency_constraint;
+
 commit;
