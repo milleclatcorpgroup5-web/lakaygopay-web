@@ -214,6 +214,7 @@ async function loadOverview(session) {
   const canSeeActions = isSuper || ["admin","risk_admin","finance_admin","accountant","auditor"].some((role) => roleSet.has(role));
   const canSeeFinance = isSuper || ["finance_admin","accountant","auditor"].some((role) => roleSet.has(role));
   const canSeeSecretariat = isSuper || roleSet.has("secretary");
+  const canSeeSystemHealth = isSuper || roleSet.has("admin");
 
   $("#adminRecordsPanel").hidden = !canSeeOperations;
   $("#adminActionsPanel").hidden = !canSeeActions;
@@ -224,6 +225,7 @@ async function loadOverview(session) {
   $("#adminFinancePanel").hidden = !canSeeFinance;
   $("#adminTeamPanel").hidden = !isSuper;
   $("#adminSecretariatPanel").hidden = !canSeeSecretariat;
+  $("#systemHealthPanel").hidden = !canSeeSystemHealth;
 
   const firstName = String(admin.email || "Administratè").split("@")[0];
   $("#adminName").textContent = firstName;
@@ -243,7 +245,6 @@ async function loadOverview(session) {
   $("#generatedAt").textContent = "Dènye mizajou: " + date.toLocaleString("fr-HT");
   setNotice("#dashboardNotice", "Aksè admin konfime sou sèvè a. PIN Admin verifye.", "success");
   const mfaReady = await updateMfaStatus().catch(() => false);
-  await loadSystemHealth(session);
 
   if (!mfaReady) {
     const lockMessage = "Verifye MFA TOTP anlè a pou ouvri done operasyonèl, finansye ak sekretarya yo.";
@@ -254,6 +255,7 @@ async function loadOverview(session) {
     return;
   }
 
+  if (canSeeSystemHealth) await loadSystemHealth(session);
   if (canSeeFinance) await loadFinanceOverview(session);
   if (isSuper) await loadTeamRoles(session);
   if (canSeeSecretariat) await loadSecretariatItems(session);
