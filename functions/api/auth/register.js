@@ -112,7 +112,7 @@ export async function onRequestPost({ request, env }) {
       user: data.user ? { id: data.user.id, email: data.user.email } : null,
       session: data.session || null,
       needs_email_confirmation: !data.session,
-      verification_method: accountType === "merchant" ? "email_otp" : "email_link",
+      verification_method: "email_otp",
     }, 201);
   } catch (error) {
     const status = Number(error?.status) || 503;
