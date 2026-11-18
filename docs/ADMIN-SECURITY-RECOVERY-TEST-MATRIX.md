@@ -22,7 +22,7 @@ A page refresh intentionally requires the Admin PIN again. PIN verification is t
 
 - The login page requests a Supabase password-recovery email.
 - Configure the exact Admin URL in Supabase Auth redirect allow-list: `https://lakaygopay-web.pages.dev/admin/` (and the trusted non-production callback URL used for QA).
-- The callback accepts only Supabase's recovery session tokens. The Admin enters a new password with at least 12 characters.
+- The callback supports Supabase's implicit recovery tokens and the PKCE `?code=` callback. For PKCE, the code verifier must still exist in the same browser storage context that requested the email. The Admin enters a new password with at least 12 characters.
 - The user must sign in again, then pass the Admin PIN and MFA gates. Password recovery does not grant access to protected Admin modules.
 
 ### Forgotten Admin PIN
