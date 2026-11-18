@@ -4,6 +4,7 @@ const $ = (selector) => document.querySelector(selector);
 let supabase = null;
 let adminPinVerifiedUserId = null;
 let pinGateSession = null;
+let currentAdminRoles = [];
 
 function setNotice(selector, message, kind) {
   const node = $(selector);
@@ -20,7 +21,11 @@ function displayRole(role) {
     super_admin: "Super administratè",
     admin: "Administratè",
     finance_admin: "Admin finans",
-    risk_admin: "Admin risk"
+    risk_admin: "Admin risk",
+    accountant: "Kontab",
+    secretary: "Sekretè pèsonèl",
+    support_agent: "Sipò kliyan",
+    auditor: "Oditè"
   };
   return names[role] || role;
 }
@@ -33,6 +38,37 @@ function explainError(code) {
   }
   const messages = {
     ADMIN_ACCESS_DENIED: "Kont sa a pa gen wòl administratè. Aksè a refize.",
+    ADMIN_PERMISSION_DENIED: "Wòl kont sa a pa otorize pou ouvri modil sa a.",
+    SUPER_ADMIN_REQUIRED: "Se Super Administratè sèlman ki ka fè chanjman sa a.",
+    ADMIN_ROLE_INVALID: "Wòl administratè sa a pa valab.",
+    ADMIN_ROLE_ACTION_INVALID: "Aksyon sou wòl la pa valab.",
+    TEAM_DIRECTORY_UNAVAILABLE: "Lis ekip administrasyon an pa disponib.",
+    FINANCE_MODULE_SCHEMA_NOT_READY: "Bazdone bous revni an poko enstale. Egzekite migrasyon Admin Control Center la.",
+    FINANCE_OVERVIEW_UNAVAILABLE: "Rezime finans lan pa disponib.",
+    FINANCE_REPORT_RANGE_INVALID: "Chwazi yon peryòd rapò ant 1 ak 90 jou.",
+    FINANCE_ROLE_REQUIRED: "Se yon Responsab Finans ki ka soumèt pwopozisyon tarif.",
+    MAKER_CANNOT_APPROVE_OWN_FEE_PROPOSAL: "Moun ki pwopoze tarif la pa kapab apwouve pwòp pwopozisyon li.",
+    FEE_PROPOSALS_UNAVAILABLE: "Istwa pwopozisyon tarif yo pa disponib; verifye migrasyon Admin Control Center la.",
+    FEE_SERVICE_INVALID: "Sèvis pou tarif sa a pa valab.",
+    FEE_CURRENCY_INVALID: "Deviz tarif la dwe HTG, USD oswa EUR.",
+    FEE_KIND_INVALID: "Chwazi yon frè fiks oswa yon pousantaj.",
+    FEE_VALUE_INVALID: "Valè frè a dwe pozitif epi li dwe gen jiska 6 desimal.",
+    FEE_PERCENTAGE_TOO_HIGH: "Pousantaj frè a pa kapab depase 100%.",
+    FEE_RANGE_INVALID: "Frè minimòm oswa maksimòm lan pa valab.",
+    FEE_EFFECTIVE_DATE_INVALID: "Dat aplikasyon tarif la pa kapab nan tan pase.",
+    FEE_NOTE_TOO_LONG: "Nòt la pa kapab depase 500 karaktè.",
+    FEE_DECISION_INVALID: "Desizyon tarif la pa valab.",
+    FEE_PROPOSAL_ID_INVALID: "ID pwopozisyon tarif la pa valab.",
+    FEE_PROPOSAL_NOT_FOUND: "Nou pa jwenn pwopozisyon tarif sa a.",
+    FEE_PROPOSAL_ALREADY_REVIEWED: "Pwopozisyon sa a deja resevwa yon desizyon.",
+    SECRETARIAT_ACCESS_NOT_ASSIGNED: "Sekretè sa a poko resevwa aksè nan sekretarya pèsonèl la.",
+    SECRETARIAT_ROLE_REQUIRED: "Kont lan dwe gen wòl Sekretè anvan li resevwa aksè sa a.",
+    SECRETARIAT_ACCESS_SAVE_FAILED: "Nou pa t kapab anrejistre otorizasyon sekretè a.",
+    SECRETARIAT_STORAGE_UNAVAILABLE: "Depo sekretarya a poko pare oswa li pa disponib.",
+    SECRETARIAT_TITLE_INVALID: "Tit la obligatwa epi li dwe gen 160 karaktè oswa mwens.",
+    SECRETARIAT_ITEM_NOT_FOUND: "Nou pa jwenn travay sa a nan sekretarya a.",
+    SECRETARIAT_STATUS_INVALID: "Estati travay la pa valab.",
+    INVALID_USER_ID: "ID itilizatè a pa valab.",
     ADMIN_ROLE_SYSTEM_NOT_READY: "Sistèm wòl administratè a poko disponib nan bazdone a.",
     ADMIN_ACCESS_CHECK_FAILED: "Nou pa kapab verifye dwa aksè administratè a kounye a.",
     ADMIN_PIN_MUST_BE_6_DIGITS: "PIN Admin lan dwe gen egzakteman 6 chif.",
@@ -82,16 +118,17 @@ function showLogin(message, kind = "error") {
   $("#logoutButton").hidden = true;
   adminPinVerifiedUserId = null;
   pinGateSession = null;
+  currentAdminRoles = [];
   if (message) setNotice("#loginNotice", message, kind);
 }
-async function adminRequest(path, session, body) {
+async function adminRequest(path, session, body, method) {
   const headers = {
     accept: "application/json",
     authorization: "Bearer " + session.access_token
   };
   if (body !== undefined) headers["content-type"] = "application/json";
   const response = await fetch(path, {
-    method: body === undefined ? "GET" : "POST",
+    method: method || (body === undefined ? "GET" : "POST"),
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
     cache: "no-store"
@@ -152,10 +189,7 @@ async function showPinGate(session) {
 async function loadOverview(session) {
   setNotice("#dashboardNotice", "Ap verifye dwa aksè epi chaje apèsi a…", "");
   const response = await fetch("/api/admin/overview", {
-    headers: {
-      accept: "application/json",
-      authorization: "Bearer " + session.access_token
-    },
+    headers: { accept: "application/json", authorization: "Bearer " + session.access_token },
     cache: "no-store"
   });
   const data = await response.json().catch(() => ({}));
@@ -173,11 +207,31 @@ async function loadOverview(session) {
   $("#logoutButton").hidden = false;
 
   const admin = data.admin || {};
+  currentAdminRoles = Array.isArray(admin.roles) ? admin.roles : [];
+  const roleSet = new Set(currentAdminRoles);
+  const isSuper = roleSet.has("super_admin");
+  const canSeeOperations = isSuper || ["admin","risk_admin","support_agent","finance_admin","accountant","auditor"].some((role) => roleSet.has(role));
+  const canSeeActions = isSuper || ["admin","risk_admin","finance_admin","accountant","auditor"].some((role) => roleSet.has(role));
+  const canSeeFinance = isSuper || ["finance_admin","accountant","auditor"].some((role) => roleSet.has(role));
+  const canSeeSecretariat = isSuper || roleSet.has("secretary");
+  const canSeeSystemHealth = isSuper || roleSet.has("admin");
+
+  $("#adminRecordsPanel").hidden = !canSeeOperations;
+  $("#adminActionsPanel").hidden = !canSeeActions;
+  $("#adminUserStatusForm").hidden = !(isSuper || roleSet.has("admin") || roleSet.has("risk_admin"));
+  $("#adminMerchantReviewForm").hidden = !(isSuper || roleSet.has("admin") || roleSet.has("risk_admin"));
+  $("#adminWithdrawalReviewForm").hidden = !(isSuper || roleSet.has("admin") || roleSet.has("risk_admin") || roleSet.has("finance_admin"));
+  $("#adminAgentReviewForm").hidden = !(isSuper || roleSet.has("admin") || roleSet.has("risk_admin"));
+  $("#adminFinancePanel").hidden = !canSeeFinance;
+  $("#adminTeamPanel").hidden = !isSuper;
+  $("#adminSecretariatPanel").hidden = !canSeeSecretariat;
+  $("#systemHealthPanel").hidden = !canSeeSystemHealth;
+
   const firstName = String(admin.email || "Administratè").split("@")[0];
   $("#adminName").textContent = firstName;
-  $("#adminMeta").textContent = "Wòl verifye: " + (admin.roles || []).map(displayRole).join(" · ");
+  $("#adminMeta").textContent = "Wòl verifye: " + currentAdminRoles.map(displayRole).join(" · ");
   $("#sessionEmail").textContent = admin.email || "Kont verifye";
-  $("#sessionRoles").textContent = (admin.roles || []).map(displayRole).join(", ");
+  $("#sessionRoles").textContent = currentAdminRoles.map(displayRole).join(", ");
 
   const counts = data.counts || {};
   $("#countUsers").textContent = formatCount(counts.users);
@@ -190,11 +244,50 @@ async function loadOverview(session) {
   const date = new Date(data.generated_at || Date.now());
   $("#generatedAt").textContent = "Dènye mizajou: " + date.toLocaleString("fr-HT");
   setNotice("#dashboardNotice", "Aksè admin konfime sou sèvè a. PIN Admin verifye.", "success");
-  await updateMfaStatus().catch(() => {});
-  await loadSystemHealth(session);
-  await loadAdminRecords("users");
-}
+  const mfaReady = await updateMfaStatus().catch(() => false);
 
+  if (!mfaReady) {
+    const lockMessage = "Verifye MFA TOTP anlè a pou ouvri done operasyonèl, finansye ak sekretarya yo.";
+    if (canSeeFinance) setNotice("#financeNotice", lockMessage, "");
+    if (isSuper) setNotice("#teamRolesNotice", lockMessage, "");
+    if (canSeeSecretariat) setNotice("#secretariatNotice", lockMessage, "");
+    if (canSeeOperations) setNotice("#adminRecordsNotice", lockMessage, "");
+    if (canSeeSystemHealth) setNotice("#systemHealthNotice", lockMessage, "error");
+    return;
+  }
+
+  if (canSeeSystemHealth) await loadSystemHealth(session);
+  if (canSeeFinance) await loadFinanceOverview(session);
+  if (isSuper) await loadTeamRoles(session);
+  if (canSeeSecretariat) await loadSecretariatItems(session);
+
+  if (canSeeOperations) {
+    const allowedRecords = new Set();
+    if (isSuper) {
+      ["users","merchants","wallets","ledger","withdrawals","agents","audit"].forEach((type) => allowedRecords.add(type));
+    } else {
+      const scopes = {
+        admin: ["users","merchants","wallets","ledger","withdrawals","agents","audit"],
+        risk_admin: ["users","merchants","withdrawals","agents","audit"],
+        support_agent: ["users","merchants","agents"],
+        finance_admin: ["wallets","ledger","withdrawals","audit"],
+        accountant: ["wallets","ledger","audit"],
+        auditor: ["wallets","ledger","audit"]
+      };
+      currentAdminRoles.forEach((role) => (scopes[role] || []).forEach((type) => allowedRecords.add(type)));
+    }
+    document.querySelectorAll("[data-record-type]").forEach((button) => {
+      button.hidden = !allowedRecords.has(button.dataset.recordType);
+    });
+    const defaultRecord = allowedRecords.has("users") ? "users"
+      : allowedRecords.has("audit") && roleSet.has("auditor") ? "audit"
+      : allowedRecords.has("ledger") ? "ledger"
+      : allowedRecords.values().next().value;
+    if (defaultRecord) await loadAdminRecords(defaultRecord);
+  } else {
+    setNotice("#adminRecordsNotice", "Wòl Sekretè a pa gen aksè nan dosye operasyonèl oswa finansye kliyan yo.", "success");
+  }
+}
 function renderSystemHealth(data) {
   const list = $("#systemHealthList");
   if (!list) return;
@@ -440,8 +533,287 @@ async function verifyAdminMfa() {
   const ready = await updateMfaStatus();
   if (!ready) throw new Error("MFA_VERIFICATION_INCOMPLETE");
   setNotice("#adminActionNotice", "MFA verifye. Aksyon admin yo toujou pase verifikasyon sou sèvè a.", "success");
-  await loadAdminRecords("users");
+  await refreshCurrent();
 }
+async function loadFinanceOverview(session) {
+  setNotice("#financeNotice", "Ap chaje kont trezò antrepriz la…", "");
+  try {
+    const data = await adminRequest("/api/admin/finance/overview", session);
+    const accounts = data.treasury?.accounts || {};
+    const formatBalance = (currency) => {
+      const account = accounts[currency];
+      if (!account) return "Pa pare";
+      return Number(account.balance || 0).toLocaleString("fr-HT", {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      }) + " " + currency;
+    };
+    $("#treasuryHtg").textContent = formatBalance("HTG");
+    $("#treasuryUsd").textContent = formatBalance("USD");
+    $("#treasuryEur").textContent = formatBalance("EUR");
+    $("#accountingReadiness").textContent = data.accounting?.note ||
+      "Ledger entèn lan se sous done kontab la. Motè frè otomatik la poko aktive.";
+    const ready = data.treasury?.ready === true;
+    setNotice("#financeNotice",
+      ready
+        ? "3 bous revni antrepriz pare. Yo kòmanse a zewo; pa gen frè sèvis k ap antre otomatikman nan faz sa a."
+        : "Estrikti bous revni an poko konplè. Verifye migrasyon Admin Control Center la.",
+      ready ? "success" : "error");
+  } catch (error) {
+    setNotice("#financeNotice", explainError(error.code || error.message), "error");
+    $("#treasuryHtg").textContent = "N/D";
+    $("#treasuryUsd").textContent = "N/D";
+    $("#treasuryEur").textContent = "N/D";
+  }
+}
+
+function feeServiceLabel(code) {
+  const labels = {
+    internal_transfer: "Transfè entèn",
+    merchant_qr: "Peman machann QR",
+    fx_conversion: "Konvèsyon lajan",
+    cash_in: "Depo / Cash In",
+    cash_out: "Retrè / Cash Out",
+    bill_payment: "Peman fakti / rechaj"
+  };
+  return labels[code] || code;
+}
+
+function renderFeeProposals(proposals, canApprove) {
+  const list = $("#feeProposalsList");
+  list.replaceChildren();
+  if (!proposals.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "Pa gen pwopozisyon tarif pou kounye a.";
+    list.append(empty);
+    return;
+  }
+  proposals.forEach((proposal) => {
+    const card = document.createElement("article");
+    card.className = "fee-proposal-card";
+    const main = document.createElement("div");
+    main.className = "fee-proposal-main";
+    const title = document.createElement("strong");
+    title.textContent = feeServiceLabel(proposal.service_code) + " · " + proposal.currency + " · v" + proposal.version;
+    const value = document.createElement("b");
+    const feeText = proposal.fee_kind === "percentage"
+      ? Number(proposal.fee_value).toLocaleString("fr-HT") + "%"
+      : Number(proposal.fee_value).toLocaleString("fr-HT") + " " + proposal.currency;
+    value.textContent = feeText;
+    const meta = document.createElement("small");
+    meta.textContent = [
+      "Estati: " + proposal.status,
+      "Aplikasyon: " + new Date(proposal.effective_at).toLocaleString("fr-HT"),
+      proposal.minimum_fee != null ? "Min: " + proposal.minimum_fee : "",
+      proposal.maximum_fee != null ? "Max: " + proposal.maximum_fee : "",
+      proposal.reviewed_at ? "Desizyon: " + new Date(proposal.reviewed_at).toLocaleString("fr-HT") : ""
+    ].filter(Boolean).join(" · ");
+    const note = document.createElement("p");
+    note.textContent = proposal.proposal_note || "";
+    if (proposal.decision_note) note.textContent += (note.textContent ? " · " : "") + "Nòt desizyon: " + proposal.decision_note;
+    main.append(title,value,meta,note);
+    card.append(main);
+
+    if (canApprove && proposal.status === "proposed") {
+      const actions = document.createElement("div");
+      actions.className = "fee-proposal-actions";
+      for (const [decision,label] of [["approve","Apwouve"],["reject","Rejte"]]) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = decision === "approve" ? "button button-primary" : "button button-quiet";
+        button.textContent = label;
+        button.addEventListener("click", () => reviewFeeProposal(proposal.id, decision));
+        actions.append(button);
+      }
+      card.append(actions);
+    }
+    list.append(card);
+  });
+}
+
+async function loadFeeProposals(session) {
+  setNotice("#feeProposalsNotice", "Ap chaje istwa pwopozisyon tarif yo…", "");
+  try {
+    const data = await adminRequest("/api/admin/finance/fees", session);
+    renderFeeProposals(data.proposals || [], data.can_approve === true);
+    setNotice("#feeProposalsNotice",
+      (data.proposals || []).length + " vèsyon tarif nan istorik la. Motè frè a rete dezaktive.",
+      "success");
+    $("#feeProposalForm").hidden = data.can_propose !== true;
+  } catch (error) {
+    setNotice("#feeProposalsNotice", explainError(error.code || error.message), "error");
+    $("#feeProposalsList").replaceChildren();
+  }
+}
+
+async function reviewFeeProposal(proposalId, decision) {
+  const verb = decision === "approve" ? "apwouve" : "rejte";
+  if (!window.confirm("Ou vle " + verb + " pwopozisyon tarif sa a? Sa pap aktive koleksyon frè.")) return;
+  const note = window.prompt("Nòt Super Administratè (opsyonèl):") || "";
+  const buttonSession = await currentSession();
+  try {
+    await adminRequest("/api/admin/finance/fees", buttonSession, {
+      proposal_id: proposalId,
+      decision,
+      decision_note: note
+    }, "PATCH");
+    setNotice("#feeProposalsNotice", "Desizyon Super Administratè a anrejistre ak tras audit.", "success");
+    await loadFeeProposals(buttonSession);
+  } catch (error) {
+    setNotice("#feeProposalsNotice", explainError(error.code || error.message), "error");
+  }
+}
+
+function renderDailySummary(rows) {
+  const body = $("#dailySummaryBody");
+  body.replaceChildren();
+  if (!rows.length) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 6;
+    td.className = "muted";
+    td.textContent = "Pa gen mouvman nan peryòd sa a.";
+    tr.append(td);
+    body.append(tr);
+    return;
+  }
+  const money = (value,currency) => Number(value || 0).toLocaleString("fr-HT", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }) + " " + currency;
+  rows.forEach((item) => {
+    const tr = document.createElement("tr");
+    const values = [
+      item.ledger_date ? new Date(item.ledger_date + "T00:00:00").toLocaleDateString("fr-HT") : "—",
+      item.currency || "—",
+      Number(item.transaction_count || 0).toLocaleString("fr-HT"),
+      money(item.total_debits,item.currency),
+      money(item.total_credits,item.currency),
+      money(item.platform_revenue_credits,item.currency)
+    ];
+    values.forEach((value) => {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.append(td);
+    });
+    body.append(tr);
+  });
+}
+
+async function loadDailyFinancialSummary(session) {
+  setNotice("#dailySummaryNotice", "Ap li ledger la pou prepare rapò jou yo…", "");
+  try {
+    const days = Number($("#dailySummaryDays").value || 30);
+    const data = await adminRequest("/api/admin/finance/daily-summary?days=" + encodeURIComponent(days), session);
+    const rows = Array.isArray(data.report?.rows) ? data.report.rows : [];
+    renderDailySummary(rows);
+    setNotice("#dailySummaryNotice",
+      "Rapò " + days + " jou chaje. Sous: ledger immutable. Revni kredit montre sèlman antre ki deja poste nan bous revni a.",
+      "success");
+  } catch (error) {
+    renderDailySummary([]);
+    setNotice("#dailySummaryNotice", explainError(error.code || error.message), "error");
+  }
+}
+
+async function loadTeamRoles(session) {
+  setNotice("#teamRolesNotice", "Ap chaje lis ekip la…", "");
+  try {
+    const data = await adminRequest("/api/admin/team/roles", session);
+    const body = $("#teamUsersBody");
+    body.replaceChildren();
+    (data.users || []).forEach((user) => {
+      const row = document.createElement("tr");
+      const name = document.createElement("td");
+      name.textContent = user.full_name || "San non";
+      const id = document.createElement("td");
+      id.textContent = user.id || "—";
+      const roles = document.createElement("td");
+      roles.textContent = (user.roles || []).map(displayRole).join(", ") || "Itilizatè";
+      const status = document.createElement("td");
+      status.textContent = user.account_status || "—";
+      const action = document.createElement("td");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "button button-quiet admin-row-action";
+      button.textContent = "Chwazi wòl";
+      button.addEventListener("click", () => { $("#teamTargetUserId").value = user.id; });
+      const secretaryButton = document.createElement("button");
+      secretaryButton.type = "button";
+      secretaryButton.className = "button button-quiet admin-row-action";
+      secretaryButton.textContent = "Chwazi sekretè";
+      secretaryButton.disabled = !(user.roles || []).includes("secretary");
+      secretaryButton.addEventListener("click", () => { $("#secretaryAssistantUserId").value = user.id; });
+      action.append(button,secretaryButton);
+      row.append(name,id,roles,status,action);
+      body.append(row);
+    });
+    setNotice("#teamRolesNotice", (data.users || []).length + " kont disponib pou jesyon wòl. ID yo rete vizib pou Super Admin sèlman.", "success");
+  } catch (error) {
+    setNotice("#teamRolesNotice", explainError(error.code || error.message), "error");
+  }
+}
+
+function renderSecretariatItems(items) {
+  const list = $("#secretariatItemsList");
+  list.replaceChildren();
+  if (!items.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "Pa gen travay, randevou oswa rapèl pou kounye a.";
+    list.append(empty);
+    return;
+  }
+  items.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "secretariat-item";
+    const main = document.createElement("div");
+    main.className = "secretariat-item-main";
+    const title = document.createElement("strong");
+    title.textContent = item.title || "San tit";
+    const meta = document.createElement("small");
+    const due = item.due_at ? new Date(item.due_at).toLocaleString("fr-HT") : "Pa gen dat";
+    meta.textContent = [item.item_type, due, "Priyorite: " + item.priority, "Estati: " + item.status].join(" · ");
+    const details = document.createElement("p");
+    details.textContent = item.details || "";
+    main.append(title,meta,details);
+    const actions = document.createElement("div");
+    actions.className = "secretariat-item-actions";
+    if (item.status !== "done" && item.status !== "cancelled") {
+      const done = document.createElement("button");
+      done.type = "button";
+      done.className = "button button-quiet admin-row-action";
+      done.textContent = "Make fini";
+      done.addEventListener("click", () => updateSecretariatStatus(item.id, "done"));
+      actions.append(done);
+    }
+    card.append(main,actions);
+    list.append(card);
+  });
+}
+
+async function loadSecretariatItems(session) {
+  setNotice("#secretariatNotice", "Ap chaje travay ak randevou pèsonèl yo…", "");
+  try {
+    const data = await adminRequest("/api/admin/secretariat", session);
+    renderSecretariatItems(data.items || []);
+    setNotice("#secretariatNotice", (data.items || []).length + " antre sekretarya chaje.", "success");
+  } catch (error) {
+    setNotice("#secretariatNotice", explainError(error.code || error.message), "error");
+    $("#secretariatItemsList").replaceChildren();
+  }
+}
+
+async function updateSecretariatStatus(itemId, status) {
+  const session = await currentSession();
+  try {
+    await adminRequest("/api/admin/secretariat", session, { item_id: itemId, status }, "PATCH");
+    await loadSecretariatItems(session);
+  } catch (error) {
+    setNotice("#secretariatNotice", explainError(error.code || error.message), "error");
+  }
+}
+
 const RECORD_COLUMNS = {
   users: [
     ["full_name","Non"],["account_status","Estati"],["preferred_language","Lang"],["created_at","Kreye"]
@@ -505,6 +877,16 @@ function openAdminAction(type, row) {
   }
   $("#adminActionsPanel").scrollIntoView({ behavior: "smooth", block: "start" });
 }
+function canReviewRecord(type) {
+  if (currentAdminRoles.includes("super_admin")) return true;
+  const scopes = {
+    users: ["admin","risk_admin"],
+    merchants: ["admin","risk_admin"],
+    withdrawals: ["admin","risk_admin","finance_admin"],
+    agents: ["admin","risk_admin"]
+  };
+  return (scopes[type] || []).some((role) => currentAdminRoles.includes(role));
+}
 function renderAdminRecords(type, rows) {
   const head = $("#adminRecordsHead");
   const body = $("#adminRecordsBody");
@@ -517,7 +899,8 @@ function renderAdminRecords(type, rows) {
     th.textContent = label;
     headerRow.append(th);
   });
-  if (["users","merchants","withdrawals","agents"].includes(type)) {
+  const showActionColumn = canReviewRecord(type);
+  if (showActionColumn) {
     const th = document.createElement("th");
     th.textContent = "Aksyon";
     headerRow.append(th);
@@ -526,7 +909,7 @@ function renderAdminRecords(type, rows) {
   if (!rows.length) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
-    td.colSpan = columns.length + (["users","merchants","withdrawals","agents"].includes(type) ? 1 : 0);
+    td.colSpan = columns.length + (showActionColumn ? 1 : 0);
     td.textContent = "Pa gen dosye nan kategori sa a.";
     tr.append(td);
     body.append(tr);
@@ -539,7 +922,7 @@ function renderAdminRecords(type, rows) {
       td.textContent = recordValue(type, row, key);
       tr.append(td);
     });
-    if (["users","merchants","withdrawals","agents"].includes(type)) {
+    if (showActionColumn) {
       const td = document.createElement("td");
       const button = document.createElement("button");
       button.type = "button";
@@ -798,6 +1181,127 @@ async function boot() {
       setNotice("#adminActionNotice", explainError(error.code || error.message), "error");
       $("#adminLedgerAuditResult").textContent = error.message;
     }
+  });
+
+  $("#dailySummaryRefresh").addEventListener("click", async () => {
+    const session = await currentSession();
+    if (session) await loadDailyFinancialSummary(session);
+  });
+  $("#dailySummaryDays").addEventListener("change", async () => {
+    const session = await currentSession();
+    if (session) await loadDailyFinancialSummary(session);
+  });
+
+  $("#feeProposalForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const effectiveValue = $("#feeEffectiveAt").value;
+    if (!effectiveValue) {
+      setNotice("#feeProposalsNotice", "Chwazi dat ak lè tarif la ta dwe antre an aplikasyon.", "error");
+      return;
+    }
+    const button = event.submitter;
+    button.disabled = true;
+    try {
+      const session = await currentSession();
+      await adminRequest("/api/admin/finance/fees", session, {
+        service_code: $("#feeServiceCode").value,
+        currency: $("#feeCurrency").value,
+        fee_kind: $("#feeKind").value,
+        fee_value: $("#feeValue").value,
+        minimum_fee: $("#feeMinimum").value,
+        maximum_fee: $("#feeMaximum").value || null,
+        effective_at: new Date(effectiveValue).toISOString(),
+        note: $("#feeProposalNote").value.trim()
+      });
+      $("#feeValue").value = "";
+      $("#feeMaximum").value = "";
+      $("#feeProposalNote").value = "";
+      setNotice("#feeProposalsNotice", "Pwopozisyon an soumèt. Li ap tann desizyon Super Administratè a; okenn frè pa kolekte.", "success");
+      await loadFeeProposals(session);
+    } catch (error) {
+      setNotice("#feeProposalsNotice", explainError(error.code || error.message), "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  $("#teamRoleForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const target = $("#teamTargetUserId").value.trim();
+    const role = $("#teamRoleSelect").value;
+    const action = $("#teamRoleAction").value;
+    if (!target) {
+      setNotice("#teamRolesNotice", "Chwazi yon kont itilizatè anvan.", "error");
+      return;
+    }
+    const verb = action === "grant" ? "bay" : "retire";
+    if (!window.confirm("Ou vle " + verb + " wòl " + displayRole(role) + " pou kont sa a?")) return;
+    const button = event.submitter;
+    button.disabled = true;
+    try {
+      const session = await currentSession();
+      await adminRequest("/api/admin/team/roles", session, { target_user_id: target, role, action });
+      setNotice("#teamRolesNotice", "Chanjman wòl la anrejistre ak tras audit.", "success");
+      await loadTeamRoles(session);
+    } catch (error) {
+      setNotice("#teamRolesNotice", explainError(error.code || error.message), "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  $("#secretariatAccessForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const assistant = $("#secretaryAssistantUserId").value.trim();
+    if (!assistant) return;
+    const button = event.submitter;
+    button.disabled = true;
+    try {
+      const session = await currentSession();
+      const action = $("#secretariatAccessAction").value;
+      await adminRequest("/api/admin/secretariat-access", session, { assistant_user_id: assistant, action });
+      setNotice("#secretariatAccessNotice",
+        action === "grant" ? "Sekretè a resevwa aksè nan sekretarya pèsonèl la sèlman."
+          : "Aksè sekretè a retire; done pèsonèl yo rete konsève.",
+        "success");
+    } catch (error) {
+      setNotice("#secretariatAccessNotice", explainError(error.code || error.message), "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  $("#secretariatForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const title = $("#secretariatTitle").value.trim();
+    if (!title) return;
+    const dueValue = $("#secretariatDueAt").value;
+    const button = event.submitter;
+    button.disabled = true;
+    try {
+      const session = await currentSession();
+      const dueAt = dueValue ? new Date(dueValue).toISOString() : null;
+      await adminRequest("/api/admin/secretariat", session, {
+        item_type: $("#secretariatType").value,
+        title,
+        details: $("#secretariatDetails").value.trim(),
+        due_at: dueAt,
+        priority: $("#secretariatPriority").value
+      });
+      $("#secretariatTitle").value = "";
+      $("#secretariatDetails").value = "";
+      $("#secretariatDueAt").value = "";
+      await loadSecretariatItems(session);
+    } catch (error) {
+      setNotice("#secretariatNotice", explainError(error.code || error.message), "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  $("#secretariatRefresh").addEventListener("click", async () => {
+    const session = await currentSession();
+    if (session) await loadSecretariatItems(session);
   });
 
   $("#systemHealthRefresh").addEventListener("click", async () => {

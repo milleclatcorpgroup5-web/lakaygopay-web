@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#071b2a">
   <title>LakayGoPay — Sant Kontwòl Admin</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/admin/admin.css?v=20261117-01">
+  <link rel="stylesheet" href="/admin/admin.css?v=20261118-01">
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -111,7 +111,7 @@
     </section>
 
 
-    <section class="surface-card system-health-panel" aria-labelledby="systemHealthHeading">
+    <section class="surface-card system-health-panel" id="systemHealthPanel" aria-labelledby="systemHealthHeading" hidden>
       <div class="section-head">
         <div>
           <p class="eyebrow">DYAGNOSTIK AK SIVEYANS</p>
@@ -126,6 +126,181 @@
       <p id="systemHealthTimestamp" class="muted small"></p>
     </section>
 
+
+
+    <section class="surface-card daily-flow-panel" aria-labelledby="dailyFlowHeading">
+      <div class="section-head">
+        <div><p class="eyebrow">DYAGRAM OPERASYONÈL CHAK JOU</p><h2 id="dailyFlowHeading">Flux travay LakayGoPay</h2></div>
+        <span class="read-only-tag">GID · PA OTOMATIK</span>
+      </div>
+      <p class="muted small">Dyagram sa a se pwosedi chak jou pou ekip la. Li pa lanse travay otomatik ni li pa deplase lajan.</p>
+      <div class="daily-flow-grid">
+        <article class="daily-flow-lane">
+          <span class="flow-time">08:00 · OUVÈTI</span>
+          <div class="flow-node"><b>1. Sante sistèm</b><small>Auth · bazdone · API · sekirite</small></div>
+          <span class="flow-arrow">↓</span>
+          <div class="flow-node"><b>2. Rekonsilyasyon</b><small>Ledger · balans · tranzaksyon an atant</small></div>
+          <span class="flow-arrow">↓</span>
+          <div class="flow-node"><b>3. Apwobasyon</b><small>Machann · dosye · travay ekip la</small></div>
+        </article>
+        <article class="daily-flow-lane">
+          <span class="flow-time">PANDAN JOUNEN AN</span>
+          <div class="flow-node"><b>4. Operasyon kliyan</b><small>Transfè · QR · sèvis ki otorize</small></div>
+          <span class="flow-arrow">↓</span>
+          <div class="flow-node"><b>5. Ledger double-antre</b><small>Debit = kredi · idempotency</small></div>
+          <span class="flow-arrow">↓</span>
+          <div class="flow-node"><b>6. Frè ak audit</b><small>Frè sèlman lè motè a aktive; tras tout aksyon</small></div>
+        </article>
+        <article class="daily-flow-lane">
+          <span class="flow-time">17:00 · FÈMEN JOUNEN AN</span>
+          <div class="flow-node"><b>7. Rekonsilye ankò</b><small>Kontwole diferans ak balans negatif</small></div>
+          <span class="flow-arrow">↓</span>
+          <div class="flow-node"><b>8. Kontablite</b><small>Revni · depans · rapò pa HTG/USD/EUR</small></div>
+          <span class="flow-arrow">↓</span>
+          <div class="flow-node"><b>9. Rapò ak siyati</b><small>Responsab finans → Super Admin</small></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="surface-card control-rules-panel">
+      <div class="section-head">
+        <div><p class="eyebrow">6 RÈG OBLIGATWA</p><h2>Règ Sant Kontwòl la</h2></div>
+        <span class="read-only-tag">APLIKE NAN BACKEND</span>
+      </div>
+      <div class="control-rules-grid">
+        <article><b>01 · Tras audit</b><p>Chak aksyon enpòtan dwe anrejistre ak aktè, dat, rezilta ak resous la.</p></article>
+        <article><b>02 · Balans pa manyèl</b><p>Pa gen administratè ki modifye balans dirèk. Ledger la se sèl sous verite a.</p></article>
+        <article><b>03 · Tarif ak istorik</b><p>Tarif gen vèsyon, dat aplikasyon ak apwobasyon. Finans ka pwopoze; Super Admin deside.</p></article>
+        <article><b>04 · MFA pou sansib</b><p>PIN Admin + MFA AAL2 obligatwa pou operasyon privilejye.</p></article>
+        <article><b>05 · Apwobasyon final</b><p>Gwo chanjman finansye ak tarif mande validasyon Super Administratè.</p></article>
+        <article><b>06 · Dwa selon wòl</b><p>Chak moun jwenn sèlman modil backend li gen otorizasyon pou itilize.</p></article>
+      </div>
+    </section>
+
+    <section class="surface-card finance-control-panel" id="adminFinancePanel" hidden>
+      <div class="section-head">
+        <div><p class="eyebrow">FINANCIAL CONTROL CENTER</p><h2>Kontwòl finans ak bous revni</h2></div>
+        <span class="read-only-tag">LEKTI SÈLMAN · LEDGER</span>
+      </div>
+      <p class="muted small">Bous revni antrepriz yo separe ak bous kliyan yo epi yo kòmanse a zewo. Nan beta sa a, mouvman ledger yo rete HTG sèlman; bous USD/EUR yo se kont preparasyon, pa sèvis FX oswa peman deviz reyèl. Pa gen frè k ap antre otomatikman.</p>
+      <div class="treasury-grid">
+        <article class="treasury-card"><span>Revni HTG</span><strong id="treasuryHtg">—</strong><small>Goud · bous sistèm</small></article>
+        <article class="treasury-card"><span>Revni USD</span><strong id="treasuryUsd">—</strong><small>Dola · bous sistèm</small></article>
+        <article class="treasury-card"><span>Revni EUR</span><strong id="treasuryEur">—</strong><small>Ewo · bous sistèm</small></article>
+      </div>
+      <div id="financeNotice" class="notice" role="status" aria-live="polite">Ap tann rezilta finansye yo…</div>
+      <div class="accounting-readiness">
+        <b>Espas kontablite · sous done</b>
+        <p id="accountingReadiness">Ledger imitab la ap sèvi kòm baz rapò. Liv kontab otomatik ak motè frè yo poko aktive.</p>
+      </div>
+
+      <div class="fee-policy-panel">
+        <div class="section-head">
+          <div><p class="eyebrow">TARIF · VÈSYON AK APWOBASYON</p><h3>Pwopozisyon frè sèvis</h3></div>
+          <span class="read-only-tag">MOTÈ FRÈ DEZAKTIVE</span>
+        </div>
+        <p class="muted small">Responsab finans kapab pwopoze yon tarif. Se sèlman Super Administratè ki kapab apwouve oswa rejte li. Apwobasyon an pa aktive koleksyon frè; li anrejistre yon vèsyon politik pou yon entegrasyon ki pral vini apre.</p>
+        <form id="feeProposalForm" class="admin-action-grid team-role-form" hidden>
+          <label>Sèvis<select id="feeServiceCode">
+            <option value="internal_transfer">Transfè entèn</option>
+            <option value="merchant_qr">Peman machann QR</option>
+            <option value="fx_conversion">Konvèsyon lajan</option>
+            <option value="cash_in">Depo / Cash In</option>
+            <option value="cash_out">Retrè / Cash Out</option>
+            <option value="bill_payment">Peman fakti / rechaj</option>
+          </select></label>
+          <label>Deviz<select id="feeCurrency"><option>HTG</option><option>USD</option><option>EUR</option></select></label>
+          <label>Kalite frè<select id="feeKind"><option value="percentage">Pousantaj (%)</option><option value="fixed">Montan fiks</option></select></label>
+          <label>Valè frè<input id="feeValue" type="number" min="0.000001" max="1000000000" step="0.000001" required></label>
+          <label>Frè minimòm<input id="feeMinimum" type="number" min="0" step="0.000001" value="0"></label>
+          <label>Frè maksimòm (opsyonèl)<input id="feeMaximum" type="number" min="0" step="0.000001"></label>
+          <label>Dat aplikasyon pwopoze<input id="feeEffectiveAt" type="datetime-local" required></label>
+          <label class="field-span">Rezon / nòt<input id="feeProposalNote" maxlength="500" placeholder="Poukisa w ap pwopoze tarif sa a?"></label>
+          <button class="button button-primary full" type="submit">Soumèt pwopozisyon tarif</button>
+        </form>
+        <div id="feeProposalsNotice" class="notice" role="status" aria-live="polite">Ap tann vèsyon tarif yo…</div>
+        <div id="feeProposalsList" class="fee-proposals-list"><div class="empty-state">Pa gen pwopozisyon tarif chaje.</div></div>
+      </div>
+
+      <div class="daily-accounting-panel">
+        <div class="section-head">
+          <div><p class="eyebrow">KONTABLITE · RAPÒ CHAK JOU</p><h3>Mouvman ledger pa jou</h3></div>
+          <div class="daily-accounting-actions">
+            <select id="dailySummaryDays" aria-label="Peryòd rapò">
+              <option value="7">7 jou</option>
+              <option value="30" selected>30 jou</option>
+              <option value="90">90 jou</option>
+            </select>
+            <button id="dailySummaryRefresh" class="button button-quiet" type="button">Rafrechi rapò</button>
+          </div>
+        </div>
+        <p class="muted small">Rapò sa a li antre debit/kredi nan ledger ki pa ka modifye. Li pa reprezante pwofi nèt, lajan bank disponib, ni frè ki poko antre nan ledger.</p>
+        <div id="dailySummaryNotice" class="notice" role="status" aria-live="polite">Ap tann rapò kontab la…</div>
+        <div class="admin-record-table-wrap">
+          <table class="admin-record-table daily-summary-table">
+            <thead><tr><th>Dat</th><th>Deviz</th><th>Tranzaksyon</th><th>Total debi</th><th>Total kredi</th><th>Revni platfòm kredi</th></tr></thead>
+            <tbody id="dailySummaryBody"><tr><td colspan="6" class="muted">Pa gen rapò chaje.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="surface-card team-control-panel" id="adminTeamPanel" hidden>
+      <div class="section-head">
+        <div><p class="eyebrow">JESTYON EKIP · SUPER ADMIN SÈLMAN</p><h2>Bay oswa retire wòl</h2></div>
+        <span class="read-only-tag">APWOBASYON SUPER ADMIN</span>
+      </div>
+      <p class="muted small">Moun nan dwe deja gen yon kont LakayGoPay. Chwazi ID li nan lis la, epi bay yon sèl wòl dapre responsablite li. Pa bay wòl Super Admin nan meni sa a.</p>
+      <form id="teamRoleForm" class="admin-action-grid team-role-form">
+        <label>ID kont itilizatè<input id="teamTargetUserId" required placeholder="Chwazi yon kont nan lis la"></label>
+        <label>Wòl<select id="teamRoleSelect">
+          <option value="admin">Administratè operasyon</option>
+          <option value="finance_admin">Responsab finans</option>
+          <option value="accountant">Kontab</option>
+          <option value="risk_admin">Responsab sekirite & risk</option>
+          <option value="support_agent">Sipò kliyan</option>
+          <option value="auditor">Oditè</option>
+          <option value="secretary">Sekretè pèsonèl</option>
+        </select></label>
+        <label>Aksyon<select id="teamRoleAction"><option value="grant">Bay wòl</option><option value="revoke">Retire wòl</option></select></label>
+        <button class="button button-primary full" type="submit">Aplike chanjman wòl</button>
+      </form>
+      <div id="teamRolesNotice" class="notice" role="status" aria-live="polite">Lis ekip la poko chaje.</div>
+      <div class="admin-record-table-wrap">
+        <table class="admin-record-table">
+          <thead><tr><th>Non</th><th>ID kont</th><th>Wòl</th><th>Estati</th><th>Chwazi</th></tr></thead>
+          <tbody id="teamUsersBody"><tr><td colspan="5" class="muted">Ap tann done yo…</td></tr></tbody>
+        </table>
+      </div>
+      <form id="secretariatAccessForm" class="team-role-form">
+        <h3>Otorize sekretè pou espas pèsonèl</h3>
+        <label>ID kont sekretè<input id="secretaryAssistantUserId" required placeholder="ID kont ki gen wòl Sekretè"></label>
+        <label>Aksyon aksè<select id="secretariatAccessAction"><option value="grant">Bay / aktive aksè</option><option value="revoke">Retire aksè</option></select></label>
+        <button class="button button-quiet" type="submit">Sove otorizasyon sekretè</button>
+        <p id="secretariatAccessNotice" class="muted small">Aksè sa a se sèlman pou ajanda, nòt, travay ak dokiman pèsonèl.</p>
+      </form>
+    </section>
+
+    <section class="surface-card secretariat-panel" id="adminSecretariatPanel" hidden>
+      <div class="section-head">
+        <div><p class="eyebrow">PERSONAL SECRETARIAT</p><h2>Sekretarya pèsonèl</h2></div>
+        <button id="secretariatRefresh" class="button button-quiet" type="button">Rafrechi</button>
+      </div>
+      <p class="muted small">Ajanda, rapèl, travay, kontak, nòt ak referans dokiman. Sekretè a pa jwenn aksè nan finans oswa nan bous kliyan yo.</p>
+      <form id="secretariatForm" class="admin-action-grid team-role-form">
+        <label>Kalite<select id="secretariatType">
+          <option value="task">Travay</option><option value="meeting">Reyinyon</option><option value="reminder">Rapèl</option>
+          <option value="note">Nòt prive</option><option value="contact">Kontak</option><option value="document">Dokiman / referans</option>
+        </select></label>
+        <label>Tit<input id="secretariatTitle" maxlength="160" required placeholder="Tit travay oswa randevou"></label>
+        <label>Dat / lè<input id="secretariatDueAt" type="datetime-local"></label>
+        <label>Priyorite<select id="secretariatPriority"><option value="normal">Nòmal</option><option value="low">Ba</option><option value="high">Wo</option><option value="urgent">Ijan</option></select></label>
+        <label class="field-span">Detay<textarea id="secretariatDetails" rows="3" maxlength="5000" placeholder="Detay, nòt, moun pou kontakte oswa referans dokiman"></textarea></label>
+        <button class="button button-primary full" type="submit">Anrejistre nan sekretarya</button>
+      </form>
+      <div id="secretariatNotice" class="notice" role="status" aria-live="polite">Ap tann done sekretarya yo…</div>
+      <div id="secretariatItemsList" class="secretariat-items-list"><div class="empty-state">Pa gen travay oswa rapèl chaje.</div></div>
+    </section>
 
     <section class="section-head">
       <div><p class="eyebrow">VIZIBILITE PLATFÒM LAN</p><h2>Apèsi operasyonèl</h2></div>
@@ -176,7 +351,7 @@
         </div>
       </section>
 
-      <section class="surface-card admin-records-panel">
+      <section class="surface-card admin-records-panel" id="adminRecordsPanel">
         <div class="section-head">
           <div><p class="eyebrow">MODIL OPERASYONÈL</p><h2>Dosye ak aktivite platfòm lan</h2></div>
           <button id="adminRecordsRefresh" class="button button-quiet" type="button">Rafrechi lis la</button>
@@ -484,6 +659,6 @@
     <footer class="admin-footer"><span>LakayGoPay · Sant Kontwòl</span><span>Entèfas administrasyon prive · Rejim tès</span></footer>
   </main>
 
-  <script type="module" src="/admin/admin.js?v=20261117-01"></script>
+  <script type="module" src="/admin/admin.js?v=20261118-01"></script>
 </body>
 </html>

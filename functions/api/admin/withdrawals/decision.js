@@ -1,10 +1,10 @@
 import { json, callRpc, readJson, validUuid } from "../../../_shared/superbase.js";
 import { financialFail } from "../../../_shared/financial-errors.js";
-import { requireAdminAal2 } from "../../../_shared/security.js";
+import { requireAdminRoles } from "../../../_shared/security.js";
 
 export async function onRequestPost({ request, env }) {
   try {
-    const auth = await requireAdminAal2(request, env);
+    const auth = await requireAdminRoles(request, env, ["admin","finance_admin","risk_admin"]);
     if (auth.error) return auth.error;
     const body = await readJson(request);
     if (!validUuid(body?.withdrawal_id)) return json({ error: "INVALID_WITHDRAWAL_ID" }, 400);

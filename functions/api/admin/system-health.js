@@ -1,5 +1,5 @@
 import { json, config } from "../../_shared/superbase.js";
-import { requireAdminPinSession } from "../../_shared/admin-pin.js";
+import { requireAdminRoles } from "../../_shared/security.js";
 
 const TABLE_CHECKS = [
   { id: "profiles", label: "Supabase DB / pwofil itilizatè", resource: "profiles?select=id,account_status&limit=0" },
@@ -14,6 +14,10 @@ const TABLE_CHECKS = [
   { id: "ledger", label: "Ledger tranzaksyon", resource: "ledger_transactions?select=id&limit=0" },
   { id: "withdrawals", label: "Demann retrè", resource: "withdrawal_requests?select=id&limit=0" },
   { id: "audit_logs", label: "Jounal audit", resource: "audit_logs?select=id&limit=0" },
+  { id: "treasury_revenue_wallets", label: "Bous revni antrepriz HTG/USD/EUR", expectCurrencies: ["HTG","USD","EUR"], resource: "wallet_balances?select=wallet_id,currency,balance,system_account_code&is_system=eq.true&system_account_code=eq.platform_revenue&limit=3" },
+  { id: "secretariat_access", label: "Otorizasyon sekretarya prive", resource: "admin_secretariat_access?select=id,owner_user_id,assistant_user_id,active&limit=0" },
+  { id: "secretariat_items", label: "Depo ajanda ak travay pèsonèl", resource: "admin_secretariat_items?select=id,owner_user_id,item_type,status&limit=0" },
+  { id: "fee_proposals", label: "Istwa pwopozisyon tarif", resource: "platform_fee_proposals?select=id,service_code,currency,version,status&limit=0" },
   { id: "security_events", label: "Jounal evènman sekirite (si konfigire)", optional: true, resource: "security_events?select=id&limit=0" }
 ];
 
@@ -46,6 +50,19 @@ async function checkTable(url, secretKey, item) {
       }
     });
     if (response.ok) {
+      if (Array.isArray(item.expectCurrencies)) {
+        const rows = await response.json().catch(() => []);
+        const actual = new Set(Array.isArray(rows) ? rows.map((row) => String(row.currency || "").trim()) : []);
+        const missing = item.expectCurrencies.filter((currency) => !actual.has(currency));
+        return {
+          id: item.id,
+          label: item.label,
+          status: missing.length ? "warning" : "ok",
+          stage: "SUPABASE_REST",
+          http_status: response.status,
+          diagnostic: missing.length ? "REVENUE_WALLET_CURRENCY_MISSING_" + missing.join("_") : "THREE_REVENUE_WALLETS_READY"
+        };
+      }
       return { id: item.id, label: item.label, status: "ok", stage: "SUPABASE_REST", http_status: response.status };
     }
     let code = "";
@@ -140,7 +157,7 @@ async function checkAuth(url, publishableKey) {
 }
 
 export async function onRequestGet({ request, env }) {
-  const access = await requireAdminPinSession(request, env);
+  const access = await requireAdminRoles(request, env, ["admin"]);
   if (access.error) return access.error;
 
   try {

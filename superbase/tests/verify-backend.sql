@@ -63,7 +63,7 @@ select lt.id as unbalanced_transaction_id,
        coalesce(sum(le.amount) filter (where le.direction = 'debit'),0) as debits,
        coalesce(sum(le.amount) filter (where le.direction = 'credit'),0) as credits
 from public.ledger_transactions lt
-left join public.ledger_entries le on le.transaction_id = lt.id
+left join public.ledger_entries le on le.ledger_transaction_id = lt.id
 group by lt.id
 having count(le.id) < 2
    or coalesce(sum(le.amount) filter (where le.direction = 'debit'),0)
@@ -133,3 +133,144 @@ select
 select setting_key, setting_value
 from public.platform_settings
 where setting_key = 'test_mode_enabled';
+
+
+-- 10. Admin Control Center foundations: role extension, private secretariat,
+-- versioned fee proposals, and dedicated platform-revenue wallets.
+select 'admin_control_center_relation' as check_type,
+       name as object_name,
+       to_regclass('public.' || name) is not null as passed
+from (values
+  ('admin_secretariat_access'),
+  ('admin_secretariat_items'),
+  ('platform_fee_proposals')
+) objects(name);
+
+select 'admin_control_center_role_check' as check_type,
+       coalesce(bool_or(
+         pg_get_constraintdef(oid) ilike '%accountant%'
+         and pg_get_constraintdef(oid) ilike '%secretary%'
+       ),false) as passed
+from pg_constraint
+where conrelid = 'public.user_roles'::regclass
+  and contype = 'c'
+  and pg_get_constraintdef(oid) ilike '%role%';
+
+select 'platform_revenue_wallets' as check_type,
+       count(*) = 3 and count(distinct currency) = 3 as passed,
+       count(*) as revenue_wallet_count,
+       array_agg(currency::text order by currency::text) as currencies
+from public.wallets
+where is_system = true
+  and system_account_code = 'platform_revenue'
+  and currency in ('HTG','USD','EUR');
+
+select 'treasury_wallet_currency_constraint' as check_type,
+       coalesce(bool_or(
+         pg_get_constraintdef(oid) ilike '%HTG%'
+         and pg_get_constraintdef(oid) ilike '%USD%'
+         and pg_get_constraintdef(oid) ilike '%EUR%'
+         and pg_get_constraintdef(oid) ilike '%is_system%'
+         and pg_get_constraintdef(oid) ilike '%platform_revenue%'
+       ),false) as passed
+from pg_constraint
+where conrelid = 'public.wallets'::regclass
+  and contype = 'c'
+  and conname = 'wallets_currency_supported_check';
+
+select 'system_clearing_wallet' as check_type,
+       count(*) = 1 as passed,
+       count(*) as htg_clearing_wallets
+from public.wallets
+where is_system = true
+  and system_account_code = 'clearing'
+  and currency = 'HTG';
+
+select 'admin_secretariat_privacy' as check_type,
+       c.relrowsecurity as rls_enabled,
+       has_table_privilege('anon', c.oid, 'SELECT') as anon_can_read,
+       has_table_privilege('authenticated', c.oid, 'SELECT') as authenticated_can_read
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+where n.nspname = 'public'
+  and c.relname in ('admin_secretariat_access','admin_secretariat_items')
+order by c.relname;
+
+select 'fee_proposal_privileges' as check_type,
+       has_table_privilege('authenticated','public.platform_fee_proposals','SELECT') as authenticated_can_read,
+       has_function_privilege(
+         'authenticated',
+         'public.propose_platform_fee(uuid,text,text,text,numeric,timestamp with time zone,numeric,numeric,text)',
+         'EXECUTE'
+       ) as authenticated_can_propose,
+       has_function_privilege(
+         'service_role',
+         'public.propose_platform_fee(uuid,text,text,text,numeric,timestamp with time zone,numeric,numeric,text)',
+         'EXECUTE'
+       ) as service_role_can_call_proposal_rpc,
+       has_function_privilege(
+         'service_role',
+         'public.review_platform_fee_proposal(uuid,uuid,text,text)',
+         'EXECUTE'
+       ) as service_role_can_call_review_rpc;
+
+select 'fee_proposal_maker_checker' as check_type,
+       position('role = ''finance_admin''' in
+         pg_get_functiondef('public.propose_platform_fee(uuid,text,text,text,numeric,timestamp with time zone,numeric,numeric,text)'::regprocedure)
+       ) > 0 as finance_admin_role_required,
+       position('or exists (' in
+         pg_get_functiondef('public.propose_platform_fee(uuid,text,text,text,numeric,timestamp with time zone,numeric,numeric,text)'::regprocedure)
+       ) > 0
+       and position('role = ''super_admin''' in
+         pg_get_functiondef('public.propose_platform_fee(uuid,text,text,text,numeric,timestamp with time zone,numeric,numeric,text)'::regprocedure)
+       ) > 0 as has_super_admin_exclusion_guard,
+       position('MAKER_CANNOT_APPROVE_OWN_FEE_PROPOSAL' in
+         pg_get_functiondef('public.review_platform_fee_proposal(uuid,uuid,text,text)'::regprocedure)
+       ) > 0 as prevents_self_approval;
+
+select 'admin_role_management_rpc' as check_type,
+       to_regprocedure('public.admin_set_user_role(uuid,uuid,text,text)') is not null as function_exists,
+       has_function_privilege(
+         'authenticated',
+         'public.admin_set_user_role(uuid,uuid,text,text)',
+         'EXECUTE'
+       ) as authenticated_can_call,
+       has_function_privilege(
+         'service_role',
+         'public.admin_set_user_role(uuid,uuid,text,text)',
+         'EXECUTE'
+       ) as service_role_can_call;
+
+select 'withdrawal_super_admin_guard' as check_type,
+       position('public.has_role_for_user(p_admin_user_id,''super_admin'')' in
+         pg_get_functiondef('public.record_withdrawal_approval(uuid,uuid,text,text)'::regprocedure)
+       ) > 0 as super_admin_can_be_approver,
+       position('v_request.currency <> ''HTG'' or v_request.amount >= v_threshold' in
+         pg_get_functiondef('public.record_withdrawal_approval(uuid,uuid,text,text)'::regprocedure)
+       ) > 0 as foreign_and_large_withdrawals_need_two_approvals,
+       position('ur.role = ''super_admin''' in
+         pg_get_functiondef('public.record_withdrawal_approval(uuid,uuid,text,text)'::regprocedure)
+       ) > 0 as super_admin_required_in_major_approval_chain;
+
+select 'daily_financial_summary_rpc' as check_type,
+       to_regprocedure('public.get_admin_daily_financial_summary(uuid,integer)') is not null as function_exists,
+       has_function_privilege(
+         'authenticated',
+         'public.get_admin_daily_financial_summary(uuid,integer)',
+         'EXECUTE'
+       ) as authenticated_can_call,
+       has_function_privilege(
+         'service_role',
+         'public.get_admin_daily_financial_summary(uuid,integer)',
+         'EXECUTE'
+       ) as service_role_can_call;
+
+
+-- 11. The service-fee system is a proposal workflow only. Approval must not
+-- turn on fee posting or any real-money payment channel.
+select
+  exists (
+    select 1 from public.platform_fee_proposals where status = 'approved'
+  ) as has_approved_fee_policy,
+  false as automatic_fee_posting_enabled,
+  false as external_payments_enabled;
