@@ -1,5 +1,6 @@
 import { json, config } from "../../_shared/superbase.js";
 import { requireAdminPinSession } from "../../_shared/admin-pin.js";
+import { requireAdminAal2 } from "../../_shared/security.js";
 
 async function countRows(url, secretKey, table, column = "id") {
   try {
@@ -24,6 +25,11 @@ async function countRows(url, secretKey, table, column = "id") {
 export async function onRequestGet({ request, env }) {
   const access = await requireAdminPinSession(request, env);
   if (access.error) return access.error;
+
+  // The PIN opens the basic Admin shell, but platform-wide KPI counts are
+  // withheld until this same session has completed TOTP/AAL2 verification.
+  const elevated = await requireAdminAal2(request, env);
+  const metricsAvailable = !elevated.error;
 
   try {
     const { url, secretKey } = config(env);
@@ -53,9 +59,11 @@ export async function onRequestGet({ request, env }) {
     }
     const tables = allTables.filter(([key]) => allowedMetricKeys.has(key));
 
-    const values = await Promise.all(
-      tables.map(async ([key, table, column]) => [key, await countRows(url, secretKey, table, column)])
-    );
+    const values = metricsAvailable
+      ? await Promise.all(
+          tables.map(async ([key, table, column]) => [key, await countRows(url, secretKey, table, column)])
+        )
+      : [];
     const counts = Object.fromEntries(values);
 
     return json({
@@ -66,6 +74,8 @@ export async function onRequestGet({ request, env }) {
         roles: access.roles,
       },
       counts,
+      metrics_available: metricsAvailable,
+      aal2_verified: metricsAvailable,
       platform: {
         mode: "internal_ledger_only",
         external_payments_enabled: false,
