@@ -18,6 +18,7 @@ const TABLE_CHECKS = [
   { id: "secretariat_access", label: "Otorizasyon sekretarya prive", resource: "admin_secretariat_access?select=id,owner_user_id,assistant_user_id,active&limit=0" },
   { id: "secretariat_items", label: "Depo ajanda ak travay pèsonèl", resource: "admin_secretariat_items?select=id,owner_user_id,item_type,status&limit=0" },
   { id: "fee_proposals", label: "Istwa pwopozisyon tarif", resource: "platform_fee_proposals?select=id,service_code,currency,version,status&limit=0" },
+  { id: "admin_pin_reset_challenges", label: "Defi rekiperasyon PIN Admin (AAL2)", resource: "admin_pin_reset_challenges?select=nonce,user_id,session_id,expires_at,consumed_at&limit=0" },
   { id: "security_events", label: "Jounal evènman sekirite (si konfigire)", optional: true, resource: "security_events?select=id&limit=0" }
 ];
 
