@@ -15,7 +15,7 @@ This branch builds the first role-scoped control-center foundation. It is additi
 | auditor | Read-only ledger, treasury and audit. |
 | secretary | Personal secretariat only, after an explicit assignment by the Super Admin. |
 
-Every role uses its own account. Server-side endpoints validate the role, the Admin PIN session and AAL2/MFA before loading protected modules. The accountant and secretary roles are intentionally not added to the broad customer-data RLS admin helper.
+Every role uses its own account. Server-side endpoints validate the role, the Admin PIN session and AAL2/MFA before loading protected modules. Only the top-level Super Admin and Admin retain broad authenticated RLS visibility. Finance, Risk, Support, Auditor, Accountant and Secretary use the server-mediated APIs for their assigned scopes; the database migration tightens the broad RLS helper accordingly.
 
 ## Six control rules
 
@@ -75,7 +75,7 @@ The Super Admin can give a user the secretary role and separately assign that us
 ## Required migration and validation
 
 1. Review and apply superbase/migrations/202611180001_admin_control_center.sql to the intended Supabase project only after the SQL is reviewed.
-2. Review and apply superbase/migrations/202611180002_admin_pin_recovery_and_role_coverage.sql after 001. It extends the server-only `is_admin_user` helper and PIN-attempt RPC to all eight RBAC roles; it does not broaden the separate `has_any_admin_role()` RLS helper.
+2. Review and apply superbase/migrations/202611180002_admin_pin_recovery_and_role_coverage.sql after 001. It extends the server-only `is_admin_user` helper and PIN-attempt RPC to all eight RBAC roles, while narrowing the broad RLS helper to Super Admin/Admin only. All other staff roles must use their narrower role-checked APIs.
 3. Run `superbase/tests/verify-backend.sql` and `superbase/tests/verify-admin-control-center.sql` and inspect all returned checks.
 4. Test role separation with one account per role: Super Admin, admin, finance admin, accountant, risk admin, support agent, auditor and secretary.
 5. Confirm that the secretary cannot query customer records, wallets, ledger or fee proposals.
