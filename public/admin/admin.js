@@ -254,6 +254,7 @@ async function loadOverview(session) {
   const mfaReady = await updateMfaStatus().catch(() => false);
 
   if (!mfaReady) {
+    setProtectedAdminControls(false);
     const lockMessage = "Verifye MFA TOTP anlè a pou ouvri done operasyonèl, finansye ak sekretarya yo.";
     if (canSeeFinance) setNotice("#financeNotice", lockMessage, "");
     if (isSuper) setNotice("#teamRolesNotice", lockMessage, "");
@@ -267,6 +268,7 @@ async function loadOverview(session) {
   }
 
   $("#adminMfaPanel").classList.remove("mfa-needs-action");
+  setProtectedAdminControls(true);
   if (canSeeSystemHealth) await loadSystemHealth(session);
   if (canSeeAnalytics) await loadAdminAnalytics(session);
   if (canSeeFinance) await loadFinanceOverview(session);
@@ -485,6 +487,39 @@ async function currentSession() {
   if (result.error) throw result.error;
   return result.data.session;
 }
+function setProtectedAdminControls(enabled) {
+  const selectors = [
+    "#adminAnalyticsPanel",
+    "#systemHealthPanel",
+    "#adminRecordsPanel",
+    "#adminActionsPanel",
+    "#adminFinancePanel",
+    "#adminTeamPanel",
+    "#adminSecretariatPanel"
+  ];
+  selectors.forEach((selector) => {
+    const panel = $(selector);
+    if (!panel) return;
+    panel.querySelectorAll("button,input,select,textarea").forEach((control) => {
+      control.disabled = !enabled;
+    });
+  });
+}
+
+function explainMfaError(error) {
+  const raw = [error?.code, error?.message, error?.name].filter(Boolean).join(" ").toLowerCase();
+  if (/invalid.*(otp|totp|token|code)|(otp|totp|token|code).*invalid/.test(raw)) {
+    return "Kòd la pa kòrèk oswa li ekspire. Gade dènye kòd 6 chif aplikasyon authenticator la bay epi antre l ankò.";
+  }
+  if (/rate|too many|attempt/.test(raw)) {
+    return "Gen twòp tantativ. Tann kèk minit, verifye lè telefòn nan kòrèk, epi eseye ankò.";
+  }
+  if (/factor.*(not found|not verified)|not.*factor/.test(raw)) {
+    return "Authenticator la poko pare. Peze “Kreye / aktive MFA”, eskane nouvo QR la, epi verifye kòd la.";
+  }
+  return explainError(error?.code || error?.message || "MFA_REQUIRED");
+}
+
 async function updateMfaStatus() {
   const session = await currentSession();
   if (!session) throw new Error("AUTH_REQUIRED");
@@ -563,9 +598,11 @@ async function verifyAdminMfa() {
 
   $("#adminMfaCode").value = "";
   const refreshed = await supabase.auth.refreshSession();
-  if (refreshed.error) throw refreshed.error;
-  const session = refreshed.data?.session || verified.data?.session;
-  if (!session?.access_token) throw new Error("MFA_VERIFICATION_INCOMPLETE");
+  const session = refreshed.data?.session || verified.data?.session || (await currentSession());
+  if (!session?.access_token) {
+    if (refreshed.error) throw refreshed.error;
+    throw new Error("MFA_VERIFICATION_INCOMPLETE");
+  }
 
   // Ask the server to validate the new signed access token, not only the
   // browser's decoded JWT claim. This prevents stale aal1 sessions being used.
@@ -1281,9 +1318,9 @@ async function boot() {
     try {
       await enrollAdminMfa();
     } catch (error) {
-      setNotice("#adminMfaStatus", error.message || "MFA pa kapab kòmanse.", "error");
+      setNotice("#adminMfaStatus", explainMfaError(error), "error");
     } finally {
-      button.disabled = false;
+      button.disabled = await updateMfaStatus().catch(() => false);
     }
   });
 
@@ -1293,9 +1330,9 @@ async function boot() {
     try {
       await verifyAdminMfa();
     } catch (error) {
-      setNotice("#adminMfaStatus", error.message || "Kòd MFA a pa valide.", "error");
+      setNotice("#adminMfaStatus", explainMfaError(error), "error");
     } finally {
-      button.disabled = false;
+      button.disabled = await updateMfaStatus().catch(() => false);
     }
   });
 
