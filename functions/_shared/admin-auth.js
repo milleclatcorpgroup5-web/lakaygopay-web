@@ -1,6 +1,9 @@
 import { json, requireUser, config } from "./superbase.js";
 
-const ADMIN_ROLES = new Set(["super_admin", "admin", "finance_admin", "risk_admin"]);
+const ADMIN_ROLES = new Set([
+  "super_admin","admin","finance_admin","risk_admin",
+  "support_agent","auditor","accountant","secretary"
+]);
 
 export async function requireAdmin(request, env) {
   const auth = await requireUser(request, env);
