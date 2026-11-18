@@ -223,14 +223,6 @@ select 'fee_proposal_maker_checker' as check_type,
          pg_get_functiondef('public.review_platform_fee_proposal(uuid,uuid,text,text)'::regprocedure)
        ) > 0 as prevents_self_approval;
 
---
-       position('role = ''finance_admin''' in
-         pg_get_functiondef('public.propose_platform_fee(uuid,text,text,text,numeric,timestamp with time zone,numeric,numeric,text)'::regprocedure)
-       ) > 0 as finance_admin_only,
-       position('MAKER_CANNOT_APPROVE_OWN_FEE_PROPOSAL' in
-         pg_get_functiondef('public.review_platform_fee_proposal(uuid,uuid,text,text)'::regprocedure)
-       ) > 0 as prevents_self_approval;
-
 select 'admin_role_management_rpc' as check_type,
        to_regprocedure('public.admin_set_user_role(uuid,uuid,text,text)') is not null as function_exists,
        has_function_privilege(
