@@ -220,26 +220,35 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $$
+as $audit_admin_secretariat$
 declare
   v_owner uuid;
   v_actor uuid;
   v_resource uuid;
   v_action text;
 begin
-  if tg_table_name = 'admin_secretariat_access' then
-    v_owner := coalesce(new.owner_user_id, old.owner_user_id);
-    v_actor := coalesce(new.assigned_by, old.assigned_by);
-    v_resource := coalesce(new.id, old.id);
-    v_action := case when tg_op = 'DELETE' or (tg_op = 'UPDATE' and old.active and not new.active)
-      then 'secretariat.access.revoked' else 'secretariat.access.granted' end;
+  if tg_op = 'DELETE' then
+    v_owner := old.owner_user_id;
+    v_resource := old.id;
+    if tg_table_name = 'admin_secretariat_access' then
+      v_actor := old.assigned_by;
+      v_action := 'secretariat.access.revoked';
+    else
+      v_actor := coalesce(old.updated_by,old.created_by);
+      v_action := 'secretariat.item.deleted';
+    end if;
   else
-    v_owner := coalesce(new.owner_user_id, old.owner_user_id);
-    v_actor := coalesce(new.updated_by, new.created_by, old.updated_by, old.created_by);
-    v_resource := coalesce(new.id, old.id);
-    v_action := case when tg_op = 'INSERT' then 'secretariat.item.created'
-      when tg_op = 'DELETE' then 'secretariat.item.deleted'
-      else 'secretariat.item.updated' end;
+    v_owner := new.owner_user_id;
+    v_resource := new.id;
+    if tg_table_name = 'admin_secretariat_access' then
+      v_actor := new.assigned_by;
+      v_action := case when new.active then 'secretariat.access.granted'
+        else 'secretariat.access.revoked' end;
+    else
+      v_actor := coalesce(new.updated_by,new.created_by);
+      v_action := case when tg_op = 'INSERT' then 'secretariat.item.created'
+        else 'secretariat.item.updated' end;
+    end if;
   end if;
 
   insert into public.audit_logs(actor_user_id, action, resource_type, resource_id, outcome, metadata)
@@ -251,10 +260,11 @@ begin
     'success',
     jsonb_build_object('owner_user_id', v_owner, 'operation', tg_op)
   );
+
   if tg_op = 'DELETE' then return old; end if;
   return new;
 end;
-$$;
+$audit_admin_secretariat$;
 
 drop trigger if exists admin_secretariat_access_audit on public.admin_secretariat_access;
 create trigger admin_secretariat_access_audit
