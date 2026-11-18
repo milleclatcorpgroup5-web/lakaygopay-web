@@ -91,6 +91,11 @@ from public.wallets w
 left join public.ledger_entries e on e.wallet_id = w.id
 group by w.id;
 
+-- Seed the dedicated HTG clearing wallet used only by the test-credit RPC.
+insert into public.wallets(owner_user_id, merchant_id, currency, status, is_system, system_account_code)
+values (null, null, 'HTG', 'active', true, 'clearing')
+on conflict do nothing;
+
 insert into public.wallets(owner_user_id, merchant_id, currency, status, is_system, system_account_code)
 select null, null, c.currency, 'active', true, 'platform_revenue'
   from (values ('HTG'::char(3)), ('USD'::char(3)), ('EUR'::char(3))) as c(currency)
