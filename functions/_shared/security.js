@@ -36,3 +36,15 @@ export async function requireAdminAal2(request, env) {
   }
   return { ...pinned, claims: auth.claims };
 }
+
+// Role checks belong on the server for every data/API module. Super Admin is
+// the only role that bypasses module scopes.
+export async function requireAdminRoles(request, env, allowedRoles = []) {
+  const auth = await requireAdminAal2(request, env);
+  if (auth.error) return auth;
+  const roles = Array.isArray(auth.roles) ? auth.roles : [];
+  if (!roles.includes("super_admin") && !roles.some((role) => allowedRoles.includes(role))) {
+    return { error: json({ error: "ADMIN_PERMISSION_DENIED" }, 403) };
+  }
+  return auth;
+}
