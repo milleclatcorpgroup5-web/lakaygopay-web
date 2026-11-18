@@ -27,6 +27,28 @@ $is_admin_user$;
 revoke all on function public.is_admin_user(uuid) from public, anon, authenticated;
 grant execute on function public.is_admin_user(uuid) to service_role;
 
+-- Narrow direct authenticated database access to the top-level Admin roles.
+-- Finance, Risk, Support, Auditor, Accountant and Secretary work through the
+-- server-side APIs, which enforce their individual role scopes. This avoids
+-- the old broad RLS helper exposing customer, wallet and ledger rows to every
+-- staff role. The helper remains callable by authenticated users for RLS.
+create or replace function public.has_any_admin_role()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $has_any_admin_role$
+  select exists (
+    select 1
+      from public.user_roles ur
+     where ur.user_id = auth.uid()
+       and ur.role in ('super_admin','admin')
+  );
+$has_any_admin_role$;
+revoke all on function public.has_any_admin_role() from public, anon, authenticated;
+grant execute on function public.has_any_admin_role() to authenticated;
+
 -- All roles admitted by user_roles must be able to complete the Admin PIN gate.
 -- Keep this function server-only and preserve the 5-attempt / 15-minute lock.
 create or replace function public.record_admin_pin_attempt(
