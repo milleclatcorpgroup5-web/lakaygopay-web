@@ -170,6 +170,8 @@ select 'treasury_wallet_currency_constraint' as check_type,
          pg_get_constraintdef(oid) ilike '%HTG%'
          and pg_get_constraintdef(oid) ilike '%USD%'
          and pg_get_constraintdef(oid) ilike '%EUR%'
+         and pg_get_constraintdef(oid) ilike '%is_system%'
+         and pg_get_constraintdef(oid) ilike '%platform_revenue%'
        ),false) as passed
 from pg_constraint
 where conrelid = 'public.wallets'::regclass
