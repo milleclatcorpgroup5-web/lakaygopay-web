@@ -55,7 +55,7 @@ Use a separate test account for each role. Never temporarily change the real Sup
 | `auditor` | Read-only treasury, ledger and audit | Mutations, fee approval, user support actions and team management |
 | `secretary` | Assigned personal secretariat only, after Super Admin grants access | Customer records, wallet, ledger, finance, operations and other owners' secretariat data |
 
-For every role, confirm the same sequence works: login → Admin PIN → TOTP AAL2 → only permitted modules load. Call protected API endpoints directly with the test account as well as using the UI; hidden UI panels do not count as a permission test.
+For every role, confirm the same sequence works: login → Admin PIN → TOTP AAL2 → only permitted modules load. Call protected API endpoints directly with the test account as well as using the UI; hidden UI panels do not count as a permission test. Only Super Admin/Admin should pass broad authenticated RLS checks; Finance, Risk, Support, Auditor, Accountant and Secretary should receive data only from their individual server-checked API scopes.
 
 ## Database and finance acceptance
 
