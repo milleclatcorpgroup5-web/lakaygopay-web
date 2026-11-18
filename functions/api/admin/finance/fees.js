@@ -35,7 +35,7 @@ export async function onRequestGet({ request, env }) {
     return json({
       ok: true,
       proposals,
-      can_propose: access.roles.includes("finance_admin"),
+      can_propose: access.roles.includes("finance_admin") && !access.roles.includes("super_admin"),
       can_approve: access.roles.includes("super_admin"),
       fee_engine_active: false,
       generated_at: new Date().toISOString()
@@ -48,7 +48,7 @@ export async function onRequestGet({ request, env }) {
 export async function onRequestPost({ request, env }) {
   const access = await requireAdminRoles(request, env, ["finance_admin"]);
   if (access.error) return access.error;
-  if (!access.roles.includes("finance_admin")) return json({ error: "FINANCE_ROLE_REQUIRED" }, 403);
+  if (!access.roles.includes("finance_admin") || access.roles.includes("super_admin")) return json({ error: "FINANCE_ROLE_REQUIRED" }, 403);
   try {
     const body = await readJson(request, 5000);
     const serviceCode = String(body?.service_code || "");
