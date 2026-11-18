@@ -17,6 +17,19 @@ This branch builds the first role-scoped control-center foundation. It is additi
 
 Every role uses its own account. Server-side endpoints validate the role, the Admin PIN session and AAL2/MFA before loading protected modules. Only the top-level Super Admin and Admin retain broad authenticated RLS visibility. Finance, Risk, Support, Auditor, Accountant and Secretary use the server-mediated APIs for their assigned scopes; the database migration tightens the broad RLS helper accordingly.
 
+## Six Admin modules and server-side role scopes
+
+| Admin module | Permitted roles |
+| --- | --- |
+| Growth and service analytics | Super Admin, Admin, Risk, Support, Finance, Accountant, Auditor |
+| System health and controls | Super Admin, Admin |
+| Finance and revenue wallets | Super Admin, Finance, Accountant, Auditor |
+| Grant or revoke staff roles | Super Admin only |
+| Personal secretariat | Super Admin for their own workspace; Secretary only after an explicit assignment |
+| Ledger integrity review | Super Admin, Admin, Finance, Risk, Accountant, Auditor |
+
+The Finance daily-summary API follows the Finance module scope; Admin and Risk cannot bypass the UI by calling that route directly. The team-role and secretariat-assignment APIs are Super Admin only. Every protected data route re-checks the bearer session, current Admin PIN session, AAL2/TOTP and the permitted server-side role. UI visibility is an aid only; it is never the permission boundary.
+
 ## Six control rules
 
 1. Important administrative and finance actions leave an audit record.
