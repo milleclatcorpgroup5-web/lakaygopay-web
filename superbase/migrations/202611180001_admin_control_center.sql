@@ -595,7 +595,7 @@ begin
   into v_rows
   from (
     select
-      date_trunc('day', le.created_at)::date as ledger_date,
+      date_trunc('day', le.created_at at time zone 'America/Port-au-Prince')::date as ledger_date,
       le.currency::text as currency,
       count(distinct le.ledger_transaction_id)::bigint as transaction_count,
       coalesce(sum(le.amount) filter (where le.direction = 'debit'),0)::numeric(20,2) as total_debits,
@@ -608,8 +608,9 @@ begin
       ),0)::numeric(20,2) as platform_revenue_debits
     from public.ledger_entries le
     join public.wallets w on w.id = le.wallet_id
-    where le.created_at >= date_trunc('day', now()) - make_interval(days => p_days - 1)
-    group by date_trunc('day', le.created_at)::date, le.currency
+    where le.created_at >= (date_trunc('day', now() at time zone 'America/Port-au-Prince') at time zone 'America/Port-au-Prince')
+      - make_interval(days => p_days - 1)
+    group by date_trunc('day', le.created_at at time zone 'America/Port-au-Prince')::date, le.currency
   ) report;
 
   return jsonb_build_object(
