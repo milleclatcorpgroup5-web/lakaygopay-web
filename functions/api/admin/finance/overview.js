@@ -48,7 +48,7 @@ export async function onRequestGet({ request, env }) {
         source: "immutable_internal_ledger",
         read_only: true,
         automatic_fee_posting_active: false,
-        note: "Rapò sa yo baze sou ledger. Motè frè sèvis la poko poste revni otomatik."
+        note: "Rapò yo baze sou ledger entèn. Nan beta a, mouvman ledger yo rete HTG sèlman; bous revni USD/EUR yo se kont preparasyon a zewo, san FX oswa peman deviz reyèl. Motè frè a pa poste revni otomatik."
       },
       roles: access.roles,
       generated_at: new Date().toISOString()
