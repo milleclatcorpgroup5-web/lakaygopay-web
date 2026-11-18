@@ -550,4 +550,80 @@ begin
 end;
 $withdrawal_super_admin$;
 
+
+-- 8) Daily ledger summary for accounting. This is a read-only report over the
+-- immutable ledger; it does not calculate or activate a service fee.
+create or replace function public.get_admin_daily_financial_summary(
+  p_admin_user_id uuid,
+  p_days integer default 30
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $daily_financial_summary$
+declare
+  v_rows jsonb;
+begin
+  if not exists (
+    select 1
+      from public.user_roles
+     where user_id = p_admin_user_id
+       and role in ('super_admin','admin','finance_admin','risk_admin','accountant','auditor')
+  ) then
+    raise exception 'FINANCE_ROLE_REQUIRED';
+  end if;
+  if p_days is null or p_days < 1 or p_days > 90 then
+    raise exception 'FINANCE_REPORT_RANGE_INVALID';
+  end if;
+
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'ledger_date', report.ledger_date,
+        'currency', report.currency,
+        'transaction_count', report.transaction_count,
+        'total_debits', report.total_debits,
+        'total_credits', report.total_credits,
+        'platform_revenue_credits', report.platform_revenue_credits,
+        'platform_revenue_debits', report.platform_revenue_debits
+      )
+      order by report.ledger_date desc, report.currency
+    ),
+    '[]'::jsonb
+  )
+  into v_rows
+  from (
+    select
+      date_trunc('day', le.created_at)::date as ledger_date,
+      le.currency::text as currency,
+      count(distinct le.ledger_transaction_id)::bigint as transaction_count,
+      coalesce(sum(le.amount) filter (where le.direction = 'debit'),0)::numeric(20,2) as total_debits,
+      coalesce(sum(le.amount) filter (where le.direction = 'credit'),0)::numeric(20,2) as total_credits,
+      coalesce(sum(le.amount) filter (
+        where w.is_system = true and w.system_account_code = 'platform_revenue' and le.direction = 'credit'
+      ),0)::numeric(20,2) as platform_revenue_credits,
+      coalesce(sum(le.amount) filter (
+        where w.is_system = true and w.system_account_code = 'platform_revenue' and le.direction = 'debit'
+      ),0)::numeric(20,2) as platform_revenue_debits
+    from public.ledger_entries le
+    join public.wallets w on w.id = le.wallet_id
+    where le.created_at >= date_trunc('day', now()) - make_interval(days => p_days - 1)
+    group by date_trunc('day', le.created_at)::date, le.currency
+  ) report;
+
+  return jsonb_build_object(
+    'days',p_days,
+    'rows',v_rows,
+    'source','immutable_double_entry_ledger',
+    'fee_engine_active',false
+  );
+end;
+$daily_financial_summary$;
+
+revoke all on function public.get_admin_daily_financial_summary(uuid,integer)
+  from public,anon,authenticated;
+grant execute on function public.get_admin_daily_financial_summary(uuid,integer)
+  to service_role;
+
 commit;
