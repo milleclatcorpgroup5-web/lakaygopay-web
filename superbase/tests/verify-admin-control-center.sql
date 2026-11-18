@@ -23,7 +23,25 @@ where pc.conrelid = 'public.user_roles'::regclass
   and pc.contype = 'c'
   and pg_get_constraintdef(pc.oid) ilike '%role%';
 
--- 2. PIN attempt RPC must include all roles and remain server-only.
+-- 2. The server-side Admin identity helper must recognize every staff role,
+-- while remaining unavailable to browser roles.
+select
+  'is_admin_user_rpc' as check_name,
+  p.oid is not null as function_exists,
+  case when p.oid is not null then
+    pg_get_functiondef(p.oid) ilike '%support_agent%'
+    and pg_get_functiondef(p.oid) ilike '%auditor%'
+    and pg_get_functiondef(p.oid) ilike '%accountant%'
+    and pg_get_functiondef(p.oid) ilike '%secretary%'
+  else false end as all_admin_roles_recognized,
+  case when p.oid is not null then
+    not has_function_privilege('anon', p.oid, 'EXECUTE')
+    and not has_function_privilege('authenticated', p.oid, 'EXECUTE')
+    and has_function_privilege('service_role', p.oid, 'EXECUTE')
+  else false end as service_role_only
+from (select to_regprocedure('public.is_admin_user(uuid)') as oid) p;
+
+-- 3. PIN attempt RPC must include all roles and remain server-only.
 select
   'admin_pin_attempt_rpc' as check_name,
   p.oid is not null as function_exists,
