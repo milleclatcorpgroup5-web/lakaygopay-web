@@ -111,7 +111,11 @@ function explainError(code) {
     LAST_SUPER_ADMIN_PROTECTED: "Ou pa kapab sispann dènye Super administratè aktif la.",
     SUPER_ADMIN_ACCOUNT_PROTECTED: "Se sèlman yon Super administratè ki ka chanje estati yon lòt Super administratè.",
     USER_NOT_FOUND: "Kont itilizatè sa a pa egziste.",
-    ADMIN_SESSION_MISMATCH: "Sesyon administratè a pa koresponn. Konekte ankò."
+    ADMIN_SESSION_MISMATCH: "Sesyon administratè a pa koresponn. Konekte ankò.",
+    ADMIN_PIN_RESET_UNAVAILABLE: "Rekiperasyon PIN lan pa disponib kounye a. Verifye migrasyon sekirite Admin lan.",
+    ADMIN_PIN_RESET_CHALLENGE_INVALID: "Demann reset PIN lan ekspire oswa pa koresponn ak sesyon an. Rekòmanse rekiperasyon an.",
+    ADMIN_PIN_NOT_SET: "Pa gen PIN Admin ki anrejistre pou kont sa a.",
+    MFA_FACTOR_LIMIT_REACHED: "Limit kantite authenticator sekou yo rive. Pa efase yon aparèy verifye san plan rekiperasyon."
   };
   return messages[code] || "Yon erè rive. Kòd: " + (code || "UNKNOWN");
 }
@@ -518,6 +522,9 @@ function explainMfaError(error) {
   const raw = [error?.code, error?.message, error?.name].filter(Boolean).join(" ").toLowerCase();
   if (/invalid.*(otp|totp|token|code)|(otp|totp|token|code).*invalid/.test(raw)) {
     return "Kòd la pa kòrèk oswa li ekspire. Gade dènye kòd 6 chif aplikasyon authenticator la bay epi antre l ankò.";
+  }
+  if (/factor.*limit|maximum.*factor|too many factors/.test(raw)) {
+    return "Limit kantite authenticator sekou yo rive. Pa efase yon aparèy verifye san plan rekiperasyon.";
   }
   if (/rate|too many|attempt/.test(raw)) {
     return "Gen twòp tantativ. Tann kèk minit, verifye lè telefòn nan kòrèk, epi eseye ankò.";
