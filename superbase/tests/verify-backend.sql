@@ -133,3 +133,97 @@ select
 select setting_key, setting_value
 from public.platform_settings
 where setting_key = 'test_mode_enabled';
+
+
+-- 10. Admin Control Center foundations: role extension, private secretariat,
+-- versioned fee proposals, and dedicated platform-revenue wallets.
+select 'admin_control_center_relation' as check_type,
+       name as object_name,
+       to_regclass('public.' || name) is not null as passed
+from (values
+  ('admin_secretariat_access'),
+  ('admin_secretariat_items'),
+  ('platform_fee_proposals')
+) objects(name);
+
+select 'admin_control_center_role_check' as check_type,
+       coalesce(bool_or(
+         pg_get_constraintdef(oid) ilike '%accountant%'
+         and pg_get_constraintdef(oid) ilike '%secretary%'
+       ),false) as passed
+from pg_constraint
+where conrelid = 'public.user_roles'::regclass
+  and contype = 'c'
+  and pg_get_constraintdef(oid) ilike '%role%';
+
+select 'platform_revenue_wallets' as check_type,
+       count(*) = 3 and count(distinct currency) = 3 as passed,
+       count(*) as revenue_wallet_count,
+       array_agg(currency::text order by currency::text) as currencies
+from public.wallets
+where is_system = true
+  and system_account_code = 'platform_revenue'
+  and currency in ('HTG','USD','EUR');
+
+select 'system_clearing_wallet' as check_type,
+       count(*) = 1 as passed,
+       count(*) as htg_clearing_wallets
+from public.wallets
+where is_system = true
+  and system_account_code = 'clearing'
+  and currency = 'HTG';
+
+select 'admin_secretariat_privacy' as check_type,
+       c.relrowsecurity as rls_enabled,
+       has_table_privilege('anon', c.oid, 'SELECT') as anon_can_read,
+       has_table_privilege('authenticated', c.oid, 'SELECT') as authenticated_can_read
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+where n.nspname = 'public'
+  and c.relname in ('admin_secretariat_access','admin_secretariat_items')
+order by c.relname;
+
+select 'fee_proposal_privileges' as check_type,
+       has_table_privilege('authenticated','public.platform_fee_proposals','SELECT') as authenticated_can_read,
+       has_function_privilege(
+         'authenticated',
+         'public.propose_platform_fee(uuid,text,text,text,numeric,timestamp with time zone,numeric,numeric,text)',
+         'EXECUTE'
+       ) as authenticated_can_propose,
+       has_function_privilege(
+         'service_role',
+         'public.propose_platform_fee(uuid,text,text,text,numeric,timestamp with time zone,numeric,numeric,text)',
+         'EXECUTE'
+       ) as service_role_can_call_proposal_rpc,
+       has_function_privilege(
+         'service_role',
+         'public.review_platform_fee_proposal(uuid,uuid,text,text)',
+         'EXECUTE'
+       ) as service_role_can_call_review_rpc;
+
+select 'admin_role_management_rpc' as check_type,
+       to_regprocedure('public.admin_set_user_role(uuid,uuid,text,text)') is not null as function_exists,
+       has_function_privilege(
+         'authenticated',
+         'public.admin_set_user_role(uuid,uuid,text,text)',
+         'EXECUTE'
+       ) as authenticated_can_call,
+       has_function_privilege(
+         'service_role',
+         'public.admin_set_user_role(uuid,uuid,text,text)',
+         'EXECUTE'
+       ) as service_role_can_call;
+
+select 'withdrawal_super_admin_guard' as check_type,
+       position('ur.role = ''super_admin''' in
+         pg_get_functiondef('public.record_withdrawal_approval(uuid,uuid,text,text)'::regprocedure)
+       ) > 0 as super_admin_required_for_major_decisions;
+
+-- 11. The service-fee system is a proposal workflow only. Approval must not
+-- turn on fee posting or any real-money payment channel.
+select
+  exists (
+    select 1 from public.platform_fee_proposals where status = 'approved'
+  ) as has_approved_fee_policy,
+  false as automatic_fee_posting_enabled,
+  false as external_payments_enabled;
