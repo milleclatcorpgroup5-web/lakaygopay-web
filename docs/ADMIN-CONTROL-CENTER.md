@@ -64,7 +64,7 @@ Approval of a proposal is not activation. The current beta does not debit users 
 
 - One system-revenue wallet per currency: HTG, USD, EUR.
 - The pre-existing clearing system wallet remains a different account purpose.
-- The ledger view applies the clearing account's debit-minus-credit convention and the revenue account's credit-minus-debit convention. The beta permits HTG, USD and EUR treasury wallet shells, but ledger postings, transfers and payout records remain HTG-only; USD/EUR wallets are preparatory, zero-balance accounts, not evidence of FX settlement or held customer funds.
+- The ledger view applies the clearing account's debit-minus-credit convention and the revenue account's credit-minus-debit convention. Personal, merchant and platform-revenue wallets support HTG, USD and EUR as separate currency ledgers. Every posting must match its wallet currency, and transfers remain same-currency only. This does not provide FX conversion, cross-currency transfers, external settlement or evidence of real USD/EUR funds.
 - No client-facing API may use a system wallet as a sender or QR payer.
 - No manual balance editing or direct fund movement is added by this branch.
 
@@ -85,6 +85,8 @@ The Super Admin can give a user the secretary role and separately assign that us
 9. Verify that all three revenue wallets exist and start at zero in a clean QA project. Do not create real credits or real payouts for this test.
 10. Test the password-recovery and AAL2-only PIN-recovery flows, including expired/replayed challenge rejection and backup TOTP enrollment.
 11. Keep external payment rails and automatic fee posting disabled. Roll out to Production only after the migrations, role tests, recovery tests and authenticated UI checks pass.
+
+The executive KPI cards show N/D until the current session reaches Supabase AAL2 after TOTP verification. The backend omits aggregate platform counts before AAL2; protected data is not sent to the browser simply because the Admin PIN was verified.
 
 ## Consolidated dashboard and daily growth analytics
 
