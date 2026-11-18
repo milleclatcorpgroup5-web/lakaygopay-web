@@ -366,7 +366,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $propose_platform_fee$
 declare
   v_version integer;
   v_id uuid;
@@ -427,7 +427,7 @@ begin
   );
   return jsonb_build_object('id',v_id,'version',v_version,'status','proposed');
 end;
-$;
+$propose_platform_fee$;
 revoke all on function public.propose_platform_fee(uuid,text,text,text,numeric,timestamptz,numeric,numeric,text)
   from public,anon,authenticated;
 grant execute on function public.propose_platform_fee(uuid,text,text,text,numeric,timestamptz,numeric,numeric,text)
@@ -443,7 +443,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $review_platform_fee$
 declare
   v_proposal public.platform_fee_proposals%rowtype;
 begin
@@ -488,7 +488,7 @@ begin
     'fee_engine_activated',false
   );
 end;
-$;
+$review_platform_fee$;
 revoke all on function public.review_platform_fee_proposal(uuid,uuid,text,text)
   from public,anon,authenticated;
 grant execute on function public.review_platform_fee_proposal(uuid,uuid,text,text)
