@@ -54,6 +54,14 @@
         </label>
         <button id="loginButton" class="button button-primary full" type="submit">Antre nan sant kontwòl la <span>→</span></button>
       </form>
+      <button id="forgotPasswordButton" class="button button-quiet full" type="button">Bliye modpas ou?</button>
+      <form id="passwordRecoveryRequestForm" class="form-stack recovery-form" hidden>
+        <p class="muted small">N ap voye yon lyen rekiperasyon sou imèl kont lan. Nou pap revele si yon adrès egziste oswa non.</p>
+        <label>Imèl administratè
+          <input id="passwordRecoveryEmail" type="email" autocomplete="email" required>
+        </label>
+        <button id="passwordRecoveryRequestButton" class="button button-primary full" type="submit">Voye lyen rekiperasyon</button>
+      </form>
       <div id="loginNotice" class="notice" role="status" aria-live="polite"></div>
       <p class="login-foot">Pa gen enskripsyon piblik pou kont admin. Super Admin ka bay oswa retire wòl dirèkteman nan sit sa a pou kont ki deja anrejistre.</p>
     </section>
@@ -84,6 +92,23 @@
         <button id="adminPinSetupButton" class="button button-primary full" type="submit">Anrejistre PIN Admin <span>→</span></button>
       </form>
 
+      <button id="showPinRecoveryButton" class="button button-quiet full" type="button" hidden>Mwen bliye PIN Admin mwen</button>
+      <form id="adminPinRecoveryForm" class="form-stack recovery-form" hidden>
+        <p id="adminPinRecoveryHelp" class="muted small">Pou reset PIN lan, ou dwe konfime idantite ou ak yon authenticator TOTP verifye. Pa gen okenn chemen ki sote MFA.</p>
+        <label>Chwazi authenticator sekou
+          <select id="adminPinRecoveryFactor" required></select>
+        </label>
+        <label>Kòd authenticator · 6 chif
+          <input id="adminPinRecoveryCode" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required>
+        </label>
+        <label>Nouvo PIN Admin · 6 chif
+          <input id="adminPinRecoveryNew" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required>
+        </label>
+        <label>Konfime nouvo PIN lan
+          <input id="adminPinRecoveryConfirm" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required>
+        </label>
+        <button id="adminPinRecoverySubmit" class="button button-primary full" type="submit">Verifye MFA epi reset PIN</button>
+      </form>
       <div id="pinNotice" class="notice" role="status" aria-live="polite"></div>
       <p class="login-foot">PIN lan estoke kòm hash PBKDF2 ak salt. 5 move tantativ youn apre lòt bloke verifikasyon pandan 15 minit. Pa pataje PIN lan.</p>
     </section>
@@ -384,10 +409,14 @@
         <p id="adminMfaStatus" class="muted admin-mfa-copy">Pou debloke dosye yo, aktive authenticator la oswa antre kòd 6 chif li epi peze Verifye MFA.</p>
         <div class="admin-mfa-actions">
           <button id="adminMfaEnrollButton" class="button button-quiet" type="button">Kreye / aktive MFA</button>
+          <button id="adminMfaBackupEnrollButton" class="button button-quiet" type="button" hidden>Ajoute authenticator sekou</button>
           <div id="adminMfaQrWrap" hidden>
             <img id="adminMfaQr" alt="QR pou aplikasyon authenticator">
             <p id="adminMfaSecret" class="small muted"></p>
           </div>
+          <label id="adminMfaFactorLabel" for="adminMfaFactorSelect" hidden>Chwazi aparèy authenticator
+            <select id="adminMfaFactorSelect"></select>
+          </label>
           <label for="adminMfaCode">Kòd authenticator 6 chif
             <input id="adminMfaCode" type="password" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000">
           </label>
