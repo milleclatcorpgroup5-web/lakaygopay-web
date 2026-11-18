@@ -246,7 +246,8 @@ begin
     'success',
     jsonb_build_object('owner_user_id', v_owner, 'operation', tg_op)
   );
-  return coalesce(new, old);
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
 end;
 $$;
 
