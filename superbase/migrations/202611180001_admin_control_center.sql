@@ -45,7 +45,14 @@ alter table public.wallets
   drop constraint if exists wallets_currency_check;
 alter table public.wallets
   add constraint wallets_currency_supported_check
-  check (currency in ('HTG','USD','EUR'));
+  check (
+    currency = 'HTG'
+    or (
+      is_system = true
+      and system_account_code = 'platform_revenue'
+      and currency in ('USD','EUR')
+    )
+  );
 
 update public.wallets
    set system_account_code = 'clearing'
