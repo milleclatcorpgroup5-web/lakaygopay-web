@@ -46,7 +46,8 @@ function explainError(code) {
     FINANCE_MODULE_SCHEMA_NOT_READY: "Bazdone bous revni an poko enstale. Egzekite migrasyon Admin Control Center la.",
     FINANCE_OVERVIEW_UNAVAILABLE: "Rezime finans lan pa disponib.",
     FINANCE_REPORT_RANGE_INVALID: "Chwazi yon peryòd rapò ant 1 ak 90 jou.",
-    FINANCE_ROLE_REQUIRED: "Wòl kont sa a pa otorize pou rapò finans sa a.",
+    FINANCE_ROLE_REQUIRED: "Se yon Responsab Finans ki ka soumèt pwopozisyon tarif.",
+    MAKER_CANNOT_APPROVE_OWN_FEE_PROPOSAL: "Moun ki pwopoze tarif la pa kapab apwouve pwòp pwopozisyon li.",
     FEE_PROPOSALS_UNAVAILABLE: "Istwa pwopozisyon tarif yo pa disponib; verifye migrasyon Admin Control Center la.",
     FEE_SERVICE_INVALID: "Sèvis pou tarif sa a pa valab.",
     FEE_CURRENCY_INVALID: "Deviz tarif la dwe HTG, USD oswa EUR.",
@@ -601,10 +602,12 @@ function renderFeeProposals(proposals, canApprove) {
       "Estati: " + proposal.status,
       "Aplikasyon: " + new Date(proposal.effective_at).toLocaleString("fr-HT"),
       proposal.minimum_fee != null ? "Min: " + proposal.minimum_fee : "",
-      proposal.maximum_fee != null ? "Max: " + proposal.maximum_fee : ""
+      proposal.maximum_fee != null ? "Max: " + proposal.maximum_fee : "",
+      proposal.reviewed_at ? "Desizyon: " + new Date(proposal.reviewed_at).toLocaleString("fr-HT") : ""
     ].filter(Boolean).join(" · ");
     const note = document.createElement("p");
     note.textContent = proposal.proposal_note || "";
+    if (proposal.decision_note) note.textContent += (note.textContent ? " · " : "") + "Nòt desizyon: " + proposal.decision_note;
     main.append(title,value,meta,note);
     card.append(main);
 
