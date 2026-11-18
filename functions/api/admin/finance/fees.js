@@ -10,7 +10,7 @@ const FEE_KINDS = new Set(["fixed","percentage"]);
 
 async function listProposals(url, secretKey) {
   const response = await fetch(
-    url + "/rest/v1/platform_fee_proposals?select=id,service_code,currency,fee_kind,fee_value,minimum_fee,maximum_fee,version,effective_at,status,proposed_by,approved_by,approved_at,proposal_note,decision_note,created_at&order=created_at.desc&limit=100",
+    url + "/rest/v1/platform_fee_proposals?select=id,service_code,currency,fee_kind,fee_value,minimum_fee,maximum_fee,version,effective_at,status,proposed_by,reviewed_by,reviewed_at,proposal_note,decision_note,created_at&order=created_at.desc&limit=100",
     {
       headers: {
         apikey: secretKey,
@@ -35,7 +35,7 @@ export async function onRequestGet({ request, env }) {
     return json({
       ok: true,
       proposals,
-      can_propose: access.roles.includes("super_admin") || access.roles.includes("finance_admin"),
+      can_propose: access.roles.includes("finance_admin"),
       can_approve: access.roles.includes("super_admin"),
       fee_engine_active: false,
       generated_at: new Date().toISOString()
@@ -48,6 +48,7 @@ export async function onRequestGet({ request, env }) {
 export async function onRequestPost({ request, env }) {
   const access = await requireAdminRoles(request, env, ["finance_admin"]);
   if (access.error) return access.error;
+  if (!access.roles.includes("finance_admin")) return json({ error: "FINANCE_ROLE_REQUIRED" }, 403);
   try {
     const body = await readJson(request, 5000);
     const serviceCode = String(body?.service_code || "");
