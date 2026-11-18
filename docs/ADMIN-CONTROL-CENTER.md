@@ -21,9 +21,9 @@ Every role uses its own account. Server-side endpoints validate the role, the Ad
 
 1. Important administrative and finance actions leave an audit record.
 2. Wallet balances are derived from immutable double-entry ledger entries; nobody edits a balance column.
-3. Fee proposals are versioned, time-stamped and retained. Finance proposes; only Super Admin approves or rejects.
+3. Fee proposals are versioned, time-stamped and retained. Only Finance Admin proposes; only Super Admin approves or rejects. The database rejects self-approval even where one person holds both roles.
 4. Sensitive operations require Admin PIN plus TOTP MFA (AAL2).
-5. Major financial decisions require Super Admin approval. Large HTG withdrawals retain the existing two-person approval count and need one Super Admin in that approval chain; foreign-currency withdrawal approvals also need a Super Admin and two approvals.
+5. Major financial decisions require Super Admin approval. Large HTG withdrawals retain the existing two-person approval count and need one Super Admin in that approval chain; foreign-currency withdrawal approvals also need a Super Admin and two approvals. The base migration seeds the HTG threshold at zero, so until an authorized operator configures a positive threshold, every positive HTG withdrawal conservatively requires two approvals and a Super Admin.
 6. Every server endpoint enforces least-privilege role permissions; hiding a UI panel is not an access-control boundary.
 
 ## Daily operating flow
@@ -64,7 +64,7 @@ Approval of a proposal is not activation. The current beta does not debit users 
 
 - One system-revenue wallet per currency: HTG, USD, EUR.
 - The pre-existing clearing system wallet remains a different account purpose.
-- The ledger view applies the clearing account's debit-minus-credit convention and the revenue account's credit-minus-debit convention.
+- The ledger view applies the clearing account's debit-minus-credit convention and the revenue account's credit-minus-debit convention. The beta permits HTG, USD and EUR treasury wallet shells, but ledger postings, transfers and payout records remain HTG-only; USD/EUR wallets are preparatory, zero-balance accounts, not evidence of FX settlement or held customer funds.
 - No client-facing API may use a system wallet as a sender or QR payer.
 - No manual balance editing or direct fund movement is added by this branch.
 
