@@ -4,6 +4,29 @@
 
 begin;
 
+-- The server-side /api/admin/me check uses is_admin_user(). Extend that
+-- helper to all explicit staff roles, but keep has_any_admin_role() unchanged
+-- so the new least-privilege roles do not gain broad customer-table RLS access.
+create or replace function public.is_admin_user(p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $is_admin_user$
+  select exists (
+    select 1
+      from public.user_roles ur
+     where ur.user_id = p_user_id
+       and ur.role in (
+         'super_admin','admin','finance_admin','risk_admin',
+         'support_agent','auditor','accountant','secretary'
+       )
+  );
+$is_admin_user$;
+revoke all on function public.is_admin_user(uuid) from public, anon, authenticated;
+grant execute on function public.is_admin_user(uuid) to service_role;
+
 -- All roles admitted by user_roles must be able to complete the Admin PIN gate.
 -- Keep this function server-only and preserve the 5-attempt / 15-minute lock.
 create or replace function public.record_admin_pin_attempt(
