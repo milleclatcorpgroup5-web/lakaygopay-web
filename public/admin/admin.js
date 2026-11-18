@@ -117,6 +117,7 @@ function explainError(code) {
 }
 function showLogin(message, kind = "error") {
   $("#loginView").hidden = false;
+  $("#passwordRecoveryView").hidden = true;
   $("#pinView").hidden = true;
   $("#adminView").hidden = true;
   $("#refreshButton").hidden = true;
@@ -581,7 +582,7 @@ async function updateMfaStatus() {
       ? "Verifye MFA sou sesyon sa a anvan ou ajoute yon aparèy sekou."
       : totpFactors.length >= 10 ? "Limit faktè MFA yo rive." : "Ajoute yon dezyèm authenticator sekou.";
   }
-  $("#adminMfaVerifyButton").disabled = aal2 || totpFactors.length === 0;
+  $("#adminMfaVerifyButton").disabled = totpFactors.length === 0 || (aal2 && !hasPendingFactor);
   $("#adminLedgerAuditButton").disabled = !aal2;
   return aal2;
 }
@@ -643,7 +644,7 @@ async function enrollAdminMfaBackup() {
 }
 
 async function completeTotpVerification(factorId, code) {
-  if (!factorId || !/^\\d{6}$/.test(code)) throw new Error("MFA_CODE_MUST_BE_6_DIGITS");
+  if (!factorId || !/^\d{6}$/.test(code)) throw new Error("MFA_CODE_MUST_BE_6_DIGITS");
   const factorsResult = await supabase.auth.mfa.listFactors();
   if (factorsResult.error) throw factorsResult.error;
   const factor = (factorsResult.data?.totp || []).find((item) => item.id === factorId);
@@ -1358,7 +1359,7 @@ async function submitAdminPinRecovery(event) {
     "000000","111111","222222","333333","444444","555555","666666","777777","888888","999999",
     "123456","234567","345678","456789","654321","543210","432109","987654","121212","112233","123123"
   ]);
-  if (!/^\\d{6}$/.test(pin) || weakPins.has(pin)) {
+  if (!/^\d{6}$/.test(pin) || weakPins.has(pin)) {
     setNotice("#pinNotice", "Nouvo PIN lan dwe gen 6 chif epi li pa dwe yon sekans fasil pou devine.", "error");
     return;
   }
