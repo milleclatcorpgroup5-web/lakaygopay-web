@@ -137,7 +137,7 @@ begin
      p_nonce is null or p_nonce !~ '^[a-f0-9]{32}$' or
      p_pin_hash is null or p_pin_hash !~ '^[a-f0-9]{64}$' or
      p_pin_salt is null or p_pin_salt !~ '^[a-f0-9]{32}$' or
-     p_pin_iterations <> 600000 then
+     p_pin_iterations is null or p_pin_iterations <> 600000 then
     raise exception 'ADMIN_PIN_RESET_ARGUMENT_INVALID';
   end if;
 
