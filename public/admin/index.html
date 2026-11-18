@@ -225,7 +225,8 @@
       <form id="secretariatAccessForm" class="team-role-form">
         <h3>Otorize sekretè pou espas pèsonèl</h3>
         <label>ID kont sekretè<input id="secretaryAssistantUserId" required placeholder="ID kont ki gen wòl Sekretè"></label>
-        <button class="button button-quiet" type="submit">Bay / aktive aksè sekretè</button>
+        <label>Aksyon aksè<select id="secretariatAccessAction"><option value="grant">Bay / aktive aksè</option><option value="revoke">Retire aksè</option></select></label>
+        <button class="button button-quiet" type="submit">Sove otorizasyon sekretè</button>
         <p id="secretariatAccessNotice" class="muted small">Aksè sa a se sèlman pou ajanda, nòt, travay ak dokiman pèsonèl.</p>
       </form>
     </section>
