@@ -195,7 +195,7 @@ async function loadOverview(session) {
   const roleSet = new Set(currentAdminRoles);
   const isSuper = roleSet.has("super_admin");
   const canSeeOperations = isSuper || ["admin","risk_admin","support_agent","finance_admin","accountant","auditor"].some((role) => roleSet.has(role));
-  const canSeeActions = isSuper || roleSet.has("admin") || roleSet.has("risk_admin") || roleSet.has("finance_admin");
+  const canSeeActions = isSuper || ["admin","risk_admin","finance_admin","accountant","auditor"].some((role) => roleSet.has(role));
   const canSeeFinance = isSuper || ["finance_admin","accountant","auditor"].some((role) => roleSet.has(role));
   const canSeeSecretariat = isSuper || roleSet.has("secretary");
 
@@ -798,6 +798,16 @@ function openAdminAction(type, row) {
   }
   $("#adminActionsPanel").scrollIntoView({ behavior: "smooth", block: "start" });
 }
+function canReviewRecord(type) {
+  if (currentAdminRoles.includes("super_admin")) return true;
+  const scopes = {
+    users: ["admin","risk_admin"],
+    merchants: ["admin","risk_admin"],
+    withdrawals: ["admin","risk_admin","finance_admin"],
+    agents: ["admin","risk_admin"]
+  };
+  return (scopes[type] || []).some((role) => currentAdminRoles.includes(role));
+}
 function renderAdminRecords(type, rows) {
   const head = $("#adminRecordsHead");
   const body = $("#adminRecordsBody");
@@ -810,7 +820,8 @@ function renderAdminRecords(type, rows) {
     th.textContent = label;
     headerRow.append(th);
   });
-  if (["users","merchants","withdrawals","agents"].includes(type)) {
+  const showActionColumn = canReviewRecord(type);
+  if (showActionColumn) {
     const th = document.createElement("th");
     th.textContent = "Aksyon";
     headerRow.append(th);
@@ -819,7 +830,7 @@ function renderAdminRecords(type, rows) {
   if (!rows.length) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
-    td.colSpan = columns.length + (["users","merchants","withdrawals","agents"].includes(type) ? 1 : 0);
+    td.colSpan = columns.length + (showActionColumn ? 1 : 0);
     td.textContent = "Pa gen dosye nan kategori sa a.";
     tr.append(td);
     body.append(tr);
@@ -832,7 +843,7 @@ function renderAdminRecords(type, rows) {
       td.textContent = recordValue(type, row, key);
       tr.append(td);
     });
-    if (["users","merchants","withdrawals","agents"].includes(type)) {
+    if (showActionColumn) {
       const td = document.createElement("td");
       const button = document.createElement("button");
       button.type = "button";
