@@ -312,4 +312,222 @@ begin
 end;
 $test_credit_system_wallet$;
 
+
+-- 6) Versioned service-fee proposals. Finance can propose; only a Super Admin
+-- can approve/reject. Approval records policy intent only; it does not collect
+-- fees or activate fee posting in the ledger.
+create table if not exists public.platform_fee_proposals (
+  id uuid primary key default gen_random_uuid(),
+  service_code text not null check (service_code in (
+    'internal_transfer','merchant_qr','fx_conversion','cash_in','cash_out','bill_payment'
+  )),
+  currency char(3) not null check (currency in ('HTG','USD','EUR')),
+  fee_kind text not null check (fee_kind in ('fixed','percentage')),
+  fee_value numeric(14,6) not null check (fee_value > 0),
+  minimum_fee numeric(20,6) not null default 0 check (minimum_fee >= 0),
+  maximum_fee numeric(20,6) check (maximum_fee is null or maximum_fee >= minimum_fee),
+  version integer not null check (version > 0),
+  effective_at timestamptz not null,
+  status text not null default 'proposed' check (status in ('proposed','approved','rejected')),
+  proposed_by uuid not null references auth.users(id),
+  approved_by uuid references auth.users(id),
+  approved_at timestamptz,
+  proposal_note text not null default '' check (length(proposal_note) <= 500),
+  decision_note text not null default '' check (length(decision_note) <= 500),
+  created_at timestamptz not null default now(),
+  unique(service_code, currency, version),
+  check (fee_kind <> 'percentage' or fee_value <= 100),
+  check (
+    (status = 'proposed' and approved_by is null and approved_at is null)
+    or (status in ('approved','rejected') and approved_by is not null and approved_at is not null)
+  )
+);
+create index if not exists platform_fee_proposals_service_version_idx
+  on public.platform_fee_proposals(service_code, currency, version desc);
+create index if not exists platform_fee_proposals_status_effective_idx
+  on public.platform_fee_proposals(status, effective_at);
+
+alter table public.platform_fee_proposals enable row level security;
+revoke all on table public.platform_fee_proposals from public, anon, authenticated, service_role;
+grant select on table public.platform_fee_proposals to service_role;
+
+create or replace function public.propose_platform_fee(
+  p_actor_user_id uuid,
+  p_service_code text,
+  p_currency text,
+  p_fee_kind text,
+  p_fee_value numeric,
+  p_effective_at timestamptz,
+  p_minimum_fee numeric default 0,
+  p_maximum_fee numeric default null,
+  p_note text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_version integer;
+  v_id uuid;
+begin
+  if not exists (
+    select 1 from public.user_roles
+     where user_id = p_actor_user_id and role in ('super_admin','finance_admin')
+  ) then
+    raise exception 'FINANCE_ROLE_REQUIRED';
+  end if;
+  if p_service_code not in ('internal_transfer','merchant_qr','fx_conversion','cash_in','cash_out','bill_payment') then
+    raise exception 'FEE_SERVICE_INVALID';
+  end if;
+  if p_currency not in ('HTG','USD','EUR') then
+    raise exception 'FEE_CURRENCY_INVALID';
+  end if;
+  if p_fee_kind not in ('fixed','percentage') then
+    raise exception 'FEE_KIND_INVALID';
+  end if;
+  if p_fee_value is null or p_fee_value <= 0 or p_fee_value <> round(p_fee_value,6) then
+    raise exception 'FEE_VALUE_INVALID';
+  end if;
+  if p_fee_kind = 'percentage' and p_fee_value > 100 then
+    raise exception 'FEE_PERCENTAGE_TOO_HIGH';
+  end if;
+  if p_minimum_fee is null or p_minimum_fee < 0 or
+     (p_maximum_fee is not null and p_maximum_fee < p_minimum_fee) then
+    raise exception 'FEE_RANGE_INVALID';
+  end if;
+  if p_effective_at is null or p_effective_at < clock_timestamp() - interval '5 minutes' then
+    raise exception 'FEE_EFFECTIVE_DATE_INVALID';
+  end if;
+  if length(coalesce(p_note,'')) > 500 then raise exception 'FEE_NOTE_TOO_LONG'; end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(p_service_code || ':' || p_currency, 0));
+  select coalesce(max(version),0) + 1
+    into v_version
+    from public.platform_fee_proposals
+   where service_code = p_service_code and currency = p_currency;
+
+  insert into public.platform_fee_proposals(
+    service_code,currency,fee_kind,fee_value,minimum_fee,maximum_fee,
+    version,effective_at,status,proposed_by,proposal_note
+  )
+  values (
+    p_service_code,p_currency,p_fee_kind,p_fee_value,p_minimum_fee,p_maximum_fee,
+    v_version,p_effective_at,'proposed',p_actor_user_id,left(coalesce(p_note,''),500)
+  )
+  returning id into v_id;
+
+  insert into public.audit_logs(actor_user_id,action,resource_type,resource_id,metadata)
+  values (
+    p_actor_user_id,'platform_fee.proposed','platform_fee_proposal',v_id,
+    jsonb_build_object(
+      'service_code',p_service_code,'currency',p_currency,'fee_kind',p_fee_kind,
+      'fee_value',p_fee_value,'version',v_version,'effective_at',p_effective_at
+    )
+  );
+  return jsonb_build_object('id',v_id,'version',v_version,'status','proposed');
+end;
+$;
+revoke all on function public.propose_platform_fee(uuid,text,text,text,numeric,timestamptz,numeric,numeric,text)
+  from public,anon,authenticated;
+grant execute on function public.propose_platform_fee(uuid,text,text,text,numeric,timestamptz,numeric,numeric,text)
+  to service_role;
+
+create or replace function public.review_platform_fee_proposal(
+  p_super_admin_user_id uuid,
+  p_proposal_id uuid,
+  p_decision text,
+  p_decision_note text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_proposal public.platform_fee_proposals%rowtype;
+begin
+  if not exists (
+    select 1 from public.user_roles
+     where user_id = p_super_admin_user_id and role = 'super_admin'
+  ) then
+    raise exception 'SUPER_ADMIN_REQUIRED';
+  end if;
+  if p_decision not in ('approve','reject') then raise exception 'FEE_DECISION_INVALID'; end if;
+  if length(coalesce(p_decision_note,'')) > 500 then raise exception 'FEE_NOTE_TOO_LONG'; end if;
+
+  select * into v_proposal
+    from public.platform_fee_proposals
+   where id = p_proposal_id
+   for update;
+  if v_proposal.id is null then raise exception 'FEE_PROPOSAL_NOT_FOUND'; end if;
+  if v_proposal.status <> 'proposed' then raise exception 'FEE_PROPOSAL_ALREADY_REVIEWED'; end if;
+
+  update public.platform_fee_proposals
+     set status = case when p_decision = 'approve' then 'approved' else 'rejected' end,
+         approved_by = p_super_admin_user_id,
+         approved_at = clock_timestamp(),
+         decision_note = left(coalesce(p_decision_note,''),500)
+   where id = p_proposal_id;
+
+  insert into public.audit_logs(actor_user_id,action,resource_type,resource_id,metadata)
+  values (
+    p_super_admin_user_id,
+    case when p_decision = 'approve' then 'platform_fee.approved' else 'platform_fee.rejected' end,
+    'platform_fee_proposal',
+    p_proposal_id,
+    jsonb_build_object(
+      'service_code',v_proposal.service_code,'currency',v_proposal.currency,
+      'version',v_proposal.version,'decision_note',left(coalesce(p_decision_note,''),500)
+    )
+  );
+  return jsonb_build_object(
+    'id',p_proposal_id,
+    'version',v_proposal.version,
+    'status',case when p_decision = 'approve' then 'approved' else 'rejected' end,
+    'fee_engine_activated',false
+  );
+end;
+$;
+revoke all on function public.review_platform_fee_proposal(uuid,uuid,text,text)
+  from public,anon,authenticated;
+grant execute on function public.review_platform_fee_proposal(uuid,uuid,text,text)
+  to service_role;
+
+-- 7) Large withdrawals need a Super Admin in the approval chain. Any withdrawal
+-- outside HTG also needs Super Admin approval because there is no FX conversion
+-- or comparable threshold in this beta ledger. The existing two-person rule
+-- remains in force when the threshold is met.
+do $withdrawal_super_admin$
+declare
+  v_definition text;
+  v_old_decl text := $old$v_approved integer;$old$;
+  v_new_decl text := $new$v_approved integer;
+  v_super_admin_approved integer;
+$new$;
+  v_old_status text := $old$v_status := case when v_approved >= v_required then 'approved' else 'awaiting_second_approval' end;$old$;
+  v_new_status text := $new$select count(*) into v_super_admin_approved
+        from public.withdrawal_approvals wa
+        join public.user_roles ur on ur.user_id = wa.admin_user_id
+       where wa.withdrawal_id = p_withdrawal_id
+         and wa.decision = 'approved'
+         and ur.role = 'super_admin';
+
+      v_status := case
+        when v_approved >= v_required
+         and (v_request.currency = 'HTG' and v_request.amount < v_threshold or v_super_admin_approved >= 1)
+        then 'approved'
+        else 'awaiting_second_approval'
+      end;$new$;
+begin
+  v_definition := pg_get_functiondef('public.record_withdrawal_approval(uuid,uuid,text,text)'::regprocedure);
+  if position(v_old_decl in v_definition) = 0 or position(v_old_status in v_definition) = 0 then
+    raise exception 'WITHDRAWAL_SUPER_ADMIN_GUARD_NOT_FOUND';
+  end if;
+  v_definition := replace(v_definition,v_old_decl,v_new_decl);
+  v_definition := replace(v_definition,v_old_status,v_new_status);
+  execute v_definition;
+end;
+$withdrawal_super_admin$;
+
 commit;
