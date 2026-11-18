@@ -68,6 +68,25 @@
   </main>
 
 
+  <main id="passwordRecoveryView" class="admin-pin-wrap" hidden>
+    <section class="admin-pin-card">
+      <div class="card-symbol">L</div>
+      <p class="eyebrow">REKIPERASYON KONT ADMIN</p>
+      <h1>Chanje modpas ou</h1>
+      <p class="muted">Chwazi yon nouvo modpas. Apre sa, w ap toujou bezwen PIN Admin ak MFA TOTP pou antre nan modil pwoteje yo.</p>
+      <form id="passwordRecoveryForm" class="form-stack">
+        <label>Nouvo modpas
+          <input id="recoveryPassword" type="password" autocomplete="new-password" minlength="8" required>
+        </label>
+        <label>Konfime nouvo modpas la
+          <input id="recoveryPasswordConfirm" type="password" autocomplete="new-password" minlength="8" required>
+        </label>
+        <button id="passwordRecoverySaveButton" class="button button-primary full" type="submit">Sove nouvo modpas</button>
+      </form>
+      <div id="passwordRecoveryNotice" class="notice" role="status" aria-live="polite"></div>
+    </section>
+  </main>
+
   <main id="pinView" class="admin-pin-wrap" hidden>
     <section class="admin-pin-card">
       <div class="card-symbol">L</div>
