@@ -221,6 +221,28 @@
         <div id="feeProposalsNotice" class="notice" role="status" aria-live="polite">Ap tann vèsyon tarif yo…</div>
         <div id="feeProposalsList" class="fee-proposals-list"><div class="empty-state">Pa gen pwopozisyon tarif chaje.</div></div>
       </div>
+
+      <div class="daily-accounting-panel">
+        <div class="section-head">
+          <div><p class="eyebrow">KONTABLITE · RAPÒ CHAK JOU</p><h3>Mouvman ledger pa jou</h3></div>
+          <div class="daily-accounting-actions">
+            <select id="dailySummaryDays" aria-label="Peryòd rapò">
+              <option value="7">7 jou</option>
+              <option value="30" selected>30 jou</option>
+              <option value="90">90 jou</option>
+            </select>
+            <button id="dailySummaryRefresh" class="button button-quiet" type="button">Rafrechi rapò</button>
+          </div>
+        </div>
+        <p class="muted small">Rapò sa a li antre debit/kredi nan ledger ki pa ka modifye. Li pa reprezante pwofi nèt, lajan bank disponib, ni frè ki poko antre nan ledger.</p>
+        <div id="dailySummaryNotice" class="notice" role="status" aria-live="polite">Ap tann rapò kontab la…</div>
+        <div class="admin-record-table-wrap">
+          <table class="admin-record-table daily-summary-table">
+            <thead><tr><th>Dat</th><th>Deviz</th><th>Tranzaksyon</th><th>Total debi</th><th>Total kredi</th><th>Revni platfòm kredi</th></tr></thead>
+            <tbody id="dailySummaryBody"><tr><td colspan="6" class="muted">Pa gen rapò chaje.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <section class="surface-card team-control-panel" id="adminTeamPanel" hidden>
