@@ -27,14 +27,17 @@ export async function onRequestGet({ request, env }) {
 
   try {
     const { url, secretKey } = config(env);
-    const tables = [
+    // A secretary-only role can open the private secretariat, but it does not
+    // receive platform-wide counts about customers, merchants, wallets or funds.
+    const metricsAllowed = (access.roles || []).some((role) => role !== "secretary");
+    const tables = metricsAllowed ? [
       ["users", "profiles", "id"],
       ["merchants", "merchants", "id"],
       ["wallets", "wallet_balances", "wallet_id"],
       ["transactions", "ledger_transactions", "id"],
       ["withdrawals", "withdrawal_requests", "id"],
       ["audit_events", "audit_logs", "id"],
-    ];
+    ] : [];
 
     const values = await Promise.all(
       tables.map(async ([key, table, column]) => [key, await countRows(url, secretKey, table, column)])
