@@ -166,7 +166,26 @@ where n.nspname = 'public'
   )
 order by p.proname;
 
--- 11. Approved fee proposals still do not imply fee posting or external payment.
+-- 11. Ledger-integrity audit authorization must match the Admin RBAC scopes.
+select
+  'ledger_integrity_audit_roles' as check_name,
+  p.oid is not null as function_exists,
+  case when p.oid is not null then
+    pg_get_functiondef(p.oid) ilike '%super_admin%'
+    and pg_get_functiondef(p.oid) ilike '%admin%'
+    and pg_get_functiondef(p.oid) ilike '%finance_admin%'
+    and pg_get_functiondef(p.oid) ilike '%risk_admin%'
+    and pg_get_functiondef(p.oid) ilike '%accountant%'
+    and pg_get_functiondef(p.oid) ilike '%auditor%'
+  else false end as all_read_audit_roles_allowed,
+  case when p.oid is not null then
+    not has_function_privilege('anon', p.oid, 'EXECUTE')
+    and not has_function_privilege('authenticated', p.oid, 'EXECUTE')
+    and has_function_privilege('service_role', p.oid, 'EXECUTE')
+  else false end as service_role_only
+from (select to_regprocedure('public.run_ledger_integrity_check(uuid)') as oid) p;
+
+-- 12. Approved fee proposals still do not imply fee posting or external payment.
 select
   'safety_gates' as check_name,
   false as automatic_fee_posting_enabled,
