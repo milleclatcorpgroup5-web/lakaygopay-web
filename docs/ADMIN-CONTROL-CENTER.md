@@ -75,13 +75,15 @@ The Super Admin can give a user the secretary role and separately assign that us
 ## Required migration and validation
 
 1. Review and apply superbase/migrations/202611180001_admin_control_center.sql to the intended Supabase project only after the SQL is reviewed.
-2. Run superbase/tests/verify-backend.sql and inspect all new Admin Control Center checks.
-3. Test role separation with one account per role: finance admin, accountant, auditor, risk admin and secretary.
-4. Confirm that the secretary cannot query customer records, wallets, ledger or fee proposals.
-5. Confirm finance can propose a fee but cannot approve it; only Super Admin can decide.
-6. Confirm a large HTG withdrawal requires the configured two approvals and includes a Super Admin; non-HTG approval requires two approvals and a Super Admin.
-7. Verify that all three revenue wallets exist and start at zero. Do not create real credits or real payouts for this test.
-8. Keep the production deployment and external payment rails unchanged until the branch, migration and tests are reviewed.
+2. Review and apply superbase/migrations/202611180002_admin_pin_recovery_and_role_coverage.sql after 001. It extends the server-only `is_admin_user` helper and PIN-attempt RPC to all eight RBAC roles; it does not broaden the separate `has_any_admin_role()` RLS helper.
+3. Run `superbase/tests/verify-backend.sql` and `superbase/tests/verify-admin-control-center.sql` and inspect all returned checks.
+4. Test role separation with one account per role: Super Admin, admin, finance admin, accountant, risk admin, support agent, auditor and secretary.
+5. Confirm that the secretary cannot query customer records, wallets, ledger or fee proposals.
+6. Confirm finance can propose a fee but cannot approve it; only Super Admin can decide.
+7. Confirm a large HTG withdrawal requires the configured two approvals and includes a Super Admin; non-HTG approval requires two approvals and a Super Admin.
+8. Verify that all three revenue wallets exist and start at zero in a clean QA project. Do not create real credits or real payouts for this test.
+9. Test the password-recovery and AAL2-only PIN-recovery flows, including expired/replayed challenge rejection and backup TOTP enrollment.
+10. Keep the Production deployment and external payment rails unchanged until the branch, migrations and tests are reviewed.
 
 ## Consolidated dashboard and daily growth analytics
 
