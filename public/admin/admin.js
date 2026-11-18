@@ -715,9 +715,15 @@ async function loadTeamRoles(session) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "button button-quiet admin-row-action";
-      button.textContent = "Chwazi";
+      button.textContent = "Chwazi wòl";
       button.addEventListener("click", () => { $("#teamTargetUserId").value = user.id; });
-      action.append(button);
+      const secretaryButton = document.createElement("button");
+      secretaryButton.type = "button";
+      secretaryButton.className = "button button-quiet admin-row-action";
+      secretaryButton.textContent = "Chwazi sekretè";
+      secretaryButton.disabled = !(user.roles || []).includes("secretary");
+      secretaryButton.addEventListener("click", () => { $("#secretaryAssistantUserId").value = user.id; });
+      action.append(button,secretaryButton);
       row.append(name,id,roles,status,action);
       body.append(row);
     });
