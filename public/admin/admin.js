@@ -577,7 +577,7 @@ async function updateMfaStatus() {
   const backupButton = $("#adminMfaBackupEnrollButton");
   if (backupButton) {
     backupButton.hidden = !hasVerifiedFactor || totpFactors.length >= 10;
-    backupButton.disabled = !aal2 || totpFactors.length >= 10;
+    backupButton.disabled = !aal2 || totpFactors.length >= 10 || hasPendingFactor;
     backupButton.title = !aal2
       ? "Verifye MFA sou sesyon sa a anvan ou ajoute yon aparèy sekou."
       : totpFactors.length >= 10 ? "Limit faktè MFA yo rive." : "Ajoute yon dezyèm authenticator sekou.";
@@ -1289,24 +1289,35 @@ function showPasswordRecoveryRequest() {
 }
 
 async function handlePasswordRecoveryRedirect() {
-  const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  if (params.get("type") !== "recovery") return false;
-  const accessToken = params.get("access_token");
-  const refreshToken = params.get("refresh_token");
-  if (!accessToken || !refreshToken) {
-    $("#passwordRecoveryView").hidden = true;
-    showLogin("Lyen rekiperasyon sa a enkonplè oswa li ekspire. Mande yon lòt lyen.", "error");
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const queryParams = new URLSearchParams(window.location.search);
+  const isImplicitRecovery = hashParams.get("type") === "recovery";
+  const isPkceCallback = Boolean(queryParams.get("code"));
+  if (!isImplicitRecovery && !isPkceCallback) return false;
+
+  let result;
+  if (isImplicitRecovery) {
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
+    if (!accessToken || !refreshToken) {
+      showLogin("Lyen rekiperasyon sa a enkonplè oswa li ekspire. Mande yon lòt lyen.", "error");
+      return true;
+    }
+    result = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+  } else {
+    // Supabase PKCE links return ?code=... and require the verifier kept in
+    // the same browser storage context that requested the recovery email.
+    result = await supabase.auth.exchangeCodeForSession(queryParams.get("code"));
+  }
+
+  if (result.error || !result.data?.session) {
+    showLogin("Lyen rekiperasyon an ekspire, li deja itilize, oswa li louvri nan yon lòt navigatè. Mande yon nouvo lyen epi louvri li nan menm navigatè a.", "error");
     return true;
   }
-  const result = await supabase.auth.setSession({
-    access_token: accessToken,
-    refresh_token: refreshToken
-  });
-  if (result.error) {
-    showLogin("Lyen rekiperasyon an ekspire oswa li deja itilize. Mande yon lòt lyen.", "error");
-    return true;
-  }
-  window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+  window.history.replaceState({}, document.title, window.location.pathname);
   $("#loginView").hidden = true;
   $("#pinView").hidden = true;
   $("#adminView").hidden = true;
