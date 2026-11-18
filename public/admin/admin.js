@@ -1820,7 +1820,7 @@ async function boot() {
     const session = await requireMfaForAdminAction();
     if (!session) return;
     try {
-      const data = await adminRequest("/api/admin/ledger/audit", session);
+      const data = await adminRequest("/api/admin/ledger/audits", session);
       $("#adminLedgerAuditResult").textContent = JSON.stringify(data.report || data, null, 2);
       setNotice("#adminActionNotice", data.report?.ok
         ? "Odit ledger la fini. Pa gen erè nan kontwòl sa yo."
