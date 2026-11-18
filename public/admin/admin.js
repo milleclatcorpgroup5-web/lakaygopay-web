@@ -195,12 +195,16 @@ async function loadOverview(session) {
   const roleSet = new Set(currentAdminRoles);
   const isSuper = roleSet.has("super_admin");
   const canSeeOperations = isSuper || ["admin","risk_admin","support_agent","finance_admin","accountant","auditor"].some((role) => roleSet.has(role));
-  const canSeeActions = isSuper || roleSet.has("admin") || roleSet.has("risk_admin");
+  const canSeeActions = isSuper || roleSet.has("admin") || roleSet.has("risk_admin") || roleSet.has("finance_admin");
   const canSeeFinance = isSuper || ["finance_admin","accountant","auditor"].some((role) => roleSet.has(role));
   const canSeeSecretariat = isSuper || roleSet.has("secretary");
 
   $("#adminRecordsPanel").hidden = !canSeeOperations;
   $("#adminActionsPanel").hidden = !canSeeActions;
+  $("#adminUserStatusForm").hidden = !(isSuper || roleSet.has("admin") || roleSet.has("risk_admin"));
+  $("#adminMerchantReviewForm").hidden = !(isSuper || roleSet.has("admin") || roleSet.has("risk_admin"));
+  $("#adminWithdrawalReviewForm").hidden = !(isSuper || roleSet.has("admin") || roleSet.has("risk_admin") || roleSet.has("finance_admin"));
+  $("#adminAgentReviewForm").hidden = !(isSuper || roleSet.has("admin") || roleSet.has("risk_admin"));
   $("#adminFinancePanel").hidden = !canSeeFinance;
   $("#adminTeamPanel").hidden = !isSuper;
   $("#adminSecretariatPanel").hidden = !canSeeSecretariat;
@@ -1026,8 +1030,12 @@ async function boot() {
     button.disabled = true;
     try {
       const session = await currentSession();
-      await adminRequest("/api/admin/secretariat-access", session, { assistant_user_id: assistant, action: "grant" });
-      setNotice("#secretariatAccessNotice", "Sekretè a resevwa aksè nan sekretarya pèsonèl la sèlman.", "success");
+      const action = $("#secretariatAccessAction").value;
+      await adminRequest("/api/admin/secretariat-access", session, { assistant_user_id: assistant, action });
+      setNotice("#secretariatAccessNotice",
+        action === "grant" ? "Sekretè a resevwa aksè nan sekretarya pèsonèl la sèlman."
+          : "Aksè sekretè a retire; done pèsonèl yo rete konsève.",
+        "success");
     } catch (error) {
       setNotice("#secretariatAccessNotice", explainError(error.code || error.message), "error");
     } finally {
