@@ -274,7 +274,7 @@ async function loadOverview(session) {
     if (canSeeOperations) setNotice("#adminRecordsNotice", lockMessage, "");
     if (canSeeAnalytics) setNotice("#analyticsNotice", lockMessage, "");
     if (canSeeSystemHealth) setNotice("#systemHealthNotice", lockMessage, "error");
-    setNotice("#dashboardNotice", "Aksè bazik la konfime. Pou sekirite, verifye TOTP nan kat ki make “Verifikasyon MFA” pou debloke tablo analiz, finans, ekip ak dosye yo.", "");
+    setNotice("#dashboardNotice", "Aksè bazik la konfime. KPI yo ak tout done operasyonèl, finansye, ekip ak sekretarya rete kache jiskaske ou verifye TOTP nan kat “Verifikasyon MFA”.", "");
     $("#adminMfaPanel").classList.add("mfa-needs-action");
     return;
   }
