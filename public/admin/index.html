@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#071421">
   <title>LakayGoPay — Executive Control Center</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/admin/admin.css?v=20261118-premium-01">
+  <link rel="stylesheet" href="/admin/admin.css?v=20261118-hardening-03">
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -54,11 +54,38 @@
         </label>
         <button id="loginButton" class="button button-primary full" type="submit">Antre nan sant kontwòl la <span>→</span></button>
       </form>
+      <button id="forgotPasswordButton" class="button button-quiet full" type="button">Bliye modpas ou?</button>
+      <form id="passwordRecoveryRequestForm" class="form-stack recovery-form" hidden>
+        <p class="muted small">N ap voye yon lyen rekiperasyon sou imèl kont lan. Nou pap revele si yon adrès egziste oswa non.</p>
+        <label>Imèl administratè
+          <input id="passwordRecoveryEmail" type="email" autocomplete="email" required>
+        </label>
+        <button id="passwordRecoveryRequestButton" class="button button-primary full" type="submit">Voye lyen rekiperasyon</button>
+      </form>
       <div id="loginNotice" class="notice" role="status" aria-live="polite"></div>
       <p class="login-foot">Pa gen enskripsyon piblik pou kont admin. Super Admin ka bay oswa retire wòl dirèkteman nan sit sa a pou kont ki deja anrejistre.</p>
     </section>
   </main>
 
+
+  <main id="passwordRecoveryView" class="admin-pin-wrap" hidden>
+    <section class="admin-pin-card">
+      <div class="card-symbol">L</div>
+      <p class="eyebrow">REKIPERASYON KONT ADMIN</p>
+      <h1>Chanje modpas ou</h1>
+      <p class="muted">Chwazi yon nouvo modpas. Apre sa, w ap toujou bezwen PIN Admin ak MFA TOTP pou antre nan modil pwoteje yo.</p>
+      <form id="passwordRecoveryForm" class="form-stack">
+        <label>Nouvo modpas
+          <input id="recoveryPassword" type="password" autocomplete="new-password" minlength="12" required>
+        </label>
+        <label>Konfime nouvo modpas la
+          <input id="recoveryPasswordConfirm" type="password" autocomplete="new-password" minlength="12" required>
+        </label>
+        <button id="passwordRecoverySaveButton" class="button button-primary full" type="submit">Sove nouvo modpas</button>
+      </form>
+      <div id="passwordRecoveryNotice" class="notice" role="status" aria-live="polite"></div>
+    </section>
+  </main>
 
   <main id="pinView" class="admin-pin-wrap" hidden>
     <section class="admin-pin-card">
@@ -84,6 +111,23 @@
         <button id="adminPinSetupButton" class="button button-primary full" type="submit">Anrejistre PIN Admin <span>→</span></button>
       </form>
 
+      <button id="showPinRecoveryButton" class="button button-quiet full" type="button" hidden>Mwen bliye PIN Admin mwen</button>
+      <form id="adminPinRecoveryForm" class="form-stack recovery-form" hidden>
+        <p id="adminPinRecoveryHelp" class="muted small">Pou reset PIN lan, ou dwe konfime idantite ou ak yon authenticator TOTP verifye. Pa gen okenn chemen ki sote MFA.</p>
+        <label>Chwazi authenticator sekou
+          <select id="adminPinRecoveryFactor" required></select>
+        </label>
+        <label>Kòd authenticator · 6 chif
+          <input id="adminPinRecoveryCode" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required>
+        </label>
+        <label>Nouvo PIN Admin · 6 chif
+          <input id="adminPinRecoveryNew" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required>
+        </label>
+        <label>Konfime nouvo PIN lan
+          <input id="adminPinRecoveryConfirm" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required>
+        </label>
+        <button id="adminPinRecoverySubmit" class="button button-primary full" type="submit">Verifye MFA epi reset PIN</button>
+      </form>
       <div id="pinNotice" class="notice" role="status" aria-live="polite"></div>
       <p class="login-foot">PIN lan estoke kòm hash PBKDF2 ak salt. 5 move tantativ youn apre lòt bloke verifikasyon pandan 15 minit. Pa pataje PIN lan.</p>
     </section>
@@ -384,10 +428,14 @@
         <p id="adminMfaStatus" class="muted admin-mfa-copy">Pou debloke dosye yo, aktive authenticator la oswa antre kòd 6 chif li epi peze Verifye MFA.</p>
         <div class="admin-mfa-actions">
           <button id="adminMfaEnrollButton" class="button button-quiet" type="button">Kreye / aktive MFA</button>
+          <button id="adminMfaBackupEnrollButton" class="button button-quiet" type="button" hidden>Ajoute authenticator sekou</button>
           <div id="adminMfaQrWrap" hidden>
             <img id="adminMfaQr" alt="QR pou aplikasyon authenticator">
             <p id="adminMfaSecret" class="small muted"></p>
           </div>
+          <label id="adminMfaFactorLabel" for="adminMfaFactorSelect" hidden>Chwazi aparèy authenticator
+            <select id="adminMfaFactorSelect"></select>
+          </label>
           <label for="adminMfaCode">Kòd authenticator 6 chif
             <input id="adminMfaCode" type="password" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000">
           </label>
@@ -703,6 +751,6 @@
     <footer class="admin-footer"><span>LakayGoPay · Sant Kontwòl</span><span>Entèfas administrasyon prive · Rejim tès</span></footer>
   </main>
 
-  <script type="module" src="/admin/admin.js?v=20261118-premium-01"></script>
+  <script type="module" src="/admin/admin.js?v=20261118-hardening-03"></script>
 </body>
 </html>

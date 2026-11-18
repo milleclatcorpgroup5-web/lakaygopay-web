@@ -111,12 +111,17 @@ function explainError(code) {
     LAST_SUPER_ADMIN_PROTECTED: "Ou pa kapab sispann dènye Super administratè aktif la.",
     SUPER_ADMIN_ACCOUNT_PROTECTED: "Se sèlman yon Super administratè ki ka chanje estati yon lòt Super administratè.",
     USER_NOT_FOUND: "Kont itilizatè sa a pa egziste.",
-    ADMIN_SESSION_MISMATCH: "Sesyon administratè a pa koresponn. Konekte ankò."
+    ADMIN_SESSION_MISMATCH: "Sesyon administratè a pa koresponn. Konekte ankò.",
+    ADMIN_PIN_RESET_UNAVAILABLE: "Rekiperasyon PIN lan pa disponib kounye a. Verifye migrasyon sekirite Admin lan.",
+    ADMIN_PIN_RESET_CHALLENGE_INVALID: "Demann reset PIN lan ekspire oswa pa koresponn ak sesyon an. Rekòmanse rekiperasyon an.",
+    ADMIN_PIN_NOT_SET: "Pa gen PIN Admin ki anrejistre pou kont sa a.",
+    MFA_FACTOR_LIMIT_REACHED: "Limit kantite authenticator sekou yo rive. Pa efase yon aparèy verifye san plan rekiperasyon."
   };
   return messages[code] || "Yon erè rive. Kòd: " + (code || "UNKNOWN");
 }
 function showLogin(message, kind = "error") {
   $("#loginView").hidden = false;
+  $("#passwordRecoveryView").hidden = true;
   $("#pinView").hidden = true;
   $("#adminView").hidden = true;
   $("#refreshButton").hidden = true;
@@ -153,12 +158,18 @@ async function showPinGate(session) {
   pinGateSession = session;
   adminPinVerifiedUserId = null;
   $("#loginView").hidden = true;
+  $("#passwordRecoveryView").hidden = true;
   $("#adminView").hidden = true;
   $("#pinView").hidden = false;
   $("#refreshButton").hidden = true;
   $("#logoutButton").hidden = false;
   $("#adminPinVerifyForm").hidden = true;
   $("#adminPinSetupForm").hidden = true;
+  $("#adminPinRecoveryForm").hidden = true;
+  $("#showPinRecoveryButton").hidden = true;
+  $("#adminPinRecoveryCode").value = "";
+  $("#adminPinRecoveryNew").value = "";
+  $("#adminPinRecoveryConfirm").value = "";
   $("#adminPinInput").value = "";
   $("#adminPinNew").value = "";
   $("#adminPinConfirm").value = "";
@@ -169,6 +180,7 @@ async function showPinGate(session) {
       $("#pinTitle").textContent = "Antre PIN sekrè Admin ou";
       $("#pinDescription").textContent = "Koneksyon imèl ak modpas la reyisi. Antre PIN 6 chif ou pou ouvri Sant Kontwòl la.";
       $("#adminPinVerifyForm").hidden = false;
+      $("#showPinRecoveryButton").hidden = false;
       if (status.locked_until && Date.parse(status.locked_until) > Date.now()) {
         setNotice("#pinNotice", explainError("ADMIN_PIN_TEMPORARILY_LOCKED"), "error");
       } else {
@@ -511,6 +523,9 @@ function explainMfaError(error) {
   if (/invalid.*(otp|totp|token|code)|(otp|totp|token|code).*invalid/.test(raw)) {
     return "Kòd la pa kòrèk oswa li ekspire. Gade dènye kòd 6 chif aplikasyon authenticator la bay epi antre l ankò.";
   }
+  if (/factor.*limit|maximum.*factor|too many factors/.test(raw)) {
+    return "Limit kantite authenticator sekou yo rive. Pa efase yon aparèy verifye san plan rekiperasyon.";
+  }
   if (/rate|too many|attempt/.test(raw)) {
     return "Gen twòp tantativ. Tann kèk minit, verifye lè telefòn nan kòrèk, epi eseye ankò.";
   }
@@ -533,30 +548,58 @@ async function updateMfaStatus() {
   const factorsResult = await supabase.auth.mfa.listFactors();
   if (factorsResult.error) throw factorsResult.error;
   const totpFactors = factorsResult.data?.totp || [];
-  const hasVerifiedFactor = totpFactors.some((factor) => factor.status === "verified");
+  const verifiedFactors = totpFactors.filter((factor) => factor.status === "verified");
+  const hasVerifiedFactor = verifiedFactors.length > 0;
   const hasPendingFactor = totpFactors.some((factor) => factor.status === "unverified");
+
+  const selector = $("#adminMfaFactorSelect");
+  if (selector) {
+    const previous = selector.value;
+    selector.replaceChildren();
+    totpFactors.forEach((factor, index) => {
+      const option = document.createElement("option");
+      option.value = factor.id;
+      const label = factor.friendly_name || factor.friendlyName || ("Authenticator " + (index + 1));
+      option.textContent = label + (factor.status === "verified" ? " · verifye" : " · poko verifye");
+      selector.append(option);
+    });
+    const preferred = (aal2 ? totpFactors.find((factor) => factor.status === "unverified") : null) ||
+      totpFactors.find((factor) => factor.id === previous) || verifiedFactors[0] || totpFactors[0];
+    if (preferred) selector.value = preferred.id;
+    $("#adminMfaFactorLabel").hidden = totpFactors.length < 2;
+  }
 
   $("#adminMfaBadge").textContent = aal2 ? "MFA verifye · AAL2" : "MFA obligatwa";
   $("#adminMfaBadge").className = aal2 ? "read-only-tag mfa-active" : "read-only-tag";
   $("#adminMfaStatus").textContent = aal2
-    ? "MFA konfime sou sesyon sa a. Dosye ki otorize pou wòl ou yo kapab chaje."
+    ? "MFA konfime sou sesyon sa a. Done operasyonèl yo ka chaje selon wòl ou."
     : hasVerifiedFactor
-      ? "Authenticator deja aktive sou kont sa a. Antre kòd 6 chif aktyèl la anba a epi peze “Verifye MFA” pou debloke modil yo."
+      ? "Authenticator aktif. Chwazi aparèy ou vle itilize a, antre kòd 6 chif aktyèl la epi verifye MFA."
       : hasPendingFactor
-        ? "Gen yon konfigirasyon authenticator ki poko verifye. Peze “Kreye / aktive MFA” pou rekòmanse QR a, eskane li, epi verifye kòd la."
-        : "Premye etap: peze “Kreye / aktive MFA”, eskane QR la ak Google Authenticator oswa Aegis, antre kòd 6 chif la epi peze “Verifye MFA”.";
+        ? "Gen yon konfigirasyon authenticator ki poko verifye. Rekòmanse konfigirasyon an epi verifye kòd la."
+        : "Kreye authenticator prensipal ou, eskane QR la, epi verifye kòd 6 chif la.";
+
   $("#adminMfaEnrollButton").textContent = aal2 ? "MFA deja verifye" : hasVerifiedFactor ? "Authenticator deja aktive" : "Kreye / aktive MFA";
-  $("#adminMfaEnrollButton").disabled = aal2;
-  $("#adminMfaVerifyButton").disabled = aal2;
+  $("#adminMfaEnrollButton").disabled = aal2 || hasVerifiedFactor;
+  const backupButton = $("#adminMfaBackupEnrollButton");
+  if (backupButton) {
+    backupButton.hidden = !hasVerifiedFactor || totpFactors.length >= 10;
+    backupButton.disabled = !aal2 || totpFactors.length >= 10 || hasPendingFactor;
+    backupButton.title = !aal2
+      ? "Verifye MFA sou sesyon sa a anvan ou ajoute yon aparèy sekou."
+      : totpFactors.length >= 10 ? "Limit faktè MFA yo rive." : "Ajoute yon dezyèm authenticator sekou.";
+  }
+  $("#adminMfaVerifyButton").disabled = totpFactors.length === 0 || (aal2 && !hasPendingFactor);
   $("#adminLedgerAuditButton").disabled = !aal2;
   return aal2;
 }
+
 async function enrollAdminMfa() {
   const factorsResult = await supabase.auth.mfa.listFactors();
   if (factorsResult.error) throw factorsResult.error;
   const existing = (factorsResult.data?.totp || []).find((factor) => factor.status === "verified");
   if (existing) {
-    $("#adminMfaStatus").textContent = "Yon faktè authenticator deja aktive. Antre kòd 6 chif li a epi peze Verifye MFA.";
+    $("#adminMfaStatus").textContent = "Yon authenticator verifye deja. Pou ajoute yon dezyèm aparèy, verifye MFA epi itilize bouton “Ajoute authenticator sekou”.";
     $("#adminMfaCode").focus();
     return;
   }
@@ -567,7 +610,7 @@ async function enrollAdminMfa() {
   }
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
-    friendlyName: "LakayGoPay Admin Authenticator"
+    friendlyName: "LakayGoPay Admin Primary"
   });
   if (error) throw error;
   $("#adminMfaQr").src = data.totp.qr_code;
@@ -576,16 +619,44 @@ async function enrollAdminMfa() {
   $("#adminMfaStatus").textContent = "Eskane QR sa a nan Google Authenticator, Aegis oswa yon aplikasyon TOTP. Apre sa, antre kòd 6 chif la pou verifye.";
   $("#adminMfaCode").focus();
 }
-async function verifyAdminMfa() {
-  const code = $("#adminMfaCode").value.trim();
-  if (!/^\d{6}$/.test(code)) throw new Error("MFA_CODE_MUST_BE_6_DIGITS");
 
+async function enrollAdminMfaBackup() {
+  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assurance.error) throw assurance.error;
+  if (assurance.data?.currentLevel !== "aal2") {
+    throw new Error("MFA_REQUIRED");
+  }
   const factorsResult = await supabase.auth.mfa.listFactors();
   if (factorsResult.error) throw factorsResult.error;
-  const factors = factorsResult.data?.totp || [];
-  const factor = factors.find((item) => item.status === "verified") ||
-    factors.find((item) => item.status === "unverified");
+  const totpFactors = factorsResult.data?.totp || [];
+  if (!totpFactors.some((factor) => factor.status === "verified")) {
+    throw new Error("MFA_FACTOR_NOT_ENROLLED");
+  }
+  if (totpFactors.length >= 10) throw new Error("MFA_FACTOR_LIMIT_REACHED");
+  const pending = totpFactors.find((factor) => factor.status === "unverified");
+  if (pending) {
+    const removed = await supabase.auth.mfa.unenroll({ factorId: pending.id });
+    if (removed.error) throw removed.error;
+  }
+  const { data, error } = await supabase.auth.mfa.enroll({
+    factorType: "totp",
+    friendlyName: "LakayGoPay Admin Backup " + new Date().toISOString().slice(0, 10)
+  });
+  if (error) throw error;
+  $("#adminMfaQr").src = data.totp.qr_code;
+  $("#adminMfaSecret").textContent = "Kle authenticator sekou (kenbe l prive): " + data.totp.secret;
+  $("#adminMfaQrWrap").hidden = false;
+  $("#adminMfaStatus").textContent = "Eskane QR sekou sa a sou yon dezyèm aparèy. Antre kòd li a epi verifye faktè a. Pa retire authenticator prensipal la.";
+  $("#adminMfaCode").focus();
+}
+
+async function completeTotpVerification(factorId, code) {
+  if (!factorId || !/^\d{6}$/.test(code)) throw new Error("MFA_CODE_MUST_BE_6_DIGITS");
+  const factorsResult = await supabase.auth.mfa.listFactors();
+  if (factorsResult.error) throw factorsResult.error;
+  const factor = (factorsResult.data?.totp || []).find((item) => item.id === factorId);
   if (!factor) throw new Error("MFA_FACTOR_NOT_ENROLLED");
+  if (factor.status !== "verified" && factor.status !== "unverified") throw new Error("MFA_FACTOR_NOT_ENROLLED");
 
   const challenge = await supabase.auth.mfa.challenge({ factorId: factor.id });
   if (challenge.error) throw challenge.error;
@@ -596,7 +667,6 @@ async function verifyAdminMfa() {
   });
   if (verified.error) throw verified.error;
 
-  $("#adminMfaCode").value = "";
   const refreshed = await supabase.auth.refreshSession();
   const session = refreshed.data?.session || verified.data?.session || (await currentSession());
   if (!session?.access_token) {
@@ -604,8 +674,6 @@ async function verifyAdminMfa() {
     throw new Error("MFA_VERIFICATION_INCOMPLETE");
   }
 
-  // Ask the server to validate the new signed access token, not only the
-  // browser's decoded JWT claim. This prevents stale aal1 sessions being used.
   const serverCheck = await fetch("/api/admin/me", {
     headers: { accept: "application/json", authorization: "Bearer " + session.access_token },
     cache: "no-store"
@@ -614,7 +682,22 @@ async function verifyAdminMfa() {
   if (!serverCheck.ok || serverData.aal2 !== true || serverData.is_admin !== true) {
     throw new Error("MFA_VERIFICATION_INCOMPLETE");
   }
+  return session;
+}
 
+async function verifyAdminMfa() {
+  const code = $("#adminMfaCode").value.trim();
+  const factorsResult = await supabase.auth.mfa.listFactors();
+  if (factorsResult.error) throw factorsResult.error;
+  const factors = factorsResult.data?.totp || [];
+  const selectedId = $("#adminMfaFactorSelect")?.value;
+  const factor = factors.find((item) => item.id === selectedId) ||
+    factors.find((item) => item.status === "verified") ||
+    factors.find((item) => item.status === "unverified");
+  if (!factor) throw new Error("MFA_FACTOR_NOT_ENROLLED");
+
+  const session = await completeTotpVerification(factor.id, code);
+  $("#adminMfaCode").value = "";
   const ready = await updateMfaStatus();
   if (!ready) throw new Error("MFA_VERIFICATION_INCOMPLETE");
   setNotice("#adminMfaStatus", "MFA verifye sou sèvè a. Modil ou gen otorizasyon pou yo ap chaje kounye a.", "success");
@@ -1202,6 +1285,188 @@ async function submitAdminAction(path, body, successMessage, reloadType) {
   }
 }
 
+
+function showPasswordRecoveryRequest() {
+  const form = $("#passwordRecoveryRequestForm");
+  form.hidden = !form.hidden;
+  if (!form.hidden) {
+    $("#passwordRecoveryEmail").value = $("#emailInput").value.trim();
+    $("#passwordRecoveryEmail").focus();
+  }
+}
+
+async function handlePasswordRecoveryRedirect() {
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const queryParams = new URLSearchParams(window.location.search);
+  const isImplicitRecovery = hashParams.get("type") === "recovery";
+  const isPkceCallback = Boolean(queryParams.get("code"));
+  if (!isImplicitRecovery && !isPkceCallback) return false;
+
+  let result;
+  if (isImplicitRecovery) {
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
+    if (!accessToken || !refreshToken) {
+      showLogin("Lyen rekiperasyon sa a enkonplè oswa li ekspire. Mande yon lòt lyen.", "error");
+      return true;
+    }
+    result = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+  } else {
+    // Supabase PKCE links return ?code=... and require the verifier kept in
+    // the same browser storage context that requested the recovery email.
+    result = await supabase.auth.exchangeCodeForSession(queryParams.get("code"));
+  }
+
+  if (result.error || !result.data?.session) {
+    showLogin("Lyen rekiperasyon an ekspire, li deja itilize, oswa li louvri nan yon lòt navigatè. Mande yon nouvo lyen epi louvri li nan menm navigatè a.", "error");
+    return true;
+  }
+  window.history.replaceState({}, document.title, window.location.pathname);
+  $("#loginView").hidden = true;
+  $("#pinView").hidden = true;
+  $("#adminView").hidden = true;
+  $("#passwordRecoveryView").hidden = false;
+  $("#recoveryPassword").focus();
+  return true;
+}
+
+async function openAdminPinRecovery() {
+  $("#adminPinVerifyForm").hidden = true;
+  $("#adminPinSetupForm").hidden = true;
+  $("#adminPinRecoveryForm").hidden = false;
+  $("#adminPinRecoveryCode").value = "";
+  $("#adminPinRecoveryNew").value = "";
+  $("#adminPinRecoveryConfirm").value = "";
+  const selector = $("#adminPinRecoveryFactor");
+  selector.replaceChildren();
+  try {
+    const factorsResult = await supabase.auth.mfa.listFactors();
+    if (factorsResult.error) throw factorsResult.error;
+    const verified = (factorsResult.data?.totp || []).filter((factor) => factor.status === "verified");
+    if (!verified.length) {
+      $("#adminPinRecoveryHelp").textContent = "Pa gen authenticator TOTP verifye sou kont sa a. Pou sekirite, aplikasyon an pa pèmèt reset PIN san MFA. Ou dwe itilize pwosedi rekiperasyon idantite ki verifye pa responsab sistèm nan.";
+      $("#adminPinRecoverySubmit").disabled = true;
+      return;
+    }
+    verified.forEach((factor, index) => {
+      const option = document.createElement("option");
+      option.value = factor.id;
+      option.textContent = factor.friendly_name || ("Authenticator verifye " + (index + 1));
+      selector.append(option);
+    });
+    $("#adminPinRecoverySubmit").disabled = false;
+    $("#adminPinRecoveryHelp").textContent = "Reset la mande yon kòd nan youn nan authenticator TOTP ki deja verifye. Se pa yon chemen pou sote MFA.";
+    $("#adminPinRecoveryCode").focus();
+  } catch (error) {
+    $("#adminPinRecoverySubmit").disabled = true;
+    setNotice("#pinNotice", explainMfaError(error), "error");
+  }
+}
+
+async function submitAdminPinRecovery(event) {
+  event.preventDefault();
+  const factorId = $("#adminPinRecoveryFactor").value;
+  const code = $("#adminPinRecoveryCode").value.trim();
+  const pin = $("#adminPinRecoveryNew").value;
+  const confirm = $("#adminPinRecoveryConfirm").value;
+  const button = $("#adminPinRecoverySubmit");
+  const weakPins = new Set([
+    "000000","111111","222222","333333","444444","555555","666666","777777","888888","999999",
+    "123456","234567","345678","456789","654321","543210","432109","987654","121212","112233","123123"
+  ]);
+  if (!/^\d{6}$/.test(pin) || weakPins.has(pin)) {
+    setNotice("#pinNotice", "Nouvo PIN lan dwe gen 6 chif epi li pa dwe yon sekans fasil pou devine.", "error");
+    return;
+  }
+  if (pin !== confirm) {
+    setNotice("#pinNotice", "De nouvo PIN yo pa koresponn.", "error");
+    return;
+  }
+  button.disabled = true;
+  try {
+    setNotice("#pinNotice", "Ap verifye authenticator la epi prepare reset PIN lan…", "");
+    const session = await completeTotpVerification(factorId, code);
+    const challengeData = await adminRequest("/api/admin/pin/reset-challenge", session, {});
+    const derivedBytes = await deriveAdminPinHashBytes(pin, challengeData.salt, challengeData.iterations);
+    let pinHash;
+    try {
+      pinHash = pinBytesToHex(derivedBytes);
+    } finally {
+      derivedBytes.fill(0);
+    }
+    const response = await signAdminPinChallenge(pin, challengeData);
+    await adminRequest("/api/admin/pin/reset", session, {
+      challenge: challengeData.challenge,
+      pin_hash: pinHash,
+      response
+    });
+    $("#adminPinRecoveryCode").value = "";
+    $("#adminPinRecoveryNew").value = "";
+    $("#adminPinRecoveryConfirm").value = "";
+    adminPinVerifiedUserId = session.user.id;
+    pinGateSession = session;
+    setNotice("#pinNotice", "PIN Admin lan reset avèk MFA verifye. Ap ouvri sant kontwòl la…", "success");
+    await loadOverview(session);
+  } catch (error) {
+    setNotice("#pinNotice", explainError(error.code || error.message) +
+      (error.diagnostic ? " (Dyagnostik: " + error.diagnostic + ")" : ""), "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function requestPasswordRecovery(event) {
+  event.preventDefault();
+  const email = $("#passwordRecoveryEmail").value.trim().toLowerCase();
+  if (!email) return;
+  const button = $("#passwordRecoveryRequestButton");
+  button.disabled = true;
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: new URL("/admin/", window.location.origin).toString()
+    });
+    if (error) throw error;
+    setNotice("#loginNotice", "Si imèl la koresponn ak yon kont, yon lyen rekiperasyon ap voye. Tcheke bwat resepsyon ak spam ou. Apre chanjman modpas la, PIN Admin ak MFA ap toujou obligatwa.", "success");
+    $("#passwordRecoveryRequestForm").hidden = true;
+  } catch {
+    setNotice("#loginNotice", "Nou pa kapab voye lyen an kounye a. Verifye sèvis imel Supabase ak URL redireksyon Admin lan.", "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function saveRecoveredPassword(event) {
+  event.preventDefault();
+  const password = $("#recoveryPassword").value;
+  const confirmation = $("#recoveryPasswordConfirm").value;
+  if (password.length < 12) {
+    setNotice("#passwordRecoveryNotice", "Nouvo modpas la dwe gen omwen 12 karaktè.", "error");
+    return;
+  }
+  if (password !== confirmation) {
+    setNotice("#passwordRecoveryNotice", "De modpas yo pa koresponn.", "error");
+    return;
+  }
+  const button = $("#passwordRecoverySaveButton");
+  button.disabled = true;
+  try {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    $("#recoveryPassword").value = "";
+    $("#recoveryPasswordConfirm").value = "";
+    await supabase.auth.signOut();
+    $("#passwordRecoveryView").hidden = true;
+    showLogin("Modpas la chanje avèk siksè. Konekte ankò, epi sèvi ak PIN Admin ak MFA TOTP ou.", "success");
+  } catch {
+    setNotice("#passwordRecoveryNotice", "Chanjman modpas la echwe oswa lyen an ekspire. Mande yon nouvo lyen rekiperasyon.", "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function boot() {
   const configResponse = await fetch("/api/config", { headers: { accept: "application/json" }, cache: "no-store" });
   const config = await configResponse.json().catch(() => ({}));
@@ -1245,6 +1510,12 @@ async function boot() {
       button.disabled = false;
     }
   });
+
+  $("#forgotPasswordButton").addEventListener("click", showPasswordRecoveryRequest);
+  $("#passwordRecoveryRequestForm").addEventListener("submit", requestPasswordRecovery);
+  $("#passwordRecoveryForm").addEventListener("submit", saveRecoveredPassword);
+  $("#showPinRecoveryButton").addEventListener("click", openAdminPinRecovery);
+  $("#adminPinRecoveryForm").addEventListener("submit", submitAdminPinRecovery);
 
   $("#adminPinVerifyForm").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1321,6 +1592,18 @@ async function boot() {
       setNotice("#adminMfaStatus", explainMfaError(error), "error");
     } finally {
       button.disabled = await updateMfaStatus().catch(() => false);
+    }
+  });
+
+  $("#adminMfaBackupEnrollButton").addEventListener("click", async () => {
+    const button = $("#adminMfaBackupEnrollButton");
+    button.disabled = true;
+    try {
+      await enrollAdminMfaBackup();
+    } catch (error) {
+      setNotice("#adminMfaStatus", explainMfaError(error), "error");
+    } finally {
+      await updateMfaStatus().catch(() => false);
     }
   });
 
@@ -1548,6 +1831,9 @@ async function boot() {
     await supabase.auth.signOut();
     showLogin("Ou dekonekte nan sant kontwòl la.", "success");
   });
+
+  const recoveryRedirect = await handlePasswordRecoveryRedirect();
+  if (recoveryRedirect) return;
 
   const sessionResult = await supabase.auth.getSession();
   if (sessionResult.data && sessionResult.data.session) {

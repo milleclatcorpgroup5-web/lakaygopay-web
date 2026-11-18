@@ -423,3 +423,144 @@ export async function verifyAdminPin(request, env) {
     return error("ADMIN_PIN_SECURITY_UNAVAILABLE", 503);
   }
 }
+
+
+const RESET_CHALLENGE_TTL_MS = 5 * 60 * 1000;
+
+async function requireAal2AdminForPinRecovery(request, env) {
+  const access = await requireAdmin(request, env);
+  if (access.error) return access;
+  const claims = decodeJwtPayload(access.accessToken);
+  const sessionId = claims?.session_id;
+  if (
+    claims?.sub !== access.user.id ||
+    claims?.aal !== "aal2" ||
+    typeof sessionId !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId)
+  ) return { error: error("MFA_REQUIRED", 403, { required_level: "aal2" }) };
+  return { access, sessionId };
+}
+
+export async function adminPinResetChallenge(request, env) {
+  const verified = await requireAal2AdminForPinRecovery(request, env);
+  if (verified.error) return verified.error;
+  try {
+    const existing = await readAdminPin(env, verified.access.user.id);
+    if (!existing?.pin_hash) return error("ADMIN_PIN_NOT_SET", 409);
+
+    const { url, secretKey } = config(env);
+    const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
+    const nonce = toHex(crypto.getRandomValues(new Uint8Array(16)));
+    const now = Date.now();
+    const expiresAt = now + RESET_CHALLENGE_TTL_MS;
+    const challenge = await signChallenge({
+      version: 1,
+      purpose: "pin_reset",
+      sub: verified.access.user.id,
+      session_id: verified.sessionId,
+      salt,
+      iterations: ITERATIONS,
+      issued_at: now,
+      expires_at: expiresAt,
+      nonce
+    }, env);
+
+    const response = await fetch(url + "/rest/v1/admin_pin_reset_challenges", {
+      method: "POST",
+      headers: {
+        apikey: secretKey,
+        authorization: "Bearer " + secretKey,
+        "content-type": "application/json",
+        accept: "application/json",
+        prefer: "return=minimal"
+      },
+      body: JSON.stringify({
+        nonce,
+        user_id: verified.access.user.id,
+        session_id: verified.sessionId,
+        expires_at: new Date(expiresAt).toISOString()
+      })
+    });
+    if (!response.ok) {
+      console.error("ADMIN_PIN_RESET_CHALLENGE_STORE_FAILED", JSON.stringify({
+        status: response.status
+      }));
+      return error("ADMIN_PIN_RESET_UNAVAILABLE", 503);
+    }
+
+    return json({ ok: true, challenge, salt, iterations: ITERATIONS, expires_at: new Date(expiresAt).toISOString() });
+  } catch (err) {
+    console.error("ADMIN_PIN_RESET_CHALLENGE_FAILED", JSON.stringify({
+      error_name: String(err?.name || "Error").slice(0, 40),
+      http_status: Number(err?.httpStatus) || null
+    }));
+    return error("ADMIN_PIN_RESET_UNAVAILABLE", 503);
+  }
+}
+
+export async function resetAdminPin(request, env) {
+  const verified = await requireAal2AdminForPinRecovery(request, env);
+  if (verified.error) return verified.error;
+  try {
+    const body = await readJson(request, 5000);
+    // The raw PIN never leaves the browser during recovery. Only the
+    // PBKDF2-derived value and its one-use challenge proof are transmitted.
+    const pinHash = typeof body?.pin_hash === "string" ? body.pin_hash : "";
+    const challengeToken = typeof body?.challenge === "string" ? body.challenge : "";
+    const responseHex = typeof body?.response === "string" ? body.response : "";
+    if (!/^[a-f0-9]{64}$/.test(pinHash) || !/^[a-f0-9]{64}$/.test(responseHex)) {
+      return error("ADMIN_PIN_RESPONSE_INVALID", 400);
+    }
+
+    const challenge = await verifyChallenge(challengeToken, env);
+    if (
+      !challenge ||
+      challenge.version !== 1 ||
+      challenge.purpose !== "pin_reset" ||
+      challenge.sub !== verified.access.user.id ||
+      challenge.session_id !== verified.sessionId ||
+      !validChallengeTimes(challenge, RESET_CHALLENGE_TTL_MS) ||
+      !/^[a-f0-9]{32}$/.test(challenge.salt) ||
+      !/^[a-f0-9]{32}$/.test(challenge.nonce) ||
+      challenge.iterations !== ITERATIONS
+    ) return error("ADMIN_PIN_RESET_CHALLENGE_INVALID", 401);
+
+    const pinKey = await crypto.subtle.importKey(
+      "raw",
+      fromHex(pinHash),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+    const valid = await crypto.subtle.verify(
+      "HMAC",
+      pinKey,
+      fromHex(responseHex),
+      new TextEncoder().encode(challengeToken)
+    );
+    if (!valid) return error("ADMIN_PIN_RESPONSE_INVALID", 401);
+
+    await callRpc(env, "reset_admin_pin", {
+      p_user_id: verified.access.user.id,
+      p_session_id: verified.sessionId,
+      p_nonce: challenge.nonce,
+      p_pin_hash: pinHash,
+      p_pin_salt: challenge.salt,
+      p_pin_iterations: ITERATIONS
+    });
+    return json({ ok: true, pin_reset: true, session_verified: true });
+  } catch (err) {
+    if (err?.message === "INVALID_JSON") return error("INVALID_JSON", 400);
+    const message = String(err?.message || "");
+    const known = message.includes("ADMIN_PIN_RESET_CHALLENGE_INVALID")
+      ? "ADMIN_PIN_RESET_CHALLENGE_INVALID"
+      : message.includes("ADMIN_PIN_NOT_SET")
+        ? "ADMIN_PIN_NOT_SET"
+        : "ADMIN_PIN_RESET_UNAVAILABLE";
+    console.error("ADMIN_PIN_RESET_FAILED", JSON.stringify({
+      diagnostic: known,
+      error_name: String(err?.name || "Error").slice(0, 40)
+    }));
+    return error(known, known === "ADMIN_PIN_RESET_CHALLENGE_INVALID" ? 409 : 503);
+  }
+}
