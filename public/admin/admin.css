@@ -236,3 +236,11 @@ textarea{font:inherit}
 .fee-proposal-main p{margin:0;font-size:10px;line-height:1.55;color:var(--muted);overflow-wrap:anywhere}
 .fee-proposal-actions{display:flex;gap:8px;flex:0 0 auto}
 @media(max-width:650px){.fee-proposal-card{display:grid}.fee-proposal-actions{justify-self:start}}
+
+
+.daily-accounting-panel{margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+.daily-accounting-panel h3{margin:0;color:#e5f0f5;font-size:14px}
+.daily-accounting-actions{display:flex;align-items:center;gap:8px}
+.daily-accounting-actions select{max-width:112px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:#0b2638;color:var(--text);font-size:11px}
+.daily-summary-table{min-width:700px}
+@media(max-width:650px){.daily-accounting-actions{width:100%;flex-wrap:wrap}.daily-accounting-actions select{flex:1}}
