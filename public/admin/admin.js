@@ -222,18 +222,45 @@ async function loadOverview(session) {
   const date = new Date(data.generated_at || Date.now());
   $("#generatedAt").textContent = "Dènye mizajou: " + date.toLocaleString("fr-HT");
   setNotice("#dashboardNotice", "Aksè admin konfime sou sèvè a. PIN Admin verifye.", "success");
-  await updateMfaStatus().catch(() => {});
+  const mfaReady = await updateMfaStatus().catch(() => false);
   await loadSystemHealth(session);
+
+  if (!mfaReady) {
+    const lockMessage = "Verifye MFA TOTP anlè a pou ouvri done operasyonèl, finansye ak sekretarya yo.";
+    if (canSeeFinance) setNotice("#financeNotice", lockMessage, "");
+    if (isSuper) setNotice("#teamRolesNotice", lockMessage, "");
+    if (canSeeSecretariat) setNotice("#secretariatNotice", lockMessage, "");
+    if (canSeeOperations) setNotice("#adminRecordsNotice", lockMessage, "");
+    return;
+  }
 
   if (canSeeFinance) await loadFinanceOverview(session);
   if (isSuper) await loadTeamRoles(session);
   if (canSeeSecretariat) await loadSecretariatItems(session);
 
   if (canSeeOperations) {
-    const defaultRecord = isSuper || roleSet.has("admin") || roleSet.has("risk_admin") || roleSet.has("support_agent")
-      ? "users"
-      : roleSet.has("auditor") ? "audit" : "ledger";
-    await loadAdminRecords(defaultRecord);
+    const allowedRecords = new Set();
+    if (isSuper) {
+      ["users","merchants","wallets","ledger","withdrawals","agents","audit"].forEach((type) => allowedRecords.add(type));
+    } else {
+      const scopes = {
+        admin: ["users","merchants","wallets","ledger","withdrawals","agents","audit"],
+        risk_admin: ["users","merchants","withdrawals","agents","audit"],
+        support_agent: ["users","merchants","agents"],
+        finance_admin: ["wallets","ledger","withdrawals","audit"],
+        accountant: ["wallets","ledger","audit"],
+        auditor: ["wallets","ledger","audit"]
+      };
+      currentAdminRoles.forEach((role) => (scopes[role] || []).forEach((type) => allowedRecords.add(type)));
+    }
+    document.querySelectorAll("[data-record-type]").forEach((button) => {
+      button.hidden = !allowedRecords.has(button.dataset.recordType);
+    });
+    const defaultRecord = allowedRecords.has("users") ? "users"
+      : allowedRecords.has("audit") && roleSet.has("auditor") ? "audit"
+      : allowedRecords.has("ledger") ? "ledger"
+      : allowedRecords.values().next().value;
+    if (defaultRecord) await loadAdminRecords(defaultRecord);
   } else {
     setNotice("#adminRecordsNotice", "Wòl Sekretè a pa gen aksè nan dosye operasyonèl oswa finansye kliyan yo.", "success");
   }
@@ -483,7 +510,7 @@ async function verifyAdminMfa() {
   const ready = await updateMfaStatus();
   if (!ready) throw new Error("MFA_VERIFICATION_INCOMPLETE");
   setNotice("#adminActionNotice", "MFA verifye. Aksyon admin yo toujou pase verifikasyon sou sèvè a.", "success");
-  await loadAdminRecords("users");
+  await refreshCurrent();
 }
 async function loadFinanceOverview(session) {
   setNotice("#financeNotice", "Ap chaje kont trezò antrepriz la…", "");
