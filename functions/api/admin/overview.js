@@ -27,17 +27,31 @@ export async function onRequestGet({ request, env }) {
 
   try {
     const { url, secretKey } = config(env);
-    // A secretary-only role can open the private secretariat, but it does not
-    // receive platform-wide counts about customers, merchants, wallets or funds.
-    const metricsAllowed = (access.roles || []).some((role) => role !== "secretary");
-    const tables = metricsAllowed ? [
+    // Return only counts associated with the caller's assigned module scopes.
+    // A secretary-only account receives no platform-wide operational metrics.
+    const roleSet = new Set(access.roles || []);
+    const allTables = [
       ["users", "profiles", "id"],
       ["merchants", "merchants", "id"],
       ["wallets", "wallet_balances", "wallet_id"],
       ["transactions", "ledger_transactions", "id"],
       ["withdrawals", "withdrawal_requests", "id"],
       ["audit_events", "audit_logs", "id"],
-    ] : [];
+    ];
+    const allowedMetricKeys = new Set();
+    if (roleSet.has("super_admin") || roleSet.has("admin")) {
+      allTables.forEach(([key]) => allowedMetricKeys.add(key));
+    } else {
+      const metricScopes = {
+        risk_admin: ["users","merchants","withdrawals","audit_events"],
+        support_agent: ["users","merchants"],
+        finance_admin: ["wallets","transactions","withdrawals","audit_events"],
+        accountant: ["wallets","transactions","audit_events"],
+        auditor: ["wallets","transactions","audit_events"]
+      };
+      roleSet.forEach((role) => (metricScopes[role] || []).forEach((key) => allowedMetricKeys.add(key)));
+    }
+    const tables = allTables.filter(([key]) => allowedMetricKeys.has(key));
 
     const values = await Promise.all(
       tables.map(async ([key, table, column]) => [key, await countRows(url, secretKey, table, column)])
