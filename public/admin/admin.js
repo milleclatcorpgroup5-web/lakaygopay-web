@@ -697,7 +697,7 @@ async function verifyAdminMfa() {
   setNotice("#adminActionNotice", "MFA verifye. Aksyon admin yo toujou pase verifikasyon sou sèvè a.", "success");
   await refreshCurrent();
 }
-function renderAnalyticsBreakdownfunction renderAnalyticsBreakdown(selector, rows, emptyLabel) {
+function renderAnalyticsBreakdown(selector, rows, emptyLabel) {
   const container = $(selector);
   if (!container) return;
   container.replaceChildren();
