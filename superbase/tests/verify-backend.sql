@@ -218,7 +218,7 @@ select 'fee_proposal_maker_checker' as check_type,
        ) > 0 as finance_admin_role_required,
        position('role = ''super_admin''' in
          pg_get_functiondef('public.propose_platform_fee(uuid,text,text,text,numeric,timestamp with time zone,numeric,numeric,text)'::regprocedure)
-       ) = 0 as super_admin_excluded_from_proposing,
+       ) > 0 as super_admin_explicitly_excluded,
        position('MAKER_CANNOT_APPROVE_OWN_FEE_PROPOSAL' in
          pg_get_functiondef('public.review_platform_fee_proposal(uuid,uuid,text,text)'::regprocedure)
        ) > 0 as prevents_self_approval;
