@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#071b2a">
   <title>LakayGoPay — Sant Kontwòl Admin</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/admin/admin.css?v=20261118-01">
+  <link rel="stylesheet" href="/admin/admin.css?v=20261119-01">
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -55,7 +55,7 @@
         <button id="loginButton" class="button button-primary full" type="submit">Antre nan sant kontwòl la <span>→</span></button>
       </form>
       <div id="loginNotice" class="notice" role="status" aria-live="polite"></div>
-      <p class="login-foot">Pa gen bouton enskripsyon administratè. Wòl yo dwe bay separeman atravè bazdone sekirize a.</p>
+      <p class="login-foot">Pa gen enskripsyon piblik pou kont admin. Super Admin ka bay oswa retire wòl dirèkteman nan sit sa a pou kont ki deja anrejistre.</p>
     </section>
   </main>
 
@@ -101,6 +101,18 @@
 
     <div id="dashboardNotice" class="notice" role="status" aria-live="polite"></div>
 
+    <nav class="admin-quick-nav" aria-label="Navigasyon Sant Kontwòl">
+      <a href="#adminDashboardMetrics">Apèsi</a>
+      <a href="#adminAnalyticsPanel">Evolisyon & aktivite</a>
+      <a href="#adminRecordsPanel">Dosye</a>
+      <a href="#systemHealthPanel">Sante sistèm</a>
+      <a href="#adminFinancePanel">Finans & bous</a>
+      <a href="#adminTeamPanel">Ekip & wòl</a>
+      <a href="#adminSecretariatPanel">Sekretarya</a>
+      <a href="#dailyFlowPanel">Flux chak jou</a>
+      <a href="#adminControlRulesPanel">6 règ</a>
+    </nav>
+
     <section class="security-banner">
       <div class="banner-icon">!</div>
       <div>
@@ -128,7 +140,7 @@
 
 
 
-    <section class="surface-card daily-flow-panel" aria-labelledby="dailyFlowHeading">
+    <section class="surface-card daily-flow-panel" id="dailyFlowPanel" aria-labelledby="dailyFlowHeading">
       <div class="section-head">
         <div><p class="eyebrow">DYAGRAM OPERASYONÈL CHAK JOU</p><h2 id="dailyFlowHeading">Flux travay LakayGoPay</h2></div>
         <span class="read-only-tag">GID · PA OTOMATIK</span>
@@ -162,7 +174,7 @@
       </div>
     </section>
 
-    <section class="surface-card control-rules-panel">
+    <section class="surface-card control-rules-panel" id="adminControlRulesPanel">
       <div class="section-head">
         <div><p class="eyebrow">6 RÈG OBLIGATWA</p><h2>Règ Sant Kontwòl la</h2></div>
         <span class="read-only-tag">APLIKE NAN BACKEND</span>
@@ -250,7 +262,7 @@
         <div><p class="eyebrow">JESTYON EKIP · SUPER ADMIN SÈLMAN</p><h2>Bay oswa retire wòl</h2></div>
         <span class="read-only-tag">APWOBASYON SUPER ADMIN</span>
       </div>
-      <p class="muted small">Moun nan dwe deja gen yon kont LakayGoPay. Chwazi ID li nan lis la, epi bay yon sèl wòl dapre responsablite li. Pa bay wòl Super Admin nan meni sa a.</p>
+      <p class="muted small">Moun nan dwe deja kreye yon kont LakayGoPay sou aplikasyon an. Chèche kont li nan lis la, peze “Chwazi wòl”, epi bay oswa retire wòl la isit la. Se Super Admin sèlman ki ka fè sa; wòl Super Admin pa ka bay nan meni sa a.</p>
       <form id="teamRoleForm" class="admin-action-grid team-role-form">
         <label>ID kont itilizatè<input id="teamTargetUserId" required placeholder="Chwazi yon kont nan lis la"></label>
         <label>Wòl<select id="teamRoleSelect">
@@ -266,6 +278,7 @@
         <button class="button button-primary full" type="submit">Aplike chanjman wòl</button>
       </form>
       <div id="teamRolesNotice" class="notice" role="status" aria-live="polite">Lis ekip la poko chaje.</div>
+      <label class="team-user-search">Chèche kont pa non oswa ID<input id="teamUserSearch" type="search" placeholder="Tape non oswa ID kont..."></label>
       <div class="admin-record-table-wrap">
         <table class="admin-record-table">
           <thead><tr><th>Non</th><th>ID kont</th><th>Wòl</th><th>Estati</th><th>Chwazi</th></tr></thead>
@@ -307,13 +320,44 @@
       <span id="generatedAt" class="muted small"></span>
     </section>
 
-    <section class="metric-grid">
+    <section class="metric-grid" id="adminDashboardMetrics">
       <article class="metric-card"><div class="metric-top"><span class="metric-icon">U</span><span class="metric-label">Kont itilizatè</span></div><strong id="countUsers">—</strong><small>Kont ki anrejistre</small></article>
       <article class="metric-card"><div class="metric-top"><span class="metric-icon">M</span><span class="metric-label">Machann</span></div><strong id="countMerchants">—</strong><small>Pwofil komèsyal</small></article>
       <article class="metric-card"><div class="metric-top"><span class="metric-icon">W</span><span class="metric-label">Bous</span></div><strong id="countWallets">—</strong><small>Bous nan sistèm nan</small></article>
       <article class="metric-card"><div class="metric-top"><span class="metric-icon">T</span><span class="metric-label">Tranzaksyon</span></div><strong id="countTransactions">—</strong><small>Antre nan ledger la</small></article>
       <article class="metric-card"><div class="metric-top"><span class="metric-icon">R</span><span class="metric-label">Demann retrè</span></div><strong id="countWithdrawals">—</strong><small>Demann ki anrejistre</small></article>
       <article class="metric-card"><div class="metric-top"><span class="metric-icon">A</span><span class="metric-label">Jounal audit</span></div><strong id="countAudit">—</strong><small>Evènman ki anrejistre</small></article>
+    </section>
+
+    <section class="surface-card admin-analytics-panel" id="adminAnalyticsPanel" aria-labelledby="adminAnalyticsHeading">
+      <div class="section-head">
+        <div><p class="eyebrow">EVOLISYON PLATFÒM LAN</p><h2 id="adminAnalyticsHeading">Kwasans itilizatè & itilizasyon sèvis</h2></div>
+        <div class="analytics-actions">
+          <select id="analyticsDays" aria-label="Peryòd analiz"><option value="7">7 jou</option><option value="30" selected>30 jou</option><option value="90">90 jou</option></select>
+          <button id="analyticsRefresh" class="button button-quiet" type="button">Rafrechi analiz</button>
+        </div>
+      </div>
+      <p class="muted small">Done yo soti nan kont ki anrejistre ak tranzaksyon ki deja poste. “San aktivite sèvis” vle di kont ki pa fè tranzaksyon nan jou sa a; li pa vle di kont lan sispann. Tout dat itilize lè Ayiti.</p>
+      <div id="analyticsNotice" class="notice" role="status" aria-live="polite">Analiz la ap tann verifikasyon MFA.</div>
+      <div class="analytics-metric-grid">
+        <article><span>Total kont anrejistre</span><strong id="analyticsRegistered">—</strong></article>
+        <article><span>Nouvo enskripsyon nan peryòd la</span><strong id="analyticsNewUsers">—</strong></article>
+        <article><span>Kont aktif</span><strong id="analyticsActiveAccounts">—</strong></article>
+        <article><span>Kont limite / sispann / fèmen</span><strong id="analyticsInactiveAccounts">—</strong></article>
+        <article><span>Moun ki itilize sèvis</span><strong id="analyticsServiceUsers">—</strong></article>
+        <article><span>Tranzaksyon sèvis poste</span><strong id="analyticsServiceTransactions">—</strong></article>
+        <article><span>Total machann</span><strong id="analyticsMerchants">—</strong></article>
+        <article><span>Machann aktif</span><strong id="analyticsActiveMerchants">—</strong></article>
+      </div>
+      <div class="analytics-chart-wrap">
+        <div class="analytics-chart-heading"><h3>Grafik pa jou</h3><div class="analytics-legend"><span><i class="legend-registrations"></i>Nouvo kont</span><span><i class="legend-active"></i>Itilizatè sèvis aktif</span><span><i class="legend-inactive"></i>San aktivite sèvis</span></div></div>
+        <svg id="adminGrowthChart" viewBox="0 0 900 280" role="img" aria-label="Grafik evolisyon enskripsyon, itilizatè sèvis aktif ak kont san aktivite sèvis"></svg>
+      </div>
+      <div class="analytics-lower-grid">
+        <div><h3>Estati kont aktyèl yo</h3><div id="analyticsAccountStatuses" class="analytics-breakdown"></div></div>
+        <div><h3>Sèvis ki itilize nan peryòd la</h3><div id="analyticsServiceBreakdown" class="analytics-breakdown"></div></div>
+      </div>
+      <p id="analyticsGeneratedAt" class="muted small"></p>
     </section>
 
     <section class="section-head modules-heading">
@@ -337,14 +381,14 @@
           <div><p class="eyebrow">SEKIRITE POU AKSYON SANSIB</p><h2>Verifikasyon MFA (TOTP)</h2></div>
           <span id="adminMfaBadge" class="read-only-tag">MFA obligatwa pou aksyon</span>
         </div>
-        <p id="adminMfaStatus" class="muted admin-mfa-copy">Ap verifye nivo sekirite sesyon an…</p>
+        <p id="adminMfaStatus" class="muted admin-mfa-copy">Pou debloke dosye yo, aktive authenticator la oswa antre kòd 6 chif li epi peze Verifye MFA.</p>
         <div class="admin-mfa-actions">
           <button id="adminMfaEnrollButton" class="button button-quiet" type="button">Kreye / aktive MFA</button>
           <div id="adminMfaQrWrap" hidden>
             <img id="adminMfaQr" alt="QR pou aplikasyon authenticator">
             <p id="adminMfaSecret" class="small muted"></p>
           </div>
-          <label>Kòd authenticator 6 chif
+          <label for="adminMfaCode">Kòd authenticator 6 chif
             <input id="adminMfaCode" type="password" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000">
           </label>
           <button id="adminMfaVerifyButton" class="button button-primary" type="button">Verifye MFA</button>
@@ -659,6 +703,6 @@
     <footer class="admin-footer"><span>LakayGoPay · Sant Kontwòl</span><span>Entèfas administrasyon prive · Rejim tès</span></footer>
   </main>
 
-  <script type="module" src="/admin/admin.js?v=20261118-01"></script>
+  <script type="module" src="/admin/admin.js?v=20261119-01"></script>
 </body>
 </html>

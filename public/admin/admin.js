@@ -5,6 +5,7 @@ let supabase = null;
 let adminPinVerifiedUserId = null;
 let pinGateSession = null;
 let currentAdminRoles = [];
+let teamDirectoryRows = [];
 
 function setNotice(selector, message, kind) {
   const node = $(selector);
@@ -98,7 +99,11 @@ function explainError(code) {
     ADMIN_OVERVIEW_UNAVAILABLE: "Apèsi administrasyon an pa disponib kounye a.",
     ADMIN_RECORDS_UNAVAILABLE: "Lis dosye administrasyon an pa disponib kounye a.",
     ADMIN_RECORD_TYPE_INVALID: "Kategori dosye sa a pa valab.",
-    MFA_REQUIRED: "Aksyon sa a mande verifikasyon TOTP. Verifye kòd authenticator ou a.",
+    MFA_REQUIRED: "Pou louvri modil yo, desann nan kat Verifikasyon MFA (TOTP), antre kòd 6 chif authenticator ou a epi peze Verifye MFA. Pa pataje kòd sa a ak pèsonn.",
+    MFA_VERIFICATION_INCOMPLETE: "Supabase pa konfime nivo AAL2 la. Verifye kòd la ankò; pa gen okenn modil ki pral ouvri san verifikasyon sa a.",
+    ANALYTICS_RANGE_INVALID: "Peryòd analiz la dwe 7, 30 oswa 90 jou.",
+    ADMIN_ANALYTICS_UNAVAILABLE: "Analiz administratè a pa disponib kounye a. Verifye koneksyon bazdone a.",
+    ANALYTICS_DATABASE_QUERY_FAILED: "Bazdone a pa t kapab bay done analiz yo.",
     MFA_CODE_MUST_BE_6_DIGITS: "Kòd authenticator lan dwe gen 6 chif.",
     MFA_FACTOR_NOT_ENROLLED: "Pa gen faktè authenticator. Klike Kreye / aktive MFA an premye.",
     USER_STATUS_INVALID: "Estati kont lan pa valab.",
@@ -215,6 +220,7 @@ async function loadOverview(session) {
   const canSeeFinance = isSuper || ["finance_admin","accountant","auditor"].some((role) => roleSet.has(role));
   const canSeeSecretariat = isSuper || roleSet.has("secretary");
   const canSeeSystemHealth = isSuper || roleSet.has("admin");
+  const canSeeAnalytics = isSuper || ["admin","risk_admin","support_agent","finance_admin","accountant","auditor"].some((role) => roleSet.has(role));
 
   $("#adminRecordsPanel").hidden = !canSeeOperations;
   $("#adminActionsPanel").hidden = !canSeeActions;
@@ -225,6 +231,7 @@ async function loadOverview(session) {
   $("#adminFinancePanel").hidden = !canSeeFinance;
   $("#adminTeamPanel").hidden = !isSuper;
   $("#adminSecretariatPanel").hidden = !canSeeSecretariat;
+  $("#adminAnalyticsPanel").hidden = !canSeeAnalytics;
   $("#systemHealthPanel").hidden = !canSeeSystemHealth;
 
   const firstName = String(admin.email || "Administratè").split("@")[0];
@@ -247,16 +254,23 @@ async function loadOverview(session) {
   const mfaReady = await updateMfaStatus().catch(() => false);
 
   if (!mfaReady) {
+    setProtectedAdminControls(false);
     const lockMessage = "Verifye MFA TOTP anlè a pou ouvri done operasyonèl, finansye ak sekretarya yo.";
     if (canSeeFinance) setNotice("#financeNotice", lockMessage, "");
     if (isSuper) setNotice("#teamRolesNotice", lockMessage, "");
     if (canSeeSecretariat) setNotice("#secretariatNotice", lockMessage, "");
     if (canSeeOperations) setNotice("#adminRecordsNotice", lockMessage, "");
+    if (canSeeAnalytics) setNotice("#analyticsNotice", lockMessage, "");
     if (canSeeSystemHealth) setNotice("#systemHealthNotice", lockMessage, "error");
+    setNotice("#dashboardNotice", "Aksè bazik la konfime. Pou sekirite, verifye TOTP nan kat ki make “Verifikasyon MFA” pou debloke tablo analiz, finans, ekip ak dosye yo.", "");
+    $("#adminMfaPanel").classList.add("mfa-needs-action");
     return;
   }
 
+  $("#adminMfaPanel").classList.remove("mfa-needs-action");
+  setProtectedAdminControls(true);
   if (canSeeSystemHealth) await loadSystemHealth(session);
+  if (canSeeAnalytics) await loadAdminAnalytics(session);
   if (canSeeFinance) await loadFinanceOverview(session);
   if (isSuper) await loadTeamRoles(session);
   if (canSeeSecretariat) await loadSecretariatItems(session);
@@ -473,17 +487,67 @@ async function currentSession() {
   if (result.error) throw result.error;
   return result.data.session;
 }
+function setProtectedAdminControls(enabled) {
+  const selectors = [
+    "#adminAnalyticsPanel",
+    "#systemHealthPanel",
+    "#adminRecordsPanel",
+    "#adminActionsPanel",
+    "#adminFinancePanel",
+    "#adminTeamPanel",
+    "#adminSecretariatPanel"
+  ];
+  selectors.forEach((selector) => {
+    const panel = $(selector);
+    if (!panel) return;
+    panel.querySelectorAll("button,input,select,textarea").forEach((control) => {
+      control.disabled = !enabled;
+    });
+  });
+}
+
+function explainMfaError(error) {
+  const raw = [error?.code, error?.message, error?.name].filter(Boolean).join(" ").toLowerCase();
+  if (/invalid.*(otp|totp|token|code)|(otp|totp|token|code).*invalid/.test(raw)) {
+    return "Kòd la pa kòrèk oswa li ekspire. Gade dènye kòd 6 chif aplikasyon authenticator la bay epi antre l ankò.";
+  }
+  if (/rate|too many|attempt/.test(raw)) {
+    return "Gen twòp tantativ. Tann kèk minit, verifye lè telefòn nan kòrèk, epi eseye ankò.";
+  }
+  if (/factor.*(not found|not verified)|not.*factor/.test(raw)) {
+    return "Authenticator la poko pare. Peze “Kreye / aktive MFA”, eskane nouvo QR la, epi verifye kòd la.";
+  }
+  return explainError(error?.code || error?.message || "MFA_REQUIRED");
+}
+
 async function updateMfaStatus() {
   const session = await currentSession();
-  const claims = decodeJwtPayload(session?.access_token);
-  const aal2 = claims?.aal === "aal2";
+  if (!session) throw new Error("AUTH_REQUIRED");
+
+  let currentLevel = decodeJwtPayload(session.access_token)?.aal || "aal1";
+  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assurance.error) throw assurance.error;
+  currentLevel = assurance.data?.currentLevel || currentLevel;
+  const aal2 = currentLevel === "aal2";
+
+  const factorsResult = await supabase.auth.mfa.listFactors();
+  if (factorsResult.error) throw factorsResult.error;
+  const totpFactors = factorsResult.data?.totp || [];
+  const hasVerifiedFactor = totpFactors.some((factor) => factor.status === "verified");
+  const hasPendingFactor = totpFactors.some((factor) => factor.status === "unverified");
+
   $("#adminMfaBadge").textContent = aal2 ? "MFA verifye · AAL2" : "MFA obligatwa";
   $("#adminMfaBadge").className = aal2 ? "read-only-tag mfa-active" : "read-only-tag";
   $("#adminMfaStatus").textContent = aal2
-    ? "Sesyon sa a gen dezyèm faktè authenticator verifye. Aksyon admin ki sansib kapab pase kontwòl backend la."
-    : "Pou apwouve machann, revize retrè, revize ajan oswa kouri odit ledger, aktive epi verifye yon aplikasyon authenticator.";
-  $("#adminMfaEnrollButton").textContent = aal2 ? "MFA deja verifye" : "Kreye / aktive MFA";
+    ? "MFA konfime sou sesyon sa a. Dosye ki otorize pou wòl ou yo kapab chaje."
+    : hasVerifiedFactor
+      ? "Authenticator deja aktive sou kont sa a. Antre kòd 6 chif aktyèl la anba a epi peze “Verifye MFA” pou debloke modil yo."
+      : hasPendingFactor
+        ? "Gen yon konfigirasyon authenticator ki poko verifye. Peze “Kreye / aktive MFA” pou rekòmanse QR a, eskane li, epi verifye kòd la."
+        : "Premye etap: peze “Kreye / aktive MFA”, eskane QR la ak Google Authenticator oswa Aegis, antre kòd 6 chif la epi peze “Verifye MFA”.";
+  $("#adminMfaEnrollButton").textContent = aal2 ? "MFA deja verifye" : hasVerifiedFactor ? "Authenticator deja aktive" : "Kreye / aktive MFA";
   $("#adminMfaEnrollButton").disabled = aal2;
+  $("#adminMfaVerifyButton").disabled = aal2;
   $("#adminLedgerAuditButton").disabled = !aal2;
   return aal2;
 }
@@ -515,11 +579,14 @@ async function enrollAdminMfa() {
 async function verifyAdminMfa() {
   const code = $("#adminMfaCode").value.trim();
   if (!/^\d{6}$/.test(code)) throw new Error("MFA_CODE_MUST_BE_6_DIGITS");
+
   const factorsResult = await supabase.auth.mfa.listFactors();
   if (factorsResult.error) throw factorsResult.error;
-  const factor = (factorsResult.data?.totp || []).find((item) => item.status === "verified") ||
-    (factorsResult.data?.totp || []).find((item) => item.status === "unverified");
+  const factors = factorsResult.data?.totp || [];
+  const factor = factors.find((item) => item.status === "verified") ||
+    factors.find((item) => item.status === "unverified");
   if (!factor) throw new Error("MFA_FACTOR_NOT_ENROLLED");
+
   const challenge = await supabase.auth.mfa.challenge({ factorId: factor.id });
   if (challenge.error) throw challenge.error;
   const verified = await supabase.auth.mfa.verify({
@@ -528,13 +595,146 @@ async function verifyAdminMfa() {
     code
   });
   if (verified.error) throw verified.error;
+
   $("#adminMfaCode").value = "";
-  await supabase.auth.refreshSession();
+  const refreshed = await supabase.auth.refreshSession();
+  const session = refreshed.data?.session || verified.data?.session || (await currentSession());
+  if (!session?.access_token) {
+    if (refreshed.error) throw refreshed.error;
+    throw new Error("MFA_VERIFICATION_INCOMPLETE");
+  }
+
+  // Ask the server to validate the new signed access token, not only the
+  // browser's decoded JWT claim. This prevents stale aal1 sessions being used.
+  const serverCheck = await fetch("/api/admin/me", {
+    headers: { accept: "application/json", authorization: "Bearer " + session.access_token },
+    cache: "no-store"
+  });
+  const serverData = await serverCheck.json().catch(() => ({}));
+  if (!serverCheck.ok || serverData.aal2 !== true || serverData.is_admin !== true) {
+    throw new Error("MFA_VERIFICATION_INCOMPLETE");
+  }
+
   const ready = await updateMfaStatus();
   if (!ready) throw new Error("MFA_VERIFICATION_INCOMPLETE");
+  setNotice("#adminMfaStatus", "MFA verifye sou sèvè a. Modil ou gen otorizasyon pou yo ap chaje kounye a.", "success");
   setNotice("#adminActionNotice", "MFA verifye. Aksyon admin yo toujou pase verifikasyon sou sèvè a.", "success");
   await refreshCurrent();
 }
+function renderAnalyticsBreakdown(selector, rows, emptyLabel) {
+  const container = $(selector);
+  if (!container) return;
+  container.replaceChildren();
+  if (!rows.length) {
+    const empty = document.createElement("p");
+    empty.className = "muted small";
+    empty.textContent = emptyLabel || "Pa gen done nan peryòd la.";
+    container.append(empty);
+    return;
+  }
+  rows.forEach((row) => {
+    const item = document.createElement("div");
+    item.className = "analytics-breakdown-row";
+    const label = document.createElement("span");
+    label.textContent = row.label;
+    const value = document.createElement("strong");
+    value.textContent = Number(row.count || 0).toLocaleString("fr-HT");
+    item.append(label, value);
+    container.append(item);
+  });
+}
+
+function renderGrowthChart(rows) {
+  const svg = $("#adminGrowthChart");
+  if (!svg) return;
+  const ns = "http://www.w3.org/2000/svg";
+  const make = (tag, attrs, parent = svg) => {
+    const node = document.createElementNS(ns, tag);
+    Object.entries(attrs || {}).forEach(([key, value]) => node.setAttribute(key, String(value)));
+    parent.append(node);
+    return node;
+  };
+  svg.replaceChildren();
+  if (!rows.length) {
+    make("text", { x: 450, y: 135, "text-anchor": "middle", class: "chart-empty" }).textContent = "Pa gen done pou peryòd sa a.";
+    return;
+  }
+  const width = 900, height = 280;
+  const left = 48, right = 22, top = 18, bottom = 42;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
+  const series = [
+    { key: "registrations", label: "Nouvo kont", className: "chart-line-registrations" },
+    { key: "active_users", label: "Itilizatè sèvis aktif", className: "chart-line-active" },
+    { key: "inactive_users", label: "San aktivite sèvis", className: "chart-line-inactive" }
+  ];
+  const maxValue = Math.max(1, ...rows.flatMap((row) => series.map((item) => Number(row[item.key] || 0))));
+  for (let tick = 0; tick <= 4; tick += 1) {
+    const y = top + (plotHeight * tick / 4);
+    make("line", { x1: left, y1: y, x2: width - right, y2: y, class: "chart-grid-line" });
+    const label = make("text", { x: left - 9, y: y + 4, "text-anchor": "end", class: "chart-axis-label" });
+    label.textContent = Math.round(maxValue * (4 - tick) / 4).toLocaleString("fr-HT");
+  }
+  const xFor = (index) => left + (rows.length === 1 ? plotWidth / 2 : (plotWidth * index / (rows.length - 1)));
+  const yFor = (value) => top + plotHeight - (Number(value || 0) / maxValue) * plotHeight;
+  series.forEach((item) => {
+    const points = rows.map((row, index) => xFor(index) + "," + yFor(row[item.key])).join(" ");
+    make("polyline", { points, class: "chart-line " + item.className });
+    rows.forEach((row, index) => {
+      if (rows.length <= 30 || index % Math.ceil(rows.length / 30) === 0) {
+        make("circle", { cx: xFor(index), cy: yFor(row[item.key]), r: 2.8, class: "chart-point " + item.className });
+      }
+    });
+  });
+  const labelCount = Math.min(6, rows.length);
+  for (let index = 0; index < labelCount; index += 1) {
+    const rowIndex = labelCount === 1 ? 0 : Math.round(index * (rows.length - 1) / (labelCount - 1));
+    const label = make("text", { x: xFor(rowIndex), y: height - 13, "text-anchor": "middle", class: "chart-axis-label" });
+    label.textContent = rows[rowIndex].date.slice(5).replace("-", "/");
+  }
+}
+
+async function loadAdminAnalytics(session) {
+  const days = Number($("#analyticsDays")?.value || 30);
+  setNotice("#analyticsNotice", "Ap chaje evolisyon kont ak itilizasyon sèvis yo…", "");
+  try {
+    const data = await adminRequest("/api/admin/analytics?days=" + days, session);
+    const summary = data.summary || {};
+    const format = (value) => Number(value || 0).toLocaleString("fr-HT");
+    $("#analyticsRegistered").textContent = format(summary.registered_users);
+    $("#analyticsNewUsers").textContent = format(summary.new_registrations);
+    $("#analyticsActiveAccounts").textContent = format(summary.active_accounts);
+    $("#analyticsInactiveAccounts").textContent = format(summary.non_active_accounts);
+    $("#analyticsServiceUsers").textContent = format(summary.users_with_service);
+    $("#analyticsServiceTransactions").textContent = format(summary.service_transactions);
+    $("#analyticsMerchants").textContent = format(summary.merchants_total);
+    $("#analyticsActiveMerchants").textContent = format(summary.active_merchants);
+    renderGrowthChart(data.timeline || []);
+    renderAnalyticsBreakdown("#analyticsAccountStatuses", [
+      { label: "Aktif", count: summary.active_accounts },
+      { label: "Limite", count: summary.restricted_accounts },
+      { label: "Sispann", count: summary.suspended_accounts },
+      { label: "Fèmen", count: summary.closed_accounts }
+    ]);
+    renderAnalyticsBreakdown("#analyticsServiceBreakdown", data.service_breakdown || [], "Pa gen tranzaksyon sèvis ki poste nan peryòd la.");
+    $("#analyticsGeneratedAt").textContent = data.generated_at
+      ? "Dènye kalkil: " + new Date(data.generated_at).toLocaleString("fr-HT") + " · Zòn lè: Ayiti"
+      : "";
+    const note = data.notes?.truncated
+      ? "Done yo chaje an pati (limit sekirite 10 000 liy). Peryòd la ka mande yon rapò agregasyon SQL lè platfòm lan grandi."
+      : "Analiz " + days + " jou chaje. Itilizatè aktif = omwen yon tranzaksyon ki deja poste nan jounen an; inaktif = pa gen tranzaksyon poste nan jounen an.";
+    setNotice("#analyticsNotice", note, data.notes?.truncated ? "error" : "success");
+  } catch (error) {
+    setNotice("#analyticsNotice", explainError(error.code || error.message), "error");
+    ["#analyticsRegistered","#analyticsNewUsers","#analyticsActiveAccounts","#analyticsInactiveAccounts",
+      "#analyticsServiceUsers","#analyticsServiceTransactions","#analyticsMerchants","#analyticsActiveMerchants"]
+      .forEach((selector) => { $(selector).textContent = "N/D"; });
+    $("#adminGrowthChart").replaceChildren();
+    renderAnalyticsBreakdown("#analyticsAccountStatuses", [], "Done estati pa disponib.");
+    renderAnalyticsBreakdown("#analyticsServiceBreakdown", [], "Done sèvis pa disponib.");
+  }
+}
+
 async function loadFinanceOverview(session) {
   setNotice("#financeNotice", "Ap chaje kont trezò antrepriz la…", "");
   try {
@@ -716,13 +916,21 @@ async function loadDailyFinancialSummary(session) {
   }
 }
 
+function filterTeamRoles() {
+  const query = ($("#teamUserSearch")?.value || "").trim().toLowerCase();
+  document.querySelectorAll("#teamUsersBody tr").forEach((row) => {
+    row.hidden = query.length > 0 && !row.textContent.toLowerCase().includes(query);
+  });
+}
+
 async function loadTeamRoles(session) {
   setNotice("#teamRolesNotice", "Ap chaje lis ekip la…", "");
   try {
     const data = await adminRequest("/api/admin/team/roles", session);
+    teamDirectoryRows = Array.isArray(data.users) ? data.users : [];
     const body = $("#teamUsersBody");
     body.replaceChildren();
-    (data.users || []).forEach((user) => {
+    teamDirectoryRows.forEach((user) => {
       const row = document.createElement("tr");
       const name = document.createElement("td");
       name.textContent = user.full_name || "San non";
@@ -737,18 +945,22 @@ async function loadTeamRoles(session) {
       button.type = "button";
       button.className = "button button-quiet admin-row-action";
       button.textContent = "Chwazi wòl";
-      button.addEventListener("click", () => { $("#teamTargetUserId").value = user.id; });
+      button.addEventListener("click", () => {
+        $("#teamTargetUserId").value = user.id;
+        $("#teamRoleForm").scrollIntoView({ behavior: "smooth", block: "center" });
+      });
       const secretaryButton = document.createElement("button");
       secretaryButton.type = "button";
       secretaryButton.className = "button button-quiet admin-row-action";
       secretaryButton.textContent = "Chwazi sekretè";
       secretaryButton.disabled = !(user.roles || []).includes("secretary");
       secretaryButton.addEventListener("click", () => { $("#secretaryAssistantUserId").value = user.id; });
-      action.append(button,secretaryButton);
-      row.append(name,id,roles,status,action);
+      action.append(button, secretaryButton);
+      row.append(name, id, roles, status, action);
       body.append(row);
     });
-    setNotice("#teamRolesNotice", (data.users || []).length + " kont disponib pou jesyon wòl. ID yo rete vizib pou Super Admin sèlman.", "success");
+    filterTeamRoles();
+    setNotice("#teamRolesNotice", teamDirectoryRows.length + " kont deja anrejistre disponib pou bay oswa retire wòl. Super Admin sèlman ka fè chanjman.", "success");
   } catch (error) {
     setNotice("#teamRolesNotice", explainError(error.code || error.message), "error");
   }
@@ -1106,9 +1318,9 @@ async function boot() {
     try {
       await enrollAdminMfa();
     } catch (error) {
-      setNotice("#adminMfaStatus", error.message || "MFA pa kapab kòmanse.", "error");
+      setNotice("#adminMfaStatus", explainMfaError(error), "error");
     } finally {
-      button.disabled = false;
+      button.disabled = await updateMfaStatus().catch(() => false);
     }
   });
 
@@ -1118,9 +1330,9 @@ async function boot() {
     try {
       await verifyAdminMfa();
     } catch (error) {
-      setNotice("#adminMfaStatus", error.message || "Kòd MFA a pa valide.", "error");
+      setNotice("#adminMfaStatus", explainMfaError(error), "error");
     } finally {
-      button.disabled = false;
+      button.disabled = await updateMfaStatus().catch(() => false);
     }
   });
 
@@ -1131,6 +1343,15 @@ async function boot() {
     const active = document.querySelector("[data-record-type].active");
     loadAdminRecords(active?.dataset.recordType || "users");
   });
+  $("#analyticsRefresh").addEventListener("click", async () => {
+    const session = await currentSession();
+    if (session) await loadAdminAnalytics(session);
+  });
+  $("#analyticsDays").addEventListener("change", async () => {
+    const session = await currentSession();
+    if (session) await loadAdminAnalytics(session);
+  });
+  $("#teamUserSearch").addEventListener("input", filterTeamRoles);
 
   $("#adminUserStatusForm").addEventListener("submit", async (event) => {
     event.preventDefault();
