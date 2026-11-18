@@ -219,6 +219,20 @@ select 'withdrawal_super_admin_guard' as check_type,
          pg_get_functiondef('public.record_withdrawal_approval(uuid,uuid,text,text)'::regprocedure)
        ) > 0 as super_admin_required_for_major_decisions;
 
+select 'daily_financial_summary_rpc' as check_type,
+       to_regprocedure('public.get_admin_daily_financial_summary(uuid,integer)') is not null as function_exists,
+       has_function_privilege(
+         'authenticated',
+         'public.get_admin_daily_financial_summary(uuid,integer)',
+         'EXECUTE'
+       ) as authenticated_can_call,
+       has_function_privilege(
+         'service_role',
+         'public.get_admin_daily_financial_summary(uuid,integer)',
+         'EXECUTE'
+       ) as service_role_can_call;
+
+
 -- 11. The service-fee system is a proposal workflow only. Approval must not
 -- turn on fee posting or any real-money payment channel.
 select
