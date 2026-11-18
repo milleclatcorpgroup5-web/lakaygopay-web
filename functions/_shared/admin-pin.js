@@ -503,12 +503,11 @@ export async function resetAdminPin(request, env) {
   if (verified.error) return verified.error;
   try {
     const body = await readJson(request, 5000);
-    const pin = typeof body?.pin === "string" ? body.pin : "";
+    // The raw PIN never leaves the browser during recovery. Only the
+    // PBKDF2-derived value and its one-use challenge proof are transmitted.
     const pinHash = typeof body?.pin_hash === "string" ? body.pin_hash : "";
     const challengeToken = typeof body?.challenge === "string" ? body.challenge : "";
     const responseHex = typeof body?.response === "string" ? body.response : "";
-    if (!PIN_PATTERN.test(pin)) return error("ADMIN_PIN_MUST_BE_6_DIGITS", 400);
-    if (WEAK_PINS.has(pin)) return error("ADMIN_PIN_TOO_WEAK", 400);
     if (!/^[a-f0-9]{64}$/.test(pinHash) || !/^[a-f0-9]{64}$/.test(responseHex)) {
       return error("ADMIN_PIN_RESPONSE_INVALID", 400);
     }
