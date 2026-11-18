@@ -295,4 +295,21 @@ begin
 end;
 $audit_roles$;
 
+
+-- Preserve the original test-credit clearing wallet lookup now that each
+-- currency can have more than one system account (clearing vs platform_revenue).
+do $test_credit_system_wallet$
+declare
+  v_definition text;
+  v_old text := $old$where is_system = true and currency = 'HTG'$old$;
+  v_new text := $new$where is_system = true and currency = 'HTG' and system_account_code = 'clearing'$new$;
+begin
+  v_definition := pg_get_functiondef('public.create_test_credit(uuid,uuid,numeric,text)'::regprocedure);
+  if position(v_old in v_definition) = 0 then
+    raise exception 'TEST_CREDIT_SYSTEM_WALLET_LOOKUP_NOT_FOUND';
+  end if;
+  execute replace(v_definition, v_old, v_new);
+end;
+$test_credit_system_wallet$;
+
 commit;
