@@ -557,6 +557,7 @@ async function updateMfaStatus() {
       selector.append(option);
     });
     const preferred = totpFactors.find((factor) => factor.id === previous) ||
+      (aal2 ? totpFactors.find((factor) => factor.status === "unverified") : null) ||
       verifiedFactors[0] || totpFactors[0];
     if (preferred) selector.value = preferred.id;
     $("#adminMfaFactorLabel").hidden = totpFactors.length < 2;
@@ -573,7 +574,7 @@ async function updateMfaStatus() {
         : "Kreye authenticator prensipal ou, eskane QR la, epi verifye kòd 6 chif la.";
 
   $("#adminMfaEnrollButton").textContent = aal2 ? "MFA deja verifye" : hasVerifiedFactor ? "Authenticator deja aktive" : "Kreye / aktive MFA";
-  $("#adminMfaEnrollButton").disabled = aal2;
+  $("#adminMfaEnrollButton").disabled = aal2 || hasVerifiedFactor;
   const backupButton = $("#adminMfaBackupEnrollButton");
   if (backupButton) {
     backupButton.hidden = !hasVerifiedFactor || totpFactors.length >= 10;
