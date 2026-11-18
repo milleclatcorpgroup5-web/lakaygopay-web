@@ -63,7 +63,7 @@ select lt.id as unbalanced_transaction_id,
        coalesce(sum(le.amount) filter (where le.direction = 'debit'),0) as debits,
        coalesce(sum(le.amount) filter (where le.direction = 'credit'),0) as credits
 from public.ledger_transactions lt
-left join public.ledger_entries le on le.transaction_id = lt.id
+left join public.ledger_entries le on le.ledger_transaction_id = lt.id
 group by lt.id
 having count(le.id) < 2
    or coalesce(sum(le.amount) filter (where le.direction = 'debit'),0)
@@ -165,6 +165,17 @@ where is_system = true
   and system_account_code = 'platform_revenue'
   and currency in ('HTG','USD','EUR');
 
+select 'treasury_wallet_currency_constraint' as check_type,
+       coalesce(bool_or(
+         pg_get_constraintdef(oid) ilike '%HTG%'
+         and pg_get_constraintdef(oid) ilike '%USD%'
+         and pg_get_constraintdef(oid) ilike '%EUR%'
+       ),false) as passed
+from pg_constraint
+where conrelid = 'public.wallets'::regclass
+  and contype = 'c'
+  and conname = 'wallets_currency_supported_check';
+
 select 'system_clearing_wallet' as check_type,
        count(*) = 1 as passed,
        count(*) as htg_clearing_wallets
@@ -200,6 +211,14 @@ select 'fee_proposal_privileges' as check_type,
          'public.review_platform_fee_proposal(uuid,uuid,text,text)',
          'EXECUTE'
        ) as service_role_can_call_review_rpc;
+
+select 'fee_proposal_maker_checker' as check_type,
+       position('role = ''finance_admin''' in
+         pg_get_functiondef('public.propose_platform_fee(uuid,text,text,text,numeric,timestamp with time zone,numeric,numeric,text)'::regprocedure)
+       ) > 0 as finance_admin_only,
+       position('MAKER_CANNOT_APPROVE_OWN_FEE_PROPOSAL' in
+         pg_get_functiondef('public.review_platform_fee_proposal(uuid,uuid,text,text)'::regprocedure)
+       ) > 0 as prevents_self_approval;
 
 select 'admin_role_management_rpc' as check_type,
        to_regprocedure('public.admin_set_user_role(uuid,uuid,text,text)') is not null as function_exists,
