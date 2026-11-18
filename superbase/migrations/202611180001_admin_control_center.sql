@@ -354,16 +354,16 @@ create table if not exists public.platform_fee_proposals (
   effective_at timestamptz not null,
   status text not null default 'proposed' check (status in ('proposed','approved','rejected')),
   proposed_by uuid not null references auth.users(id),
-  approved_by uuid references auth.users(id),
-  approved_at timestamptz,
+  reviewed_by uuid references auth.users(id),
+  reviewed_at timestamptz,
   proposal_note text not null default '' check (length(proposal_note) <= 500),
   decision_note text not null default '' check (length(decision_note) <= 500),
   created_at timestamptz not null default now(),
   unique(service_code, currency, version),
   check (fee_kind <> 'percentage' or fee_value <= 100),
   check (
-    (status = 'proposed' and approved_by is null and approved_at is null)
-    or (status in ('approved','rejected') and approved_by is not null and approved_at is not null)
+    (status = 'proposed' and reviewed_by is null and reviewed_at is null)
+    or (status in ('approved','rejected') and reviewed_by is not null and reviewed_at is not null)
   )
 );
 create index if not exists platform_fee_proposals_service_version_idx
@@ -492,8 +492,8 @@ begin
 
   update public.platform_fee_proposals
      set status = case when p_decision = 'approve' then 'approved' else 'rejected' end,
-         approved_by = p_super_admin_user_id,
-         approved_at = clock_timestamp(),
+         reviewed_by = p_super_admin_user_id,
+         reviewed_at = clock_timestamp(),
          decision_note = left(coalesce(p_decision_note,''),500)
    where id = p_proposal_id;
 
