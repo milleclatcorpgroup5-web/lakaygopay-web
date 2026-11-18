@@ -377,13 +377,13 @@ begin
   ) then
     raise exception 'FINANCE_ROLE_REQUIRED';
   end if;
-  if p_service_code not in ('internal_transfer','merchant_qr','fx_conversion','cash_in','cash_out','bill_payment') then
+  if p_service_code is null or p_service_code not in ('internal_transfer','merchant_qr','fx_conversion','cash_in','cash_out','bill_payment') then
     raise exception 'FEE_SERVICE_INVALID';
   end if;
-  if p_currency not in ('HTG','USD','EUR') then
+  if p_currency is null or p_currency not in ('HTG','USD','EUR') then
     raise exception 'FEE_CURRENCY_INVALID';
   end if;
-  if p_fee_kind not in ('fixed','percentage') then
+  if p_fee_kind is null or p_fee_kind not in ('fixed','percentage') then
     raise exception 'FEE_KIND_INVALID';
   end if;
   if p_fee_value is null or p_fee_value <= 0 or p_fee_value <> round(p_fee_value,6) then
@@ -453,7 +453,7 @@ begin
   ) then
     raise exception 'SUPER_ADMIN_REQUIRED';
   end if;
-  if p_decision not in ('approve','reject') then raise exception 'FEE_DECISION_INVALID'; end if;
+  if p_decision is null or p_decision not in ('approve','reject') then raise exception 'FEE_DECISION_INVALID'; end if;
   if length(coalesce(p_decision_note,'')) > 500 then raise exception 'FEE_NOTE_TOO_LONG'; end if;
 
   select * into v_proposal
@@ -505,6 +505,8 @@ declare
   v_new_decl text := $new$v_approved integer;
   v_super_admin_approved integer;
 $new$;
+  v_old_required text := $old$v_required := case when v_request.amount >= v_threshold then 2 else 1 end;$old$;
+  v_new_required text := $new$v_required := case when v_request.currency <> 'HTG' or v_request.amount >= v_threshold then 2 else 1 end;$new$;
   v_old_status text := $old$v_status := case when v_approved >= v_required then 'approved' else 'awaiting_second_approval' end;$old$;
   v_new_status text := $new$select count(*) into v_super_admin_approved
         from public.withdrawal_approvals wa
@@ -521,10 +523,13 @@ $new$;
       end;$new$;
 begin
   v_definition := pg_get_functiondef('public.record_withdrawal_approval(uuid,uuid,text,text)'::regprocedure);
-  if position(v_old_decl in v_definition) = 0 or position(v_old_status in v_definition) = 0 then
+  if position(v_old_decl in v_definition) = 0 or
+     position(v_old_required in v_definition) = 0 or
+     position(v_old_status in v_definition) = 0 then
     raise exception 'WITHDRAWAL_SUPER_ADMIN_GUARD_NOT_FOUND';
   end if;
   v_definition := replace(v_definition,v_old_decl,v_new_decl);
+  v_definition := replace(v_definition,v_old_required,v_new_required);
   v_definition := replace(v_definition,v_old_status,v_new_status);
   execute v_definition;
 end;
