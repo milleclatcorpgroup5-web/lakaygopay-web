@@ -28,8 +28,14 @@ export async function onRequestGet({ request, env }) {
 
   // The PIN opens the basic Admin shell, but platform-wide KPI counts are
   // withheld until this same session has completed TOTP/AAL2 verification.
-  const elevated = await requireAdminAal2(request, env);
-  const metricsAvailable = !elevated.error;
+  let metricsAvailable = false;
+  try {
+    const elevated = await requireAdminAal2(request, env);
+    metricsAvailable = !elevated.error && elevated.user?.id === access.user.id;
+  } catch {
+    // Fail closed: transient Auth/network errors must not disclose KPIs.
+    metricsAvailable = false;
+  }
 
   try {
     const { url, secretKey } = config(env);
