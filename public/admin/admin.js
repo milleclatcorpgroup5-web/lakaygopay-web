@@ -1450,7 +1450,7 @@ async function saveRecoveredPassword(event) {
 }
 
 async function boot() {
-  const configResponse  const configResponse = await fetch("/api/config", { headers: { accept: "application/json" }, cache: "no-store" });
+  const configResponse = await fetch("/api/config", { headers: { accept: "application/json" }, cache: "no-store" });
   const config = await configResponse.json().catch(() => ({}));
   if (!configResponse.ok || !config.configured || !config.supabaseUrl || !config.publishableKey) {
     setNotice("#loginNotice", "Koneksyon backend lan poko pare.", "error");
