@@ -252,6 +252,7 @@ async function loadOverview(session) {
     if (isSuper) setNotice("#teamRolesNotice", lockMessage, "");
     if (canSeeSecretariat) setNotice("#secretariatNotice", lockMessage, "");
     if (canSeeOperations) setNotice("#adminRecordsNotice", lockMessage, "");
+    if (canSeeSystemHealth) setNotice("#systemHealthNotice", lockMessage, "error");
     return;
   }
 
