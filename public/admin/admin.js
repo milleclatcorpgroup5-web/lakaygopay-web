@@ -563,9 +563,8 @@ async function updateMfaStatus() {
       option.textContent = label + (factor.status === "verified" ? " · verifye" : " · poko verifye");
       selector.append(option);
     });
-    const preferred = totpFactors.find((factor) => factor.id === previous) ||
-      (aal2 ? totpFactors.find((factor) => factor.status === "unverified") : null) ||
-      verifiedFactors[0] || totpFactors[0];
+    const preferred = (aal2 ? totpFactors.find((factor) => factor.status === "unverified") : null) ||
+      totpFactors.find((factor) => factor.id === previous) || verifiedFactors[0] || totpFactors[0];
     if (preferred) selector.value = preferred.id;
     $("#adminMfaFactorLabel").hidden = totpFactors.length < 2;
   }
