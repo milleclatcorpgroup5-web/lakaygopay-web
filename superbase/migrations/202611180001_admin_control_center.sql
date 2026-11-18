@@ -38,6 +38,15 @@ alter table public.user_roles
 alter table public.wallets
   add column if not exists system_account_code text;
 
+-- Treasury wallet shells may be denominated in HTG, USD, or EUR. This does not
+-- enable foreign-currency customer wallets or ledger postings: ledger_entries,
+-- transfers and payout records remain HTG-only until FX controls are delivered.
+alter table public.wallets
+  drop constraint if exists wallets_currency_check;
+alter table public.wallets
+  add constraint wallets_currency_supported_check
+  check (currency in ('HTG','USD','EUR'));
+
 update public.wallets
    set system_account_code = 'clearing'
  where is_system = true
@@ -388,7 +397,7 @@ declare
 begin
   if not exists (
     select 1 from public.user_roles
-     where user_id = p_actor_user_id and role in ('super_admin','finance_admin')
+     where user_id = p_actor_user_id and role = 'finance_admin'
   ) then
     raise exception 'FINANCE_ROLE_REQUIRED';
   end if;
@@ -477,6 +486,9 @@ begin
    for update;
   if v_proposal.id is null then raise exception 'FEE_PROPOSAL_NOT_FOUND'; end if;
   if v_proposal.status <> 'proposed' then raise exception 'FEE_PROPOSAL_ALREADY_REVIEWED'; end if;
+  if v_proposal.proposed_by = p_super_admin_user_id then
+    raise exception 'MAKER_CANNOT_APPROVE_OWN_FEE_PROPOSAL';
+  end if;
 
   update public.platform_fee_proposals
      set status = case when p_decision = 'approve' then 'approved' else 'rejected' end,
@@ -520,6 +532,8 @@ declare
   v_new_decl text := $new$v_approved integer;
   v_super_admin_approved integer;
 $new$;
+  v_old_role text := $old$if not (public.has_role_for_user(p_admin_user_id,'admin') or public.has_role_for_user(p_admin_user_id,'finance_admin') or public.has_role_for_user(p_admin_user_id,'risk_admin')) then raise exception 'ADMIN_ROLE_REQUIRED'; end if;$old$;
+  v_new_role text := $new$if not (public.has_role_for_user(p_admin_user_id,'super_admin') or public.has_role_for_user(p_admin_user_id,'admin') or public.has_role_for_user(p_admin_user_id,'finance_admin') or public.has_role_for_user(p_admin_user_id,'risk_admin')) then raise exception 'ADMIN_ROLE_REQUIRED'; end if;$new$;
   v_old_required text := $old$v_required := case when v_request.amount >= v_threshold then 2 else 1 end;$old$;
   v_new_required text := $new$v_required := case when v_request.currency <> 'HTG' or v_request.amount >= v_threshold then 2 else 1 end;$new$;
   v_old_status text := $old$v_status := case when v_approved >= v_required then 'approved' else 'awaiting_second_approval' end;$old$;
@@ -539,11 +553,13 @@ $new$;
 begin
   v_definition := pg_get_functiondef('public.record_withdrawal_approval(uuid,uuid,text,text)'::regprocedure);
   if position(v_old_decl in v_definition) = 0 or
+     position(v_old_role in v_definition) = 0 or
      position(v_old_required in v_definition) = 0 or
      position(v_old_status in v_definition) = 0 then
     raise exception 'WITHDRAWAL_SUPER_ADMIN_GUARD_NOT_FOUND';
   end if;
   v_definition := replace(v_definition,v_old_decl,v_new_decl);
+  v_definition := replace(v_definition,v_old_role,v_new_role);
   v_definition := replace(v_definition,v_old_required,v_new_required);
   v_definition := replace(v_definition,v_old_status,v_new_status);
   execute v_definition;
