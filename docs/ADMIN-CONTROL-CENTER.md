@@ -83,6 +83,24 @@ The Super Admin can give a user the secretary role and separately assign that us
 7. Verify that all three revenue wallets exist and start at zero. Do not create real credits or real payouts for this test.
 8. Keep the production deployment and external payment rails unchanged until the branch, migration and tests are reviewed.
 
+## Consolidated dashboard and daily growth analytics
+
+The Super Admin workspace includes a consolidated navigation bar to reach the overview, growth analytics, operations, system health, finance/treasury, team roles, personal secretariat, daily flow and six control rules.
+
+The analytics endpoint is server-mediated and requires a verified Supabase session, fresh Admin PIN session and AAL2/TOTP. It returns aggregate counts only, not customer names or personal transaction details. The 7/30/90-day chart uses:
+
+- New registrations from `profiles.created_at`.
+- Active service users from distinct `ledger_transactions.initiated_by` values where the transaction is already posted.
+- Daily service transactions grouped by `transaction_type`.
+- “No service activity” as the number of accounts registered by that date that did not initiate a posted ledger transaction on that date. This is a daily activity measure, not a suspended/closed account status.
+- Current account-status counts from `profiles.account_status` and merchant counts from `merchants`.
+
+The chart is based on posted ledger activity. Pending requests and services that have not created a ledger transaction are not counted. The read path has a 10,000-row safety ceiling per window and explicitly flags partial results; a scalable SQL aggregate/reporting table is a later step when volume justifies it.
+
+The team-role module is available on the website to the Super Admin only. A person must first register a normal LakayGoPay account. The Super Admin can then search the staff directory, select the account, and grant or revoke an assignable role. The Super Admin role itself cannot be granted through this form; the database RPC and backend role checks remain authoritative.
+
+TOTP remains required for protected operational, analytics, finance and team data. When AAL2 is absent, the interface clearly describes how to enroll or verify an existing authenticator and disables protected controls. Successful verification is checked again by the server through `/api/admin/me`; the UI never treats a decoded client-side JWT claim as the only proof.
+
 ## Known V1 limits
 
 - No automatic fee calculation or posting exists.
