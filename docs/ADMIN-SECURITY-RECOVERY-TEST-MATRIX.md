@@ -2,9 +2,9 @@
 
 ## Scope
 
-This change is additive and is developed on `feat/admin-hardening-premium-control-center`. It does not activate payment rails, customer deposits, external withdrawals, FX settlement, fee collection or automatic fee posting. It does not reset or alter any live administrator's PIN, MFA factors, roles or wallet balances.
+The Admin Control Center, recovery and role-scope source changes are now on `main`. Source-code deployment does not apply Supabase SQL migrations. These changes do not activate payment rails, customer deposits, external withdrawals, FX settlement, fee collection or automatic fee posting. They do not reset or alter any live administrator's PIN, MFA factors, roles or wallet balances.
 
-The SQL migration `202611180002_admin_pin_recovery_and_role_coverage.sql` must be reviewed and tested against an isolated Supabase project before anyone considers applying it to Production. It corrects the PIN-attempt RPC role allow-list so every role already admitted by Admin RBAC can complete its PIN gate.
+Review and test these additive SQL migrations against an isolated Supabase project, in order, before applying them to Production: `202611180001_admin_control_center.sql`, `202611180002_admin_pin_recovery_and_role_coverage.sql`, and `202611180003_admin_ledger_audit_role_alignment.sql`. Migration 002 corrects the PIN-attempt RPC role allow-list so all eight Admin roles can complete the PIN gate. Migration 003 aligns Ledger-integrity audit authorization with the Super Admin, Admin, Finance, Risk, Accountant and Auditor API scopes.
 
 ## Authentication sequence
 
@@ -72,7 +72,8 @@ After reviewing and applying migrations to an isolated QA database in order:
 6. Confirm all three platform-revenue accounts exist for HTG, USD and EUR. They must start at zero in a clean QA database. These are treasury account shells, not customer FX wallets.
 7. Test Finance Admin fee proposal and Super Admin review with different user accounts. Confirm the same person cannot propose and approve the same proposal.
 8. Confirm the finance summary is read-only and sourced from the immutable ledger. No manual balance editing.
-9. Confirm all external payment and automatic fee engine flags remain false. Do not use production deposits, withdrawals or real external payment providers for these tests.
+9. Confirm `run_ledger_integrity_check(uuid)` permits Super Admin, Admin, Finance Admin, Risk Admin, Accountant and Auditor, while the function remains executable only by `service_role`.
+10. Confirm all external payment and automatic fee engine flags remain false. Do not use production deposits, withdrawals or real external payment providers for these tests.
 
 The existing accounting foundation is not a full general ledger product yet: chart of accounts, journals, formal period close, accounting exports and tax reporting remain separate product work. The daily workflow illustration is a procedure, not a scheduled automated close.
 
@@ -89,4 +90,4 @@ Test the Production UI only after an approved rollout. Before that, validate in 
 
 ## Rollout boundary
 
-This branch is not Production. Do not run the migration against the live Supabase project, merge the branch, or deploy to the Production Pages domain until the SQL review, role tests, recovery tests, static checks and UI review have passed and the Production rollout is explicitly authorized.
+The source changes are on `main`, but the three Supabase migrations have not been confirmed on Production and authenticated end-to-end checks remain outstanding. Do not treat the Admin Control Center as Production-ready until migration status, role separation, recovery flows, Cloudflare Pages deployment and authenticated UI tests are verified. Keep external payment rails and automatic fee posting disabled.
