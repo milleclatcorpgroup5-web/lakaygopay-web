@@ -20,6 +20,9 @@ A page refresh intentionally requires the Admin PIN again. PIN verification is t
 
 ### Forgotten account password
 
+- Email delivery is dependent on the Supabase Auth SMTP configuration and sender-domain deliverability. The code path can be checked statically, but a real email delivery test has not been run. Do not mark this recovery path accepted until the inbox and spam delivery test succeeds on a QA account.
+
+
 - The login page requests a Supabase password-recovery email.
 - Configure the exact Admin URL in Supabase Auth redirect allow-list: `https://lakaygopay-web.pages.dev/admin/` (and the trusted non-production callback URL used for QA).
 - The callback supports Supabase's implicit recovery tokens and the PKCE `?code=` callback. For PKCE, the code verifier must still exist in the same browser storage context that requested the email. The Admin enters a new password with at least 12 characters.
