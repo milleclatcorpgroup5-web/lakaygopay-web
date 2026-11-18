@@ -218,9 +218,12 @@ select 'fee_proposal_maker_checker' as check_type,
        position('role = ''finance_admin''' in
          pg_get_functiondef('public.propose_platform_fee(uuid,text,text,text,numeric,timestamp with time zone,numeric,numeric,text)'::regprocedure)
        ) > 0 as finance_admin_role_required,
-       position('role = ''super_admin''' in
+       position('or exists (' in
          pg_get_functiondef('public.propose_platform_fee(uuid,text,text,text,numeric,timestamp with time zone,numeric,numeric,text)'::regprocedure)
-       ) > 0 as super_admin_explicitly_excluded,
+       ) > 0
+       and position('role = ''super_admin''' in
+         pg_get_functiondef('public.propose_platform_fee(uuid,text,text,text,numeric,timestamp with time zone,numeric,numeric,text)'::regprocedure)
+       ) > 0 as has_super_admin_exclusion_guard,
        position('MAKER_CANNOT_APPROVE_OWN_FEE_PROPOSAL' in
          pg_get_functiondef('public.review_platform_fee_proposal(uuid,uuid,text,text)'::regprocedure)
        ) > 0 as prevents_self_approval;
@@ -239,9 +242,15 @@ select 'admin_role_management_rpc' as check_type,
        ) as service_role_can_call;
 
 select 'withdrawal_super_admin_guard' as check_type,
+       position('public.has_role_for_user(p_admin_user_id,''super_admin'')' in
+         pg_get_functiondef('public.record_withdrawal_approval(uuid,uuid,text,text)'::regprocedure)
+       ) > 0 as super_admin_can_be_approver,
+       position('v_request.currency <> ''HTG'' or v_request.amount >= v_threshold' in
+         pg_get_functiondef('public.record_withdrawal_approval(uuid,uuid,text,text)'::regprocedure)
+       ) > 0 as foreign_and_large_withdrawals_need_two_approvals,
        position('ur.role = ''super_admin''' in
          pg_get_functiondef('public.record_withdrawal_approval(uuid,uuid,text,text)'::regprocedure)
-       ) > 0 as super_admin_required_for_major_decisions;
+       ) > 0 as super_admin_required_in_major_approval_chain;
 
 select 'daily_financial_summary_rpc' as check_type,
        to_regprocedure('public.get_admin_daily_financial_summary(uuid,integer)') is not null as function_exists,
