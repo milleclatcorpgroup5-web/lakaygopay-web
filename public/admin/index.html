@@ -150,6 +150,7 @@
       <a href="#adminAnalyticsPanel">Evolisyon & aktivite</a>
       <a href="#adminRecordsPanel">Dosye</a>
       <a href="#systemHealthPanel">Sante sistèm</a>
+      <a id="liveLogsNav" href="#liveLogsPanel" hidden>Logs Live</a>
       <a href="#adminCardProgramPanel">Kat LakayGo</a>
       <a href="#adminConnectPanel">Connect · Patnè</a>
       <a href="#adminFinancePanel">Finans & bous</a>
@@ -182,6 +183,26 @@
       <strong id="systemHealthSummary" class="health-summary">Ap tann verifikasyon…</strong>
       <div id="systemHealthList" class="system-health-list" aria-live="polite"></div>
       <p id="systemHealthTimestamp" class="muted small"></p>
+    </section>
+
+    <section class="surface-card live-logs-panel" id="liveLogsPanel" aria-labelledby="liveLogsHeading" hidden>
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">SIVEYANS TEKNIK · RAFRECHISMAN OTOMATIK 15 SEGON</p>
+          <h2 id="liveLogsHeading">Logs Live · Jounal pwoblèm</h2>
+          <p class="muted">Erè API, pwoblèm koneksyon ak erè JavaScript parèt isit la. Modpas, PIN, token ak done finansye pa antre nan jounal la.</p>
+        </div>
+        <button id="liveLogsRefresh" class="button button-quiet" type="button">Rafrechi logs</button>
+      </div>
+      <div id="liveLogsNotice" class="notice" role="status" aria-live="polite">Ap prepare siveyans lan…</div>
+      <div id="liveLogsSummary" class="live-log-summary" aria-live="polite"></div>
+      <div class="admin-record-table-wrap live-logs-table-wrap">
+        <table class="admin-record-table live-logs-table">
+          <thead><tr><th>Dat / lè</th><th>Nivo</th><th>Modil</th><th>Evènman</th><th>Route</th><th>HTTP</th><th>Referans</th></tr></thead>
+          <tbody id="liveLogsBody"><tr><td colspan="7" class="muted">Pa gen evènman chaje.</td></tr></tbody>
+        </table>
+      </div>
+      <p id="liveLogsUpdatedAt" class="muted small"></p>
     </section>
 
 
@@ -795,6 +816,7 @@
     <footer class="admin-footer"><span>LakayGoPay · Sant Kontwòl</span><span>Entèfas administrasyon prive · Rejim tès</span></footer>
   </main>
 
-  <script type="module" src="/admin/admin.js?v=20261119-connect-01"></script>
+  <script src="/observability.js?v=20261119-logs-01"></script>
+  <script type="module" src="/admin/admin.js?v=20261119-logs-01"></script>
 </body>
 </html>
