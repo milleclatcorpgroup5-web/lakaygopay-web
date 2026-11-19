@@ -168,7 +168,7 @@ function translateError(code) {
     CONNECT_DATABASE_UNAVAILABLE: "Sèvis LakayGoPay Connect la poko disponib. Ekip la dwe verifye enstalasyon bazdone a.",
     CONNECT_PAYOUT_RECIPIENT_REQUIRED: "Idantifyan kliyan LakayGoPay la obligatwa."
   };
-  return map[code] || map[String(code || "").toUpperCase()] || code || "Yon erè rive. Eseye ankò.";
+  return map[code] || map[String(code || "").toUpperCase()] || "Nou pa kapab trete demann ou an kounye a. Tanpri eseye ankò pita." ;
 }
 async function sessionNow() {
   const result = await supabase.auth.getSession();
@@ -198,9 +198,14 @@ async function api(path, options) {
   const data = await response.json().catch(function () { return {}; });
   if (!response.ok) {
     if (options.idempotency && response.status < 500 && response.status !== 409) sessionStorage.removeItem(keyName);
-    const error = new Error(translateError(data.error || ("HTTP_" + response.status)));
+    const requestId = response.headers.get("x-request-id") || "";
+    const friendly = response.status >= 500
+      ? "Nou pa kapab trete demann ou an kounye a. Tanpri eseye ankò pita." + (requestId ? " Referans: " + requestId.slice(0, 16) : "")
+      : translateError(data.error || ("HTTP_" + response.status));
+    const error = new Error(friendly);
     error.status = response.status;
     error.code = data.error;
+    error.requestId = requestId || null;
     throw error;
   }
   if (options.idempotency) sessionStorage.removeItem(keyName);
