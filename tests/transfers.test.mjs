@@ -53,14 +53,19 @@ function response(data, status = 200) {
   });
 }
 
-function request(path, { pin = PIN, key = "transfer-test-key-01" } = {}) {
+function request(path, options = {}) {
+  const key = options.key || "transfer-test-key-01";
   const body = {
     sender_wallet_id: SENDER_WALLET,
     recipient_wallet_id: RECIPIENT_WALLET,
     amount: "12.50",
     note: "  tès  ",
   };
-  if (pin !== undefined) body.pin = pin;
+  if (Object.prototype.hasOwnProperty.call(options, "pin")) {
+    if (options.pin !== undefined) body.pin = options.pin;
+  } else {
+    body.pin = PIN;
+  }
   return new Request("https://lakaygopay.test" + path, {
     method: "POST",
     headers: {
