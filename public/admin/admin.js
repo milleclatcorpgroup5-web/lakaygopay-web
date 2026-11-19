@@ -1392,7 +1392,7 @@ const RECORD_COLUMNS = {
     ["currency","Lajan"],["balance","Balans"],["owner_user_id","ID pwopriyetè"],["merchant_id","ID machann"]
   ],
   ledger: [
-    ["transaction_type","Kalite"],["reference_code","Referans"],["status","Estati"],["entries","Ekriti debit/kredi"],["created_at","Dat"]
+    ["id","ID tranzaksyon"],["transaction_type","Kalite"],["status","Estati"],["entries","Ekriti debit/kredi"],["created_at","Dat"]
   ],
   withdrawals: [
     ["amount","Montan"],["currency","Lajan"],["destination_type","Destinasyon"],["status","Estati"],["requested_by","Mande pa"],["created_at","Dat"]
