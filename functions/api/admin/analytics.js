@@ -127,7 +127,6 @@ export async function onRequestGet({ request, env }) {
     const today = dayKey(new Date());
     const startDay = shiftDay(today, -(rawDays - 1));
     const startIso = localMidnightIso(startDay);
-    const startFilter = "&created_at=lt." + encodeURIComponent(startIso);
 
     const [
       totalUsers,
@@ -137,7 +136,6 @@ export async function onRequestGet({ request, env }) {
       closedAccounts,
       merchantsTotal,
       activeMerchants,
-      registrationsBefore,
       registrationWindow,
       transactionWindow
     ] = await Promise.all([
@@ -148,22 +146,14 @@ export async function onRequestGet({ request, env }) {
       countRows(url, secretKey, "profiles", "&account_status=eq.closed"),
       countRows(url, secretKey, "merchants"),
       countRows(url, secretKey, "merchants", "&status=eq.active"),
-      countRows(url, secretKey, "profiles", startFilter),
       readWindowRows(url, secretKey, "profiles", "id,created_at", startIso),
-      readWindowRows(url, secretKey, "ledger_transactions", "id,initiated_by,transaction_type,created_at", startIso, "&status=eq.posted")
+      readWindowRows(url, secretKey, "ledger_transactions", "id,transaction_type,created_at", startIso, "&status=eq.posted")
     ]);
 
     const buckets = new Map();
     for (let offset = 0; offset < rawDays; offset += 1) {
       const key = shiftDay(startDay, offset);
-      buckets.set(key, {
-        date: key,
-        registrations: 0,
-        active_users: 0,
-        service_transactions: 0,
-        inactive_users: 0,
-        _users: new Set()
-      });
+      buckets.set(key, { date: key, registrations: 0, service_transactions: 0 });
     }
 
     for (const row of registrationWindow.rows) {
@@ -172,31 +162,20 @@ export async function onRequestGet({ request, env }) {
       if (bucket) bucket.registrations += 1;
     }
 
-    const activeUsersInPeriod = new Set();
     const services = new Map();
     for (const row of transactionWindow.rows) {
       if (!row.created_at) continue;
       const key = dayKey(new Date(row.created_at));
       const bucket = buckets.get(key);
-      if (bucket) {
-        bucket.service_transactions += 1;
-        if (row.initiated_by) bucket._users.add(row.initiated_by);
-      }
-      if (row.initiated_by) activeUsersInPeriod.add(row.initiated_by);
+      if (bucket) bucket.service_transactions += 1;
       const type = String(row.transaction_type || "other");
       services.set(type, (services.get(type) || 0) + 1);
     }
 
-    let cumulativeRegistrations = registrationsBefore;
-    const timeline = [...buckets.values()].map((bucket) => {
-      cumulativeRegistrations += bucket.registrations;
-      bucket.active_users = bucket._users.size;
-      // Daily inactivity means a registered account with no posted ledger
-      // service initiated on that calendar day. It is not an account-status flag.
-      bucket.inactive_users = Math.max(0, cumulativeRegistrations - bucket.active_users);
-      delete bucket._users;
-      return bucket;
-    });
+    // The current Production ledger schema does not store a verified actor
+    // column on ledger_transactions. Do not infer unique active users from
+    // transaction counts; report that metric as unavailable instead.
+    const timeline = [...buckets.values()];
 
     const serviceBreakdown = [...services.entries()]
       .map(([type, count]) => ({ type, label: serviceLabel(type), count }))
@@ -220,14 +199,15 @@ export async function onRequestGet({ request, env }) {
         closed_accounts: closedAccounts,
         merchants_total: merchantsTotal,
         active_merchants: activeMerchants,
-        users_with_service: activeUsersInPeriod.size,
+        users_with_service: null,
         service_transactions: transactionWindow.total
       },
       timeline,
       service_breakdown: serviceBreakdown,
       notes: {
-        activity_definition: "Yon itilizatè aktif nan jounen an si li inisye omwen yon tranzaksyon ki deja poste nan ledger la.",
-        inactivity_definition: "Kont ki pa inisye okenn tranzaksyon ki deja poste pandan jounen an; sa pa vle di kont lan sispann oswa bloke.",
+        activity_definition: "Kantite tranzaksyon ki deja poste nan ledger la.",
+        user_activity_metric_available: false,
+        user_activity_note: "Production ledger la pa gen yon kolòn aktè verifye pou chak tranzaksyon; kantite itilizatè inik pa kalkile pou evite done ki ta ka twonpe.",
         service_definition: "Sèvis yo konte apati tranzaksyon ki deja poste nan ledger la. Demann ki poko finalize pa antre nan total sa a.",
         truncated,
         source: "profiles + posted ledger_transactions",
