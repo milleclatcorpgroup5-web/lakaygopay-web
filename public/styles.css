@@ -2,7 +2,7 @@
 *{box-sizing:border-box}
 html{min-width:320px;scroll-behavior:smooth}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-button,input,select{font:inherit}
+button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 [hidden]{display:none!important}
 .topbar{height:72px;padding:0 clamp(16px,4vw,52px);background:var(--white);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
@@ -37,7 +37,7 @@ button{cursor:pointer}
 .auth-tab.active{background:var(--white);color:var(--navy);box-shadow:0 2px 8px rgba(0,30,45,.08)}
 .form-stack{display:grid;gap:13px}
 .form-stack label,.profile-form label{display:grid;gap:6px;color:#365466;font-size:12px;font-weight:750}
-input,select{width:100%;min-width:0;border:1px solid #cfdee5;border-radius:10px;padding:12px 13px;background:#fff;color:var(--ink);font-size:14px;outline:none}
+input,select,textarea{width:100%;min-width:0;border:1px solid #cfdee5;border-radius:10px;padding:12px 13px;background:#fff;color:var(--ink);font-size:14px;outline:none}\ntextarea{min-height:96px;resize:vertical;line-height:1.5}\ntextarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(8,127,130,.1)}
 input:focus,select:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(8,127,130,.1)}
 input[readonly]{background:#f3f7f8;color:#718593}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
