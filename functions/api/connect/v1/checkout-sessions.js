@@ -1,5 +1,5 @@
-import { json,callRpc,validAmount,idempotencyKey } from "../../../../_shared/superbase.js";
-import { authenticatePartner,connectError,validConnectReference,validHttpsUrl } from "../../../../_shared/connect.js";
+import { json,callRpc,validAmount,idempotencyKey } from "../../../_shared/superbase.js";
+import { authenticatePartner,connectError,validConnectReference,validHttpsUrl } from "../../../_shared/connect.js";
 export async function onRequestPost({request,env}){try{const a=await authenticatePartner(request,env);if(a.error)return a.error;const {app,body}=a;
  if(!Array.isArray(app.capabilities)||!app.capabilities.includes("checkout"))return json({error:"CONNECT_CAPABILITY_DENIED"},403);
  const key=idempotencyKey(request);if(!key)return json({error:"IDEMPOTENCY_KEY_REQUIRED"},400);
