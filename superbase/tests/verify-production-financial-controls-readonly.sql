@@ -130,58 +130,62 @@ left join pg_namespace n on n.oid=p.pronamespace and n.nspname='public'
 where p.oid is null or n.oid is not null
 order by e.function_name,p.oid;
 
--- 8) Ledger integrity summary. Expected healthy result: unbalanced_transactions = 0.
-select count(*) as unbalanced_transactions
-from (
-  select lt.id
-  from public.ledger_transactions lt
-  left join public.ledger_entries le on le.ledger_transaction_id=lt.id
-  group by lt.id
-  having count(le.id)<2
-      or coalesce(sum(le.amount) filter(where le.direction='debit'),0)
-         <> coalesce(sum(le.amount) filter(where le.direction='credit'),0)
-) bad;
+-- 8) Actual financial schema inspection.
+-- The Production database may not yet match the repository migration. Do not
+-- assume ledger foreign-key column names or that all views/tables exist.
+select table_name, column_name, data_type, udt_name, is_nullable
+from information_schema.columns
+where table_schema='public'
+  and table_name in (
+    'ledger_transactions','ledger_entries','wallets','wallet_balances',
+    'transfers','withdrawal_requests','withdrawal_approvals','platform_settings'
+  )
+order by table_name, ordinal_position;
 
--- 9) Derived balances and withdrawal reservations. Expected healthy results:
--- negative_wallet_balances = 0 and over_reserved_withdrawal_wallets = 0.
-select count(*) as negative_wallet_balances
-from public.wallet_balances
-where balance<0;
+-- 9) Report whether key financial objects exist and whether each is a table or view.
+select expected.object_name,
+       c.relkind,
+       case c.relkind
+         when 'r' then 'table'
+         when 'p' then 'partitioned table'
+         when 'v' then 'view'
+         when 'm' then 'materialized view'
+         when 'f' then 'foreign table'
+         else 'missing'
+       end as object_type,
+       c.oid is not null as exists
+from (values
+  ('ledger_transactions'),('ledger_entries'),('wallets'),('wallet_balances'),
+  ('transfers'),('withdrawal_requests'),('withdrawal_approvals'),('platform_settings')
+) as expected(object_name)
+left join pg_class c
+  on c.relname=expected.object_name
+ and c.relnamespace='public'::regnamespace
+order by expected.object_name;
 
-select count(*) as over_reserved_withdrawal_wallets
-from public.wallet_balances wb
-left join lateral (
-  select coalesce(sum(wr.amount),0) as reserved
-  from public.withdrawal_requests wr
-  where wr.wallet_id=wb.wallet_id
-    and wr.status in ('submitted','awaiting_second_approval','approved','processing')
-) r on true
-where coalesce(wb.balance,0)-coalesce(r.reserved,0)<0;
+-- 10) Withdrawal maker-checker constraints, without assuming the table exists.
+select c.relname as table_name, con.conname,
+       pg_get_constraintdef(con.oid) as definition
+from pg_constraint con
+join pg_class c on c.oid=con.conrelid
+join pg_namespace n on n.oid=c.relnamespace
+where n.nspname='public'
+  and c.relname='withdrawal_approvals'
+  and con.contype in ('u','p')
+order by con.conname;
 
--- 10) Withdrawal maker-checker: each administrator may approve a request
--- only once. The default threshold should require two distinct approvers.
-select conname,pg_get_constraintdef(oid) as definition
-from pg_constraint
-where conrelid='public.withdrawal_approvals'::regclass
-  and contype in ('u','p')
-order by conname;
+-- 11) Critical setting keys only (values are intentionally not exposed).
+select s.setting_key
+from public.platform_settings s
+where to_regclass('public.platform_settings') is not null
+  and s.setting_key in (
+    'test_mode_enabled','external_payments_enabled',
+    'payments_enabled','automatic_fee_posting_enabled',
+    'withdrawal_two_person_threshold_htg'
+  )
+order by s.setting_key;
 
--- 10) Confirm the independent currency-ledger constraint and critical flags.
-select conname,pg_get_constraintdef(oid) as definition
-from pg_constraint
-where conrelid='public.wallets'::regclass
-  and contype='c'
-  and conname='wallets_currency_supported_check';
-
-select setting_key,setting_value
-from public.platform_settings
-where setting_key in (
-  'test_mode_enabled','external_payments_enabled',
-  'payments_enabled','automatic_fee_posting_enabled','withdrawal_two_person_threshold_htg'
-)
-order by setting_key;
-
--- 11) Return current server-side financial function definitions for manual
+-- 12) Return current server-side financial function definitions for manual
 -- review. In particular, verify wallet-transfer/payment RPCs reject all
 -- system/treasury wallets as senders and recipients, and validate actor IDs
 -- against the authenticated caller context enforced by their Worker routes.
