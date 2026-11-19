@@ -37,7 +37,9 @@ button{cursor:pointer}
 .auth-tab.active{background:var(--white);color:var(--navy);box-shadow:0 2px 8px rgba(0,30,45,.08)}
 .form-stack{display:grid;gap:13px}
 .form-stack label,.profile-form label{display:grid;gap:6px;color:#365466;font-size:12px;font-weight:750}
-input,select,textarea{width:100%;min-width:0;border:1px solid #cfdee5;border-radius:10px;padding:12px 13px;background:#fff;color:var(--ink);font-size:14px;outline:none}\ntextarea{min-height:96px;resize:vertical;line-height:1.5}\ntextarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(8,127,130,.1)}
+input,select,textarea{width:100%;min-width:0;border:1px solid #cfdee5;border-radius:10px;padding:12px 13px;background:#fff;color:var(--ink);font-size:14px;outline:none}
+textarea{min-height:96px;resize:vertical;line-height:1.5}
+textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(8,127,130,.1)}
 input:focus,select:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(8,127,130,.1)}
 input[readonly]{background:#f3f7f8;color:#718593}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
