@@ -12,11 +12,11 @@ const RESOURCE_BY_TYPE = {
   },
   wallets: {
     roles: ["admin","finance_admin","accountant","auditor"],
-    resource: "wallet_balances?select=wallet_id,owner_user_id,merchant_id,currency,balance,created_at,is_system,system_account_code&order=created_at.desc&limit=100"
+    resource: "wallet_balances?select=wallet_id,owner_user_id,merchant_id,currency,balance,created_at&order=created_at.desc&limit=100"
   },
   ledger: {
     roles: ["admin","finance_admin","accountant","auditor"],
-    resource: "ledger_transactions?select=id,transaction_type,reference_code,status,created_at,ledger_entries(direction,amount,currency)&order=created_at.desc&limit=75"
+    resource: "ledger_transactions?select=id,transaction_type,status,created_at,ledger_entries(direction,amount,currency)&order=created_at.desc&limit=75"
   },
   withdrawals: {
     roles: ["admin","finance_admin","risk_admin"],
