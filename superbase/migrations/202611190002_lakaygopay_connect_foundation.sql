@@ -301,7 +301,7 @@ end; $$;
 
 
 create or replace function public.connect_reject_payout(p_actor_user_id uuid,p_payout_id uuid)
-returns jsonb language plpgsql security definer set search_path = '' as $
+returns jsonb language plpgsql security definer set search_path = '' as $$
 declare v_payout public.connect_payout_requests%rowtype;
 begin
   select * into v_payout from public.connect_payout_requests where id=p_payout_id for update;
@@ -316,7 +316,7 @@ begin
   values (p_actor_user_id,'connect.payout.rejected','connect_payout',v_payout.id,
     jsonb_build_object('app_id',v_payout.app_id,'amount',v_payout.amount,'currency',v_payout.currency));
   return jsonb_build_object('payout_id',v_payout.id,'status','rejected');
-end; $;
+end; $$;
 
 create or replace function public.connect_accept_payout(p_actor_user_id uuid,p_payout_id uuid,p_idempotency_key text)
 returns jsonb language plpgsql security definer set search_path = '' as $$
