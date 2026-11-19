@@ -34,7 +34,6 @@ on conflict (tier_code) do update set
   sort_order = excluded.sort_order,
   description = excluded.description,
   benefits = excluded.benefits,
-  application_open = excluded.application_open,
   virtual_supported = excluded.virtual_supported,
   physical_supported = excluded.physical_supported,
   updated_at = now();

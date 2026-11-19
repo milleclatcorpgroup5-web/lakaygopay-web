@@ -137,6 +137,8 @@ function translateError(code) {
     CARD_APPLICATION_ALREADY_EXISTS: "Ou deja gen yon demann kat ki an kou.",
     CARD_APPLICATION_CLOSED: "Enskripsyon pou klasman sa a fèmen pou kounye a.",
     CARD_TIER_INVALID: "Klasman kat ou chwazi a pa disponib.",
+    CARD_FORMAT_INVALID: "Chwazi yon kalite kat ki valab.",
+    CARD_PROGRAM_DATA_UNAVAILABLE: "Sèvis enfòmasyon kat la pa disponib kounye a.",
     CARD_FORMAT_UNAVAILABLE: "Kalite kat ou chwazi a poko disponib pou klasman sa a.",
     CARD_APPLICATION_FAILED: "Nou pa kapab anrejistre enterè kat la kounye a."
   };
@@ -309,6 +311,9 @@ function renderCardProgram() {
     select.append(option);
   });
   if (selectedApplication) select.value = selectedApplication.tier_code;
+  $("#cardTierGrid [data-card-tier-select]").forEach(function (node) {
+    node.setAttribute("aria-pressed", String(node.dataset.cardTierSelect === select.value));
+  });
   const submit = $("#cardInterestSubmit");
   const format = $("#cardFormSelect");
   const schemaReady = Boolean(program.schema_ready);

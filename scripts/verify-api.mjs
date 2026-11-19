@@ -34,12 +34,14 @@ async function check(name, path, expectedStatuses, options = {}) {
 await check("health endpoint", "/api/health", [200]);
 await check("public client config", "/api/config", [200]);
 await check("private profile refuses anonymous access", "/api/profile", [401], { auth: false });
+await check("card program refuses anonymous access", "/api/cards", [401], { auth: false });
 
 if (token) {
   await check("profile endpoint", "/api/profile", [200]);
   await check("wallet endpoint", "/api/wallets", [200]);
   await check("merchant endpoint", "/api/merchant/mine", [200]);
   await check("payments endpoint", "/api/payments", [200]);
+  await check("card program catalogue endpoint", "/api/cards", [200]);
   await check("withdrawals endpoint", "/api/withdrawals", [200]);
   await check("admin role endpoint", "/api/admin/me", [200]);
   await check("transfer validation rejects malformed wallet IDs", "/api/transfers", [400], {
