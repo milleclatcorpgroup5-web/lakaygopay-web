@@ -17,7 +17,7 @@ const TABLE_CHECKS = [
   { id: "card_customer_limits", label: "Plafon kat kliyan apwouve", resource: "card_customer_limits?select=user_id,approved_limit_htg,tier_code,star_level,assessment_status&limit=0" },
   { id: "card_limit_history", label: "Istwa chanjman plafon kat", resource: "card_limit_history?select=id,user_id,changed_by,new_limit_htg,reason&limit=0" },
   { id: "card_applications", label: "Demann kat kliyan", resource: "card_applications?select=id,user_id,tier_code,star_level,status&limit=0" },
-  { id: "card_instruments", label: "Dosye enstriman kat (emisyon fèmen)", resource: "card_instruments?select=id,user_id,status&limit=0" },
+  { id: "card_instruments", label: "Dosye enstriman kat (emisyon fèmen)", resource: "card_instruments?select=id,user_id,card_status&limit=0" },
   { id: "wallets", label: "Bous", resource: "wallet_balances?select=wallet_id,owner_user_id,merchant_id,currency,balance,created_at&limit=0" },
   { id: "ledger", label: "Ledger tranzaksyon", resource: "ledger_transactions?select=id&limit=0" },
   { id: "withdrawals", label: "Demann retrè", resource: "withdrawal_requests?select=id&limit=0" },
