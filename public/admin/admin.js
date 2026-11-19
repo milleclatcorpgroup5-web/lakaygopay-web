@@ -819,12 +819,11 @@ function renderGrowthChart(rows, emptyMessage = "") {
   const title = make("title", {});
   title.textContent = "Evolisyon itilizatè ak aktivite sèvis";
   const description = make("desc", {});
-  description.textContent = "Grafik sou nouvo kont, itilizatè sèvis aktif ak kont san aktivite sèvis.";
+  description.textContent = "Grafik sou nouvo kont ak kantite tranzaksyon sèvis ki deja poste.";
 
   const series = [
     { key: "registrations", label: "Nouvo kont", color: "#f0c276" },
-    { key: "active_users", label: "Itilizatè sèvis aktif", color: "#63d8c5" },
-    { key: "inactive_users", label: "San aktivite sèvis", color: "#73aef1" }
+    { key: "service_transactions", label: "Tranzaksyon sèvis poste", color: "#63d8c5" }
   ];
 
   const sourceRows = Array.isArray(rows) ? rows : [];
@@ -945,8 +944,9 @@ async function loadAdminAnalytics(session) {
     const data = await adminRequest("/api/admin/analytics?days=" + days, session);
     const summary = data.summary || {};
     const format = (value) => {
+      if (value === null || value === undefined) return "N/D";
       const number = Number(value);
-      return Number.isFinite(number) ? number.toLocaleString("fr-HT") : "0";
+      return Number.isFinite(number) ? number.toLocaleString("fr-HT") : "N/D";
     };
 
     $("#analyticsRegistered").textContent = format(summary.registered_users);
@@ -977,7 +977,7 @@ async function loadAdminAnalytics(session) {
 
     const note = data.notes?.truncated
       ? "Done yo chaje an pati (limit sekirite 10 000 liy). Peryòd la ka mande yon rapò agregasyon SQL lè platfòm lan grandi."
-      : "Analiz " + days + " jou chaje. Itilizatè aktif = omwen yon tranzaksyon ki deja poste nan jounen an; inaktif = pa gen tranzaksyon poste nan jounen an.";
+      : "Analiz " + days + " jou chaje. Grafik la montre nouvo kont ak tranzaksyon sèvis ki deja poste. Kantite itilizatè inik ki fè tranzaksyon rete N/D paske Production pa estoke yon aktè verifye sou chak antre ledger.";
     setNotice("#analyticsNotice", note, data.notes?.truncated ? "error" : "success");
   } catch (error) {
     const message = explainError(error.code || error.message);
@@ -1392,7 +1392,7 @@ const RECORD_COLUMNS = {
     ["currency","Lajan"],["balance","Balans"],["owner_user_id","ID pwopriyetè"],["merchant_id","ID machann"]
   ],
   ledger: [
-    ["transaction_type","Kalite"],["reference_code","Referans"],["status","Estati"],["entries","Ekriti debit/kredi"],["created_at","Dat"]
+    ["id","ID tranzaksyon"],["transaction_type","Kalite"],["status","Estati"],["entries","Ekriti debit/kredi"],["created_at","Dat"]
   ],
   withdrawals: [
     ["amount","Montan"],["currency","Lajan"],["destination_type","Destinasyon"],["status","Estati"],["requested_by","Mande pa"],["created_at","Dat"]

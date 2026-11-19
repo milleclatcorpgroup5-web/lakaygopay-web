@@ -12,6 +12,7 @@ let currentWithdrawals = [];
 let currentMerchantPayments = [];
 let currentCardProgram = { schema_ready: false, tiers: [], application: null };
 let currentConnectPayouts = [];
+let currentAgentStatus = null;
 
 const FALLBACK_CARD_TIERS = [
   {tier_code:"BASIC",display_name:"LakayGo Basic",sort_order:1,min_limit_htg:0,max_limit_htg:999999.99,description:"Plafon HTG: 0 rive 999,999.99.",benefits:["Kat klas baz","Bous HTG, USD ak EUR","Kontwòl sekirite"],star_levels:[{star_level:1,star_label:"Basic 1 etwal",min_limit_htg:0,max_limit_htg:333333.33},{star_level:2,star_label:"Basic 2 etwal",min_limit_htg:333333.34,max_limit_htg:666666.66},{star_level:3,star_label:"Basic 3 etwal",min_limit_htg:666666.67,max_limit_htg:999999.99}],application_open:true,issuance_enabled:false,virtual_supported:true,physical_supported:true},
@@ -57,7 +58,10 @@ function statusText(value) {
     eligible: "Prekalifye — pa yon kat aktif",
     declined: "Pa apwouve",
     withdrawn: "Retire",
-    closed: "Fèmen"
+    closed: "Fèmen",
+    submitted: "Soumèt",
+    approved: "Apwouve",
+    cancelled: "Anile"
   };
   return map[value] || value || "Pa disponib";
 }
@@ -117,6 +121,14 @@ function translateError(code) {
     MERCHANT_NOT_ACTIVE: "Kont machann sa a poko aktive.",
     ACCOUNT_SUSPENDED: "Kont sa a sispann. Kontakte sipò LakayGoPay.",
     ACCOUNT_NOT_ACTIVE: "Kont sa a pa aktif. Kontakte sipò LakayGoPay.",
+    AGENT_ALREADY_ACTIVE: "Kont ou deja gen aksè ajan. Kontakte administrasyon an pou nenpòt chanjman.",
+    DEPARTMENT_REQUIRED: "Antre depatman kote w ap sèvi a.",
+    COMMUNE_REQUIRED: "Antre komin kote w ap sèvi a.",
+    AGENT_ADDRESS_TOO_LONG: "Adrès ajan an depase limit 200 karaktè.",
+    AGENT_MOTIVATION_TOO_LONG: "Eksplikasyon motivasyon an depase limit 1,000 karaktè.",
+    AGENT_STATUS_UNAVAILABLE: "Estati ajan an pa disponib kounye a. Rafrechi paj la.",
+    AGENT_APPLICATIONS_UNAVAILABLE: "Lis aplikasyon ajan yo pa disponib pou administrasyon an.",
+    AGENT_APPLICATION_NOT_FOUND: "Nou pa jwenn aplikasyon ajan sa a.",
     PAYMENT_REQUEST_NOT_FOUND: "Nou pa jwenn demann QR sa a.",
     PAYMENT_REQUEST_NOT_PAYABLE: "Demann QR sa a deja peye oswa li pa disponib.",
     PAYMENT_REQUEST_EXPIRED: "Demann QR sa a ekspire.",
@@ -224,7 +236,8 @@ async function loadDashboard(session) {
     api("/api/withdrawals"),
     api("/api/payments"),
     api("/api/cards"),
-    api("/api/connect/payouts")
+    api("/api/connect/payouts"),
+    api("/api/agents/status")
   ]);
   if (results[0].status === "rejected") throw results[0].reason;
   if (results[1].status === "rejected") throw results[1].reason;
@@ -238,6 +251,7 @@ async function loadDashboard(session) {
     ? results[7].value
     : { schema_ready: false, tiers: FALLBACK_CARD_TIERS, application: null };
   currentConnectPayouts = results[8].status === "fulfilled" ? (results[8].value.payouts || []) : [];
+  currentAgentStatus = results[9].status === "fulfilled" ? results[9].value : { unavailable: true };
   const ownedMerchantIds = new Set(currentMerchants.map(function (merchant) { return merchant.id; }));
   currentMerchantPayments = paymentRecords.filter(function (payment) {
     return ownedMerchantIds.has(payment.merchant_id);
@@ -250,6 +264,7 @@ async function loadDashboard(session) {
   renderWallets();
   renderCardProgram();
   renderConnectPayouts();
+  renderAgentStatus(currentAgentStatus);
   renderMerchants(session);
   renderWithdrawals(currentWithdrawals);
   renderMerchantPayments(currentMerchantPayments);
@@ -379,7 +394,7 @@ function renderCardProgram() {
   else if(!hasApprovedLimit)message("#cardProgramNotice","Klasman ak etwal ou poko apwouve. Ou pap wè lòt kat klasman yo; se sèlman kat nivo pa ou a k ap parèt apre validasyon.","");
   else if(activeApplication)message("#cardProgramNotice","Demann ou anrejistre pou "+assignedTier.display_name+" "+starText(assignment.star_level)+". Sa poko vle di yon kat apwouve oswa emèt.","success");
   else if(!assignedTier.application_open)message("#cardProgramNotice","Demann kat pou klasman sa a fèmen tanporèman.","");
-  else message("#cardProgramNotice","Ou wè sèlman kat ki koresponn ak klasman ak etwal LakayGo apwouve pou kont ou.","success");
+  else message("#cardProgramNotice","Ou wè sèlman klasman ak etwal LakayGo apwouve pou kont ou. Sa se yon demann enterè sèlman: pa gen okenn kat fizik oswa vityèl k ap emèt, aktive oswa sèvi pou peye kounye a.","success");
 
   const status=$("#cardApplicationStatus");
   if(application){status.textContent="Estati demann: "+statusText(application.status)+" · "+(assignedTier?.display_name||application.tier_code)+" · "+starText(application.star_level)+" · "+application.requested_form+" · Plafon lè demann: "+formatHtgLimit(application.approved_limit_htg)+" · "+new Date(application.created_at).toLocaleDateString("fr-HT");status.hidden=false;}
@@ -514,6 +529,77 @@ function renderMerchants(session) {
     ? "Machann ou aktive. Ou kapab kreye yon demann QR HTG pou peman entèn."
     : "Pwofil machann lan dwe aktive pa administratè anvan li kapab resevwa peman QR.";
 }
+function renderAgentStatus(data) {
+  const banner = $("#agentStatusBanner");
+  const form = $("#agentApplicationForm");
+  const history = $("#agentApplicationHistory");
+  if (!banner || !form || !history) return;
+
+  history.replaceChildren();
+  if (!data || data.unavailable) {
+    form.hidden = true;
+    message("#agentStatusBanner", "Nou pa kapab verifye estati aplikasyon ajan ou kounye a. Rafrechi paj la; fòm lan rete fèmen jiskaske verifikasyon an reyisi.", "error");
+    return;
+  }
+
+  const agent = data.agent || null;
+  if (agent) {
+    form.hidden = true;
+    const state = statusText(agent.status);
+    const code = agent.agent_code ? " · Kòd ajan: " + agent.agent_code : "";
+    message("#agentStatusBanner",
+      "Kont ajan ou: " + state + code +
+      (agent.approved_at ? " · Aktive depi " + new Date(agent.approved_at).toLocaleDateString("fr-HT") : "") +
+      (agent.status === "active"
+        ? ". Aksè ajan an anrejistre. Operasyon depo/retrè ak lajan reyèl rete dezaktive jiskaske patnè ak otorizasyon nesesè yo valide."
+        : ". Kontakte administrasyon LakayGoPay pou enfòmasyon sou estati kont ajan an."),
+      agent.status === "active" ? "success" : "error"
+    );
+  } else {
+    const applications = Array.isArray(data.applications) ? data.applications : [];
+    const openApplication = applications.find((item) => ["submitted", "under_review"].includes(item.status));
+    form.hidden = Boolean(openApplication);
+    if (openApplication) {
+      message("#agentStatusBanner",
+        "Nou resevwa aplikasyon ajan ou a. Estati: " + statusText(openApplication.status) +
+        ". Ekip administrasyon an poko pran desizyon final la.",
+        "success"
+      );
+    } else {
+      message("#agentStatusBanner",
+        "Ou kapab soumèt yon aplikasyon pou vin ajan LakayGo. Soumèt aplikasyon an pa bay aksè otomatik; administrasyon an dwe verifye epi apwouve li.",
+        ""
+      );
+    }
+  }
+
+  const applications = Array.isArray(data.applications) ? data.applications : [];
+  if (!applications.length) {
+    const empty = document.createElement("p");
+    empty.className = "field-hint";
+    empty.textContent = "Pa gen aplikasyon ajan ki anrejistre sou kont sa a.";
+    history.append(empty);
+    return;
+  }
+
+  applications.forEach((item) => {
+    const row = document.createElement("article");
+    row.className = "compact-row";
+    const title = document.createElement("strong");
+    title.textContent = statusText(item.status) + " · " + (item.department || "Depatman pa presize");
+    const detail = document.createElement("span");
+    detail.textContent = (item.commune || "Komin pa presize") +
+      (item.created_at ? " · " + new Date(item.created_at).toLocaleDateString("fr-HT") : "");
+    row.append(title, detail);
+    if (item.admin_note) {
+      const note = document.createElement("small");
+      note.textContent = "Nòt administrasyon: " + item.admin_note;
+      row.append(note);
+    }
+    history.append(row);
+  });
+}
+
 function renderWithdrawals(rows) {
   const list = $("#withdrawalsList");
   if (!list) return;
@@ -1433,6 +1519,41 @@ function wireForms() {
     } finally {
       $("#withdrawPin").value = "";
       button.disabled = !pinConfigured;
+    }
+  });
+
+  $("#agentApplicationForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    if (currentAgentStatus?.unavailable) {
+      message("#agentApplicationNotice", "Rafrechi estati aplikasyon an anvan ou soumèt fòm lan.", "error");
+      return;
+    }
+    const button = $("#agentApplicationSubmit");
+    const body = {
+      contact_phone: $("#agentContactPhone").value.trim(),
+      department: $("#agentDepartment").value.trim(),
+      commune: $("#agentCommune").value.trim(),
+      business_address: $("#agentBusinessAddress").value.trim() || null,
+      motivation: $("#agentMotivation").value.trim() || null
+    };
+    button.disabled = true;
+    message("#agentApplicationNotice", "Ap voye aplikasyon ajan ou a pou verifikasyon…", "");
+    try {
+      const result = await api("/api/agents/apply", { method: "POST", body });
+      const data = await api("/api/agents/status");
+      currentAgentStatus = data;
+      renderAgentStatus(data);
+      $("#agentApplicationForm").reset();
+      message("#agentApplicationNotice",
+        result.application?.already_submitted
+          ? "Ou te deja gen yon aplikasyon ouvè. Men estati aktyèl li."
+          : "Aplikasyon ajan ou a soumèt avèk siksè. Li ap tann verifikasyon administrasyon an.",
+        "success"
+      );
+    } catch (error) {
+      message("#agentApplicationNotice", translateError(error.code || error.message), "error");
+    } finally {
+      button.disabled = false;
     }
   });
 

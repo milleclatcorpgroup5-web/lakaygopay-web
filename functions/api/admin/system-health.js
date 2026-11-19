@@ -10,11 +10,19 @@ const TABLE_CHECKS = [
     resource: "admin_security?select=user_id,pin_hash,pin_salt,pin_iterations,failed_attempts,locked_until,last_verified_at,last_verified_session_id&limit=0"
   },
   { id: "merchants", label: "Pwofil machann", resource: "merchants?select=id&limit=0" },
+  { id: "agent_applications", label: "Aplikasyon ajan", resource: "agent_applications?select=id,applicant_user_id,status&limit=0" },
+  { id: "agent_accounts", label: "Kont ajan ak estati", resource: "agent_accounts?select=id,user_id,agent_code,status&limit=0" },
+  { id: "card_tiers", label: "Katalòg kat LakayGo", resource: "card_program_tiers?select=tier_code,issuance_enabled,min_limit_htg,max_limit_htg&limit=0" },
+  { id: "card_stars", label: "Nivo etwal kat", resource: "card_tier_stars?select=tier_code,star_level,min_limit_htg,max_limit_htg&limit=0" },
+  { id: "card_customer_limits", label: "Plafon kat kliyan apwouve", resource: "card_customer_limits?select=user_id,approved_limit_htg,tier_code,star_level,assessment_status&limit=0" },
+  { id: "card_limit_history", label: "Istwa chanjman plafon kat", resource: "card_limit_history?select=id,user_id,changed_by,new_limit_htg,reason&limit=0" },
+  { id: "card_applications", label: "Demann kat kliyan", resource: "card_applications?select=id,user_id,tier_code,star_level,status&limit=0" },
+  { id: "card_instruments", label: "Dosye enstriman kat (emisyon fèmen)", resource: "card_instruments?select=id,user_id,card_status&limit=0" },
   { id: "wallets", label: "Bous", resource: "wallet_balances?select=wallet_id,owner_user_id,merchant_id,currency,balance,created_at&limit=0" },
   { id: "ledger", label: "Ledger tranzaksyon", resource: "ledger_transactions?select=id&limit=0" },
   { id: "withdrawals", label: "Demann retrè", resource: "withdrawal_requests?select=id&limit=0" },
   { id: "audit_logs", label: "Jounal audit", resource: "audit_logs?select=id&limit=0" },
-  { id: "treasury_revenue_wallets", label: "Bous revni antrepriz HTG/USD/EUR", expectCurrencies: ["HTG","USD","EUR"], resource: "wallet_balances?select=wallet_id,currency,balance,system_account_code&is_system=eq.true&system_account_code=eq.platform_revenue&limit=3" },
+  { id: "treasury_revenue_wallets", label: "Bous revni antrepriz HTG/USD/EUR", expectCurrencies: ["HTG","USD","EUR"], optional: true, resource: "wallet_balances?select=wallet_id,currency,balance,system_account_code&is_system=eq.true&system_account_code=eq.platform_revenue&limit=3" },
   { id: "secretariat_access", label: "Otorizasyon sekretarya prive", resource: "admin_secretariat_access?select=id,owner_user_id,assistant_user_id,active&limit=0" },
   { id: "secretariat_items", label: "Depo ajanda ak travay pèsonèl", resource: "admin_secretariat_items?select=id,owner_user_id,item_type,status&limit=0" },
   { id: "fee_proposals", label: "Istwa pwopozisyon tarif", resource: "platform_fee_proposals?select=id,service_code,currency,version,status&limit=0" },
@@ -71,7 +79,7 @@ async function checkTable(url, secretKey, item) {
       const body = await response.json();
       code = String(body?.code || "");
     } catch {}
-    if (item.optional && ["PGRST205", "42P01"].includes(code)) {
+    if (item.optional && ["PGRST205", "42P01", "PGRST204", "42703"].includes(code)) {
       return {
         id: item.id,
         label: item.label,

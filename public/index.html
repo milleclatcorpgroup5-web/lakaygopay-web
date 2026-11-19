@@ -403,12 +403,44 @@
       <div id="activityList" class="activity-list"><div class="loading-card">Ap chaje istwa a…</div></div>
     </section>
 
+    <section id="agentSection" class="surface-card">
+      <div class="section-heading">
+        <div><p class="eyebrow">REZO AJAN LAKAYGO</p><h2>Vin tounen ajan LakayGo</h2></div>
+        <span class="subtle-tag">APLIKASYON AK VERIFIKASYON</span>
+      </div>
+      <p class="field-hint">Moun ki vle sèvi kòm ajan kapab soumèt enfòmasyon yo isit la. Administrasyon LakayGoPay ap verifye aplikasyon an anvan li bay aksè.</p>
+      <div id="agentStatusBanner" class="notice" role="status" aria-live="polite">Ap verifye estati aplikasyon ajan ou…</div>
+      <form id="agentApplicationForm" class="form-stack" hidden>
+        <label>Nimewo telefòn kontak
+          <input id="agentContactPhone" type="tel" minlength="8" maxlength="24" autocomplete="tel" placeholder="+509 ..." required>
+        </label>
+        <div class="field-row">
+          <label>Depatman
+            <input id="agentDepartment" type="text" minlength="2" maxlength="80" placeholder="Egzanp: Lwès" required>
+          </label>
+          <label>Komin
+            <input id="agentCommune" type="text" minlength="2" maxlength="100" placeholder="Egzanp: Léogâne" required>
+          </label>
+        </div>
+        <label>Adrès sèvis (opsyonèl)
+          <input id="agentBusinessAddress" type="text" maxlength="200" placeholder="Katye oswa adrès kote w ap sèvi">
+        </label>
+        <label>Poukisa ou vle vin ajan? (opsyonèl)
+          <textarea id="agentMotivation" maxlength="1000" rows="3" placeholder="Eksplike eksperyans ou oswa sèvis ou ta renmen bay."></textarea>
+        </label>
+        <button id="agentApplicationSubmit" class="button button-primary full" type="submit">Soumèt aplikasyon ajan</button>
+      </form>
+      <div id="agentApplicationNotice" class="notice" role="status" aria-live="polite"></div>
+      <div id="agentApplicationHistory" class="compact-list" aria-live="polite"></div>
+      <p class="field-hint">Enpòtan: estati ajan apwouve a pa aktive depo, retrè, MonCash, NatCash oswa peman lajan reyèl. Operasyon sa yo ap rete fèmen jiskaske gen patnè otorize, règleman ak kontwòl sekirite ki valide.</p>
+    </section>
+
     <footer class="app-footer">
       <p><strong>LakayGoPay</strong> · Sèvis peman senp ak yon lavi senp.</p>
       <p>Bous ak transfè entèn yo se fonksyon rejis dijital. Depo, retrè, MonCash, NatCash ak peman bank rete dezaktive jiskaske tout otorizasyon ak patnè finansye nesesè yo valide.</p>
     </footer>
   </main>
 
-  <script type="module" src="/app.js?v=20261119-connect-01"></script>
+  <script type="module" src="/app.js?v=20261119-agent-01"></script>
 </body>
 </html>
