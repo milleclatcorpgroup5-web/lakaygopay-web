@@ -52,7 +52,6 @@ function statusText(value) {
     suspended: "Sispann",
     frozen: "Bloke",
     waitlist: "Sou lis enterè",
-    under_review: "An revizyon",
     eligible: "Prekalifye — pa yon kat aktif",
     declined: "Pa apwouve",
     withdrawn: "Retire",
@@ -311,7 +310,7 @@ function renderCardProgram() {
     select.append(option);
   });
   if (selectedApplication) select.value = selectedApplication.tier_code;
-  $("#cardTierGrid [data-card-tier-select]").forEach(function (node) {
+  $$("#cardTierGrid [data-card-tier-select]").forEach(function (node) {
     node.setAttribute("aria-pressed", String(node.dataset.cardTierSelect === select.value));
   });
   const submit = $("#cardInterestSubmit");
@@ -1416,7 +1415,7 @@ function wireActions() {
     const button = event.target.closest("[data-card-tier-select]");
     if (!button || button.disabled) return;
     $("#cardTierSelect").value = button.dataset.cardTierSelect;
-    $("#cardTierGrid [data-card-tier-select]").forEach(function (node) {
+    $$("#cardTierGrid [data-card-tier-select]").forEach(function (node) {
       node.setAttribute("aria-pressed", String(node === button));
     });
   });
@@ -1552,7 +1551,7 @@ async function init() {
   const session = await sessionNow();
   await syncSession(session);
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js?v=20261117-03").catch(function () {});
+    navigator.serviceWorker.register("/service-worker.js?v=20261118-card-01").catch(function () {});
   }
 }
 init().catch(function (error) {
