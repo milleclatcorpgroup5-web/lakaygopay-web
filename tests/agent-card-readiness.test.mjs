@@ -49,7 +49,7 @@ test("card tiers remain server-assigned and card issuance stays disabled", () =>
   assert.match(cardApi, /issuance_enabled:false/);
   assert.match(systemHealth, /card_program_tiers/);
   assert.match(systemHealth, /card_customer_limits/);
-  assert.match(systemHealth, /card_instruments\\?select=id,user_id,card_status/);
+  assert.match(systemHealth, /card_instruments\?select=id,user_id,card_status/);
   assert.match(app, /pa gen okenn kat fizik oswa vityèl k ap emèt/);
 });
 
