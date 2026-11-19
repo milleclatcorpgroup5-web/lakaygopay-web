@@ -127,6 +127,8 @@ function explainError(code) {
     ADMIN_PIN_NOT_SET: "Pa gen PIN Admin ki anrejistre pou kont sa a.",
     MFA_FACTOR_LIMIT_REACHED: "Limit kantite authenticator sekou yo rive. Pa efase yon aparèy verifye san plan rekiperasyon.",
     CONNECT_DATABASE_UNAVAILABLE: "Tab Connect yo poko disponib. Verifye migrasyon LakayGoPay Connect la.",
+    CONNECT_NOT_AVAILABLE: "LakayGoPay Connect la an poz nan Production pandan n ap mete Sandbox izole a an sekirite.",
+    TEST_CREDITS_DISABLED_IN_PRODUCTION: "Kredi tès yo dezaktive nan Production. Yo ap disponib sèlman nan Sandbox izole a.",
     CONNECT_APP_NOT_FOUND: "Nou pa jwenn aplikasyon patnè sa a.",
     CONNECT_APP_NOT_PENDING: "Aplikasyon an pa nan estati pou resevwa desizyon sa a.",
     CONNECT_APP_NOT_ACTIVE: "Aplikasyon an pa aktif nan Sandbox.",
