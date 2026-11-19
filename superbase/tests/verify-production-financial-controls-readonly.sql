@@ -175,15 +175,12 @@ where n.nspname='public'
 order by con.conname;
 
 -- 11) Critical setting keys only (values are intentionally not exposed).
-select s.setting_key
-from public.platform_settings s
-where to_regclass('public.platform_settings') is not null
-  and s.setting_key in (
-    'test_mode_enabled','external_payments_enabled',
-    'payments_enabled','automatic_fee_posting_enabled',
-    'withdrawal_two_person_threshold_htg'
-  )
-order by s.setting_key;
+select table_name, column_name, data_type
+from information_schema.columns
+where table_schema='public'
+  and table_name='platform_settings'
+  and column_name in ('setting_key','setting_value','updated_by','updated_at')
+order by ordinal_position;
 
 -- 12) Return current server-side financial function definitions for manual
 -- review. In particular, verify wallet-transfer/payment RPCs reject all
