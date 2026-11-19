@@ -181,4 +181,23 @@ where setting_key in (
 )
 order by setting_key;
 
+-- 11) Return current server-side financial function definitions for manual
+-- review. In particular, verify wallet-transfer/payment RPCs reject all
+-- system/treasury wallets as senders and recipients, and validate actor IDs
+-- against the authenticated caller context enforced by their Worker routes.
+select p.proname as function_name,
+       pg_get_function_identity_arguments(p.oid) as identity_arguments,
+       pg_get_functiondef(p.oid) as current_definition
+from pg_proc p
+join pg_namespace n on n.oid=p.pronamespace
+where n.nspname='public'
+  and p.proname in (
+    'post_wallet_transfer','pay_merchant_payment_request',
+    'create_withdrawal_request','record_withdrawal_approval',
+    'create_test_credit','store_user_pin_hash',
+    'record_customer_pin_attempt','record_admin_pin_attempt',
+    'run_ledger_integrity_check'
+  )
+order by p.proname,pg_get_function_identity_arguments(p.oid);
+
 commit;
