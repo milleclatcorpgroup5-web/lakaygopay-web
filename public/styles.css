@@ -184,3 +184,28 @@ input[readonly]{background:#f3f7f8;color:#718593}
 .card-program-disclaimer{margin:0;font-size:10px;line-height:1.65}
 @media(max-width:760px){.card-tier-grid{grid-template-columns:1fr}.card-tier-card{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);align-items:start}.card-tier-card .card-visual{grid-row:span 4;min-height:135px}.card-tier-card h3{align-self:end}.card-tier-card ul{padding-left:15px}.card-tier-choose{grid-column:2}.card-interest-form{grid-template-columns:1fr 1fr}.card-interest-form .button{grid-column:1/-1;width:100%}}
 @media(max-width:460px){.card-tier-card{grid-template-columns:1fr}.card-tier-card .card-visual{grid-row:auto;min-height:160px}.card-tier-card h3{align-self:auto}.card-tier-choose{grid-column:auto}.card-interest-form{grid-template-columns:1fr}.card-interest-form .button{grid-column:auto}}
+
+
+/* LakayGo Card: automatic HTG ceiling assignment and star sub-levels. */
+.card-assignment-banner{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:#f5f9fb;color:#35566a;font-size:12px;line-height:1.65;font-weight:750}
+.card-assignment-banner.pending{border-color:#eadbb2;background:#fffaf0;color:#775a19}
+.card-assignment-banner.assigned{border-color:#b9ded5;background:#effaf6;color:#145b4e}
+.card-tier-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.card-tier-card{display:grid;align-content:start;gap:10px;min-width:0;padding:14px;border:1px solid var(--line);border-radius:17px;background:#fff}
+.card-tier-card.is-assigned{border:2px solid #229b87;box-shadow:0 0 0 3px rgba(34,155,135,.10)}
+.card-tier-card h3{margin:0;color:var(--navy);font-size:17px}
+.card-tier-range{color:#147f78;font-size:11px;font-weight:850;line-height:1.5}
+.card-tier-assigned-badge{justify-self:start;padding:5px 8px;border-radius:99px;background:#dff6ef;color:#126454;font-size:9px;font-weight:900;letter-spacing:.6px}
+.card-tier-assigned-badge[hidden]{display:none}
+.card-star-levels{display:grid;gap:7px;padding:10px;border:1px solid #e4edf0;border-radius:11px;background:#f7fafb}
+.card-star-row{display:grid;gap:3px}
+.card-star-row span{color:#294e62;font-size:10px;font-weight:800}
+.card-star-row small{color:#708694;font-size:9px;line-height:1.5}
+.card-tier-card ul{display:grid;gap:6px;margin:0;padding-left:17px;color:#526a78;font-size:10px;line-height:1.5}
+.card-interest-form{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end}
+.card-interest-form label{display:grid;gap:7px;color:#35566a;font-size:11px;font-weight:750}
+.card-interest-form select{width:100%;min-width:0;border:1px solid #d6e2e8;border-radius:10px;background:#fff;color:#173b50;padding:12px 13px;font:inherit}
+.card-interest-form .button{min-width:190px}
+.card-application-status{padding:12px 14px;border:1px solid #c9e4df;border-radius:12px;background:#f2faf7;color:#165b4c;font-size:11px;font-weight:700;line-height:1.6}
+@media(max-width:780px){.card-tier-grid{grid-template-columns:1fr}}
+@media(max-width:460px){.card-interest-form{grid-template-columns:1fr}.card-interest-form .button{width:100%}}

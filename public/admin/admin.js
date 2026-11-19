@@ -44,6 +44,16 @@ function explainError(code) {
     ADMIN_ROLE_INVALID: "Wòl administratè sa a pa valab.",
     ADMIN_ROLE_ACTION_INVALID: "Aksyon sou wòl la pa valab.",
     TEAM_DIRECTORY_UNAVAILABLE: "Lis ekip administrasyon an pa disponib.",
+    CARD_LIMIT_INVALID: "Plafon HTG la pa valab. Antre zewo oswa yon kantite ki gen jiska 2 desimal.",
+    CARD_LIMIT_REASON_INVALID: "Rezon verifikasyon an dwe gen ant 10 ak 300 karaktè.",
+    CARD_LIMIT_USER_REQUIRED: "ID kont kliyan an obligatwa.",
+    CARD_CUSTOMER_NOT_ACTIVE: "Nou pa jwenn yon kont kliyan ki aktif pou ID sa a.",
+    CARD_LIMIT_CLASSIFICATION_FAILED: "Plafon an pa antre nan okenn nivo kat. Verifye ranje klasman yo.",
+    CARD_LIMIT_SCHEMA_NOT_READY: "Bazdone plafon kat la poko enstale. Aplike migrasyon 004 ak 005 la.",
+    CARD_LIMIT_ASSIGNMENTS_UNAVAILABLE: "Lis plafon kliyan yo pa disponib.",
+    CARD_LIMIT_UPDATE_FAILED: "Nou pa t kapab mete plafon kliyan an ajou.",
+    CARD_TIER_SERVER_ASSIGNED: "Se sistèm LakayGo ki detèmine klasman ak nivo etwal la.",
+
     FINANCE_MODULE_SCHEMA_NOT_READY: "Bazdone bous revni an poko enstale. Egzekite migrasyon Admin Control Center la.",
     FINANCE_OVERVIEW_UNAVAILABLE: "Rezime finans lan pa disponib.",
     FINANCE_REPORT_RANGE_INVALID: "Chwazi yon peryòd rapò ant 1 ak 90 jou.",
@@ -242,6 +252,8 @@ async function loadOverview(session) {
   $("#adminAgentReviewForm").hidden = !(isSuper || roleSet.has("admin") || roleSet.has("risk_admin"));
   $("#adminFinancePanel").hidden = !canSeeFinance;
   $("#adminTeamPanel").hidden = !isSuper;
+  const canManageCardLimits = isSuper || roleSet.has("risk_admin");
+  $("#adminCardProgramPanel").hidden = !canManageCardLimits;
   $("#adminSecretariatPanel").hidden = !canSeeSecretariat;
   $("#adminAnalyticsPanel").hidden = !canSeeAnalytics;
   $("#systemHealthPanel").hidden = !canSeeSystemHealth;
@@ -273,6 +285,7 @@ async function loadOverview(session) {
     if (canSeeSecretariat) setNotice("#secretariatNotice", lockMessage, "");
     if (canSeeOperations) setNotice("#adminRecordsNotice", lockMessage, "");
     if (canSeeAnalytics) setNotice("#analyticsNotice", lockMessage, "");
+    if (canManageCardLimits) setNotice("#cardLimitNotice", lockMessage, "");
     if (canSeeSystemHealth) setNotice("#systemHealthNotice", lockMessage, "error");
     setNotice("#dashboardNotice", "Aksè bazik la konfime. KPI yo ak tout done operasyonèl, finansye, ekip ak sekretarya rete kache jiskaske ou verifye TOTP nan kat “Verifikasyon MFA”.", "");
     $("#adminMfaPanel").classList.add("mfa-needs-action");
@@ -294,6 +307,7 @@ async function loadOverview(session) {
     moduleLoads.push(loadDailyFinancialSummary(session));
   }
   if (isSuper) moduleLoads.push(loadTeamRoles(session));
+  if (canManageCardLimits) moduleLoads.push(loadCardLimitAssignments(session));
   if (canSeeSecretariat) moduleLoads.push(loadSecretariatItems(session));
   await Promise.allSettled(moduleLoads);
 
@@ -1143,6 +1157,29 @@ async function loadDailyFinancialSummary(session) {
   }
 }
 
+
+const CARD_TIER_LABELS = { BASIC:"LakayGo Basic", STANDARD:"LakayGo Mwayèn", GOLD:"LakayGo Gold", ELITE_GOLD:"LakayGo Elite Gold" };
+function renderCardLimitAssignments(rows) {
+  const body=$("#cardLimitAssignmentsBody");body.replaceChildren();
+  if(!rows.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=7;cell.textContent="Pa gen plafon kat ki apwouve pou kounye a.";row.append(cell);body.append(row);return;}
+  rows.forEach(item=>{
+    const row=document.createElement("tr");
+    const name=document.createElement("td");name.textContent=item.full_name||"San non";
+    const id=document.createElement("td");id.textContent=item.user_id||"—";
+    const limit=document.createElement("td");limit.textContent=Number(item.approved_limit_htg||0).toLocaleString("fr-HT",{minimumFractionDigits:2,maximumFractionDigits:2})+" HTG";
+    const tier=document.createElement("td");tier.textContent=CARD_TIER_LABELS[item.tier_code]||item.tier_code||"—";
+    const stars=document.createElement("td");const level=Math.max(0,Math.min(3,Number(item.star_level)||0));stars.textContent="★".repeat(level)+"☆".repeat(3-level);
+    const updated=document.createElement("td");updated.textContent=item.updated_at?new Date(item.updated_at).toLocaleString("fr-HT"):"—";
+    const action=document.createElement("td"),choose=document.createElement("button");choose.type="button";choose.className="button button-quiet admin-row-action";choose.textContent="Chwazi";
+    choose.addEventListener("click",()=>{$("#cardLimitUserId").value=item.user_id;$("#cardLimitAmount").value=item.approved_limit_htg;$("#cardLimitUserId").focus();$("#cardLimitAssignmentForm").scrollIntoView({behavior:"smooth",block:"center"});});
+    action.append(choose);row.append(name,id,limit,tier,stars,updated,action);body.append(row);
+  });
+}
+async function loadCardLimitAssignments(session){
+  setNotice("#cardLimitNotice","Ap chaje plafon kliyan ak klasman yo…","");
+  try{const data=await adminRequest("/api/admin/cards/limits",session);const rows=Array.isArray(data.assignments)?data.assignments:[];renderCardLimitAssignments(rows);setNotice("#cardLimitNotice",rows.length+" plafon HTG klase otomatikman. Chanjman yo antre nan audit.","success");}
+  catch(error){renderCardLimitAssignments([]);setNotice("#cardLimitNotice",explainError(error.code||error.message),"error");}
+}
 function filterTeamRoles() {
   const query = ($("#teamUserSearch")?.value || "").trim().toLowerCase();
   document.querySelectorAll("#teamUsersBody tr").forEach((row) => {
@@ -1779,6 +1816,23 @@ async function boot() {
     if (session) await loadAdminAnalytics(session);
   });
   $("#teamUserSearch").addEventListener("input", filterTeamRoles);
+  $("#cardLimitRefresh").addEventListener("click",async()=>{const session=await currentSession();if(session)await loadCardLimitAssignments(session);});
+  $("#cardLimitAssignmentForm").addEventListener("submit",async(event)=>{
+    event.preventDefault();
+    const userId=$("#cardLimitUserId").value.trim(),amount=$("#cardLimitAmount").value.trim(),reason=$("#cardLimitReason").value.trim();
+    if(!userId||amount===""||reason.length<10){setNotice("#cardLimitNotice","Antre ID kliyan an, plafon HTG a ak yon rezon ki gen omwen 10 karaktè.","error");return;}
+    if(!window.confirm("Ou konfime plafon HTG sa a baze sou verifikasyon KYC ak sous fon kliyan an? Sistèm nan pral bay klasman ak etwal otomatikman."))return;
+    const button=$("#cardLimitSubmit");button.disabled=true;
+    try{
+      const session=await requireMfaForAdminAction();if(!session)return;
+      const result=await adminRequest("/api/admin/cards/limits",session,{target_user_id:userId,approved_limit_htg:amount,reason});
+      const a=result.assignment||{};
+      setNotice("#cardLimitNotice",(CARD_TIER_LABELS[a.tier_code]||a.tier_code||"Klasman")+" · "+Number(a.approved_limit_htg||amount).toLocaleString("fr-HT")+" HTG · "+"★".repeat(Number(a.star_level||0))+" klase epi anrejistre nan audit.","success");
+      $("#cardLimitReason").value="";await loadCardLimitAssignments(session);
+    }catch(error){setNotice("#cardLimitNotice",explainError(error.code||error.message),"error");if(error.code==="MFA_REQUIRED")setNotice("#adminMfaStatus","Sesyon MFA a ekspire. Verifye TOTP ankò.","error");}
+    finally{button.disabled=false;}
+  });
+
 
   $("#adminUserStatusForm").addEventListener("submit", async (event) => {
     event.preventDefault();

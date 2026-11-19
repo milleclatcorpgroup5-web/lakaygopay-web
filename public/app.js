@@ -13,9 +13,10 @@ let currentMerchantPayments = [];
 let currentCardProgram = { schema_ready: false, tiers: [], application: null };
 
 const FALLBACK_CARD_TIERS = [
-  { tier_code: "BASIC", display_name: "LakayGo Basic", sort_order: 1, description: "Klas baz LakayGo pou antre nan ekosistèm kat la.", benefits: ["Bous HTG, USD ak EUR", "Peman QR ak transfè entèn", "Kontwòl sekirite ak notifikasyon"], application_open: true, issuance_enabled: false, virtual_supported: true, physical_supported: true },
-  { tier_code: "STANDARD", display_name: "LakayGo Standard", sort_order: 2, description: "Klas mwayèn pou itilizasyon regilye ak plis sèvis.", benefits: ["Tout avantaj Basic", "Opsyon kat vityèl oswa fizik", "Limit depans konfigirab apre patnè a valide", "Sipò priyoritè"], application_open: true, issuance_enabled: false, virtual_supported: true, physical_supported: true },
-  { tier_code: "GOLD", display_name: "LakayGo Gold", sort_order: 3, description: "Klas Premium pou kliyan ki bezwen plis avantaj.", benefits: ["Tout avantaj Standard", "Kat Gold vityèl oswa fizik", "Avantaj patnè ak òf eksklizif", "Sipò kliyan Gold"], application_open: true, issuance_enabled: false, virtual_supported: true, physical_supported: true }
+  {tier_code:"BASIC",display_name:"LakayGo Basic",sort_order:1,min_limit_htg:0,max_limit_htg:999999.99,description:"Plafon HTG: 0 rive 999,999.99.",benefits:["Kat klas baz","Bous HTG, USD ak EUR","Kontwòl sekirite"],star_levels:[{star_level:1,star_label:"Basic 1 etwal",min_limit_htg:0,max_limit_htg:333333.33},{star_level:2,star_label:"Basic 2 etwal",min_limit_htg:333333.34,max_limit_htg:666666.66},{star_level:3,star_label:"Basic 3 etwal",min_limit_htg:666666.67,max_limit_htg:999999.99}],application_open:true,issuance_enabled:false,virtual_supported:true,physical_supported:true},
+  {tier_code:"STANDARD",display_name:"LakayGo Mwayèn",sort_order:2,min_limit_htg:1000000,max_limit_htg:29999999.99,description:"Plafon HTG: 1,000,000 rive 29,999,999.99.",benefits:["Tout avantaj Basic","Avantaj sèvis entèmedyè","Nivo etwal selon plafon"],star_levels:[{star_level:1,star_label:"Mwayèn 1 etwal",min_limit_htg:1000000,max_limit_htg:10000000},{star_level:2,star_label:"Mwayèn 2 etwal",min_limit_htg:10000000.01,max_limit_htg:20000000},{star_level:3,star_label:"Mwayèn 3 etwal",min_limit_htg:20000000.01,max_limit_htg:29999999.99}],application_open:true,issuance_enabled:false,virtual_supported:true,physical_supported:true},
+  {tier_code:"GOLD",display_name:"LakayGo Gold",sort_order:3,min_limit_htg:30000000,max_limit_htg:100000000,description:"Plafon HTG: 30,000,000 rive 100,000,000.",benefits:["Tout avantaj Mwayèn","Avantaj sèvis Gold","Sipò priyoritè selon sèvis"],star_levels:[{star_level:1,star_label:"Gold 1 etwal",min_limit_htg:30000000,max_limit_htg:53333333.33},{star_level:2,star_label:"Gold 2 etwal",min_limit_htg:53333333.34,max_limit_htg:76666666.66},{star_level:3,star_label:"Gold 3 etwal",min_limit_htg:76666666.67,max_limit_htg:100000000}],application_open:true,issuance_enabled:false,virtual_supported:true,physical_supported:true},
+  {tier_code:"ELITE_GOLD",display_name:"LakayGo Elite Gold",sort_order:4,min_limit_htg:100000000.01,max_limit_htg:null,description:"Plafon HTG ki depase 100,000,000.",benefits:["Tout avantaj Gold","Avantaj patnè Elite","Relasyon kliyan priyoritè"],star_levels:[{star_level:1,star_label:"Elite Gold 1 etwal",min_limit_htg:100000000.01,max_limit_htg:250000000},{star_level:2,star_label:"Elite Gold 2 etwal",min_limit_htg:250000000.01,max_limit_htg:500000000},{star_level:3,star_label:"Elite Gold 3 etwal",min_limit_htg:500000000.01,max_limit_htg:null}],application_open:true,issuance_enabled:false,virtual_supported:true,physical_supported:true}
 ];
 let currentQrRequest = null;
 let incomingQrToken = new URLSearchParams(window.location.search).get("lgp_qr") || "";
@@ -136,6 +137,8 @@ function translateError(code) {
     CARD_APPLICATION_ALREADY_EXISTS: "Ou deja gen yon demann kat ki an kou.",
     CARD_APPLICATION_CLOSED: "Enskripsyon pou klasman sa a fèmen pou kounye a.",
     CARD_TIER_INVALID: "Klasman kat ou chwazi a pa disponib.",
+    CARD_TIER_SERVER_ASSIGNED: "Klasman ak etwal la se sistèm LakayGo ki detèmine yo; kliyan pa chwazi yo.",
+    CARD_LIMIT_NOT_APPROVED: "Plafon finansye kont ou poko verifye oswa apwouve. Kontakte ekip LakayGo.",
     CARD_FORMAT_INVALID: "Chwazi yon kalite kat ki valab.",
     CARD_PROGRAM_DATA_UNAVAILABLE: "Sèvis enfòmasyon kat la pa disponib kounye a.",
     CARD_FORMAT_UNAVAILABLE: "Kalite kat ou chwazi a poko disponib pou klasman sa a.",
@@ -247,101 +250,64 @@ async function loadDashboard(session) {
   }
 }
 
+
+function formatHtgLimit(value) {
+  return Number(value || 0).toLocaleString("fr-HT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " HTG";
+}
+function starText(level) {
+  const count = Math.max(0, Math.min(3, Number(level) || 0));
+  return count ? "★".repeat(count) + "☆".repeat(3-count) : "Nivo poko asiyen";
+}
 function renderCardProgram() {
-  const program = currentCardProgram || {};
-  const tiers = (Array.isArray(program.tiers) && program.tiers.length
-    ? program.tiers
-    : FALLBACK_CARD_TIERS).slice().sort(function (a, b) {
-      return Number(a.sort_order || 0) - Number(b.sort_order || 0);
+  const program=currentCardProgram||{};
+  const tiers=(Array.isArray(program.tiers)&&program.tiers.length?program.tiers:FALLBACK_CARD_TIERS).slice().sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
+  const assignment=program.limit_assignment||null;
+  const assignedTier=program.assigned_tier||null;
+  const assignedStar=program.assigned_star||null;
+  const application=program.application||null;
+  const activeApplication=application&&["waitlist","under_review","eligible"].includes(application.status);
+  const schemaReady=Boolean(program.schema_ready);
+  const hasApprovedLimit=Boolean(assignment&&assignment.assessment_status==="approved"&&assignedTier&&assignedStar);
+  const banner=$("#cardAssignmentBanner");
+  if(!schemaReady){banner.textContent="Pwogram kat la deja parèt. Klasman otomatik la ap aktive lè migrasyon kat la fin enstale nan Supabase.";banner.className="card-assignment-banner pending";}
+  else if(!hasApprovedLimit){banner.textContent="Plafon finansye ou poko evalye oswa apwouve. Ekip LakayGo dwe verifye dosye kont ou anvan sistèm nan asiyen klasman ak etwal ou.";banner.className="card-assignment-banner pending";}
+  else{banner.textContent="PLAFON LAKAYGO VALIDE: "+formatHtgLimit(assignment.approved_limit_htg)+" · KLASMAN: "+assignedTier.display_name+" · NIVO: "+starText(assignment.star_level)+" ("+assignedStar.star_label+").";banner.className="card-assignment-banner assigned";}
+  const grid=$("#cardTierGrid");grid.replaceChildren();
+  tiers.forEach(function(tier){
+    const article=document.createElement("article");
+    const isAssigned=Boolean(hasApprovedLimit&&tier.tier_code===assignedTier.tier_code);
+    article.className="card-tier-card tier-"+String(tier.tier_code||"").toLowerCase()+(isAssigned?" is-assigned":"");
+    const visual=document.createElement("div");visual.className="card-visual";
+    const brand=document.createElement("div");brand.className="card-visual-brand";brand.textContent="LAKAYGO";
+    const chip=document.createElement("span");chip.className="card-chip";chip.setAttribute("aria-hidden","true");
+    const level=document.createElement("div");level.className="card-visual-level";level.textContent=tier.tier_code==="ELITE_GOLD"?"ELITE GOLD":tier.tier_code==="STANDARD"?"MWAYÈN":tier.tier_code;
+    const mark=document.createElement("div");mark.className="card-visual-mark";mark.textContent="L";visual.append(brand,chip,level,mark);
+    const title=document.createElement("h3");title.textContent=tier.display_name||("LakayGo "+tier.tier_code);
+    const range=document.createElement("div");range.className="card-tier-range";range.textContent=formatHtgLimit(tier.min_limit_htg)+" — "+(tier.max_limit_htg==null?"San plafon siperyè":formatHtgLimit(tier.max_limit_htg));
+    const badge=document.createElement("span");badge.className="card-tier-assigned-badge";badge.textContent="KLASMAN OU";badge.hidden=!isAssigned;
+    const description=document.createElement("p");description.className="card-tier-description";description.textContent=tier.description||"";
+    const starList=document.createElement("div");starList.className="card-star-levels";
+    (Array.isArray(tier.star_levels)?tier.star_levels:[]).forEach(function(star){
+      const row=document.createElement("div");row.className="card-star-row";
+      const label=document.createElement("span");label.textContent=starText(star.star_level)+" · "+star.star_label;
+      const limit=document.createElement("small");limit.textContent=formatHtgLimit(star.min_limit_htg)+" — "+(star.max_limit_htg==null?"plis":formatHtgLimit(star.max_limit_htg));
+      row.append(label,limit);starList.append(row);
     });
-  const grid = $("#cardTierGrid");
-  grid.replaceChildren();
-  const labels = { BASIC: "BASIC", STANDARD: "STANDARD", GOLD: "GOLD" };
-  const selectedApplication = program.application || null;
-  const activeApplication = selectedApplication &&
-    ["waitlist", "under_review", "eligible"].includes(selectedApplication.status);
-  tiers.forEach(function (tier) {
-    const article = document.createElement("article");
-    article.className = "card-tier-card tier-" + String(tier.tier_code || "").toLowerCase();
-    const visual = document.createElement("div");
-    visual.className = "card-visual";
-    const brand = document.createElement("div");
-    brand.className = "card-visual-brand";
-    brand.textContent = "LAKAYGO";
-    const chip = document.createElement("span");
-    chip.className = "card-chip";
-    chip.setAttribute("aria-hidden", "true");
-    const level = document.createElement("div");
-    level.className = "card-visual-level";
-    level.textContent = labels[tier.tier_code] || tier.tier_code;
-    const mark = document.createElement("div");
-    mark.className = "card-visual-mark";
-    mark.textContent = "L";
-    visual.append(brand, chip, level, mark);
-
-    const title = document.createElement("h3");
-    title.textContent = tier.display_name || ("LakayGo " + tier.tier_code);
-    const description = document.createElement("p");
-    description.className = "card-tier-description";
-    description.textContent = tier.description || "";
-    const list = document.createElement("ul");
-    (Array.isArray(tier.benefits) ? tier.benefits : []).forEach(function (benefit) {
-      const item = document.createElement("li");
-      item.textContent = String(benefit);
-      list.append(item);
-    });
-    const choose = document.createElement("button");
-    choose.type = "button";
-    choose.className = "button button-secondary card-tier-choose";
-    choose.dataset.cardTierSelect = tier.tier_code;
-    choose.textContent = "Chwazi " + (labels[tier.tier_code] || tier.tier_code);
-    choose.disabled = Boolean(activeApplication) || !tier.application_open;
-    article.append(visual, title, description, list, choose);
-    grid.append(article);
+    const list=document.createElement("ul");
+    (Array.isArray(tier.benefits)?tier.benefits:[]).forEach(function(benefit){const item=document.createElement("li");item.textContent=String(benefit);list.append(item);});
+    article.append(visual,badge,title,range,description,starList,list);grid.append(article);
   });
-
-  const select = $("#cardTierSelect");
-  select.replaceChildren();
-  tiers.forEach(function (tier) {
-    const option = document.createElement("option");
-    option.value = tier.tier_code;
-    option.textContent = tier.display_name || ("LakayGo " + tier.tier_code);
-    option.disabled = !tier.application_open;
-    select.append(option);
-  });
-  if (selectedApplication) select.value = selectedApplication.tier_code;
-  $$("#cardTierGrid [data-card-tier-select]").forEach(function (node) {
-    node.setAttribute("aria-pressed", String(node.dataset.cardTierSelect === select.value));
-  });
-  const submit = $("#cardInterestSubmit");
-  const format = $("#cardFormSelect");
-  const schemaReady = Boolean(program.schema_ready);
-  const enabledTier = tiers.some(function (tier) { return tier.application_open; });
-  const locked = !schemaReady || Boolean(activeApplication) || !enabledTier;
-  submit.disabled = locked;
-  select.disabled = locked;
-  format.disabled = locked;
-  if (!schemaReady) {
-    message("#cardProgramNotice", "Twa klasman yo deja defini nan aplikasyon an. Pou aktive lis enterè a, migrasyon kat la dwe aplike nan Supabase.", "error");
-  } else if (activeApplication) {
-    const tierName = tiers.find(function (tier) { return tier.tier_code === selectedApplication.tier_code; })?.display_name || selectedApplication.tier_code;
-    message("#cardProgramNotice", "Nou anrejistre enterè ou pou " + tierName + ". Sa poko vle di yon kat apwouve oswa emèt.", "success");
-  } else if (!enabledTier) {
-    message("#cardProgramNotice", "Lis enterè pou kat yo fèmen tanporèman.", "");
-  } else {
-    message("#cardProgramNotice", "Chwazi Basic, Standard oswa Gold, epi presize si se kat vityèl, fizik oswa toude ki enterese w.", "");
-  }
-  const status = $("#cardApplicationStatus");
-  if (selectedApplication) {
-    status.textContent = "Estati demann: " + statusText(selectedApplication.status) +
-      " · Klasman: " + selectedApplication.tier_code +
-      " · Kalite: " + selectedApplication.requested_form +
-      " · " + new Date(selectedApplication.created_at).toLocaleDateString("fr-HT");
-    status.hidden = false;
-  } else {
-    status.textContent = "";
-    status.hidden = true;
-  }
+  const format=$("#cardFormSelect"),submit=$("#cardInterestSubmit");
+  const canApply=schemaReady&&hasApprovedLimit&&Boolean(assignedTier.application_open)&&!activeApplication;
+  format.disabled=!canApply;submit.disabled=!canApply;
+  if(!schemaReady)message("#cardProgramNotice","Klasman yo parèt. Migrasyon Supabase la nesesè pou verifye plafon, asiyen etwal epi anrejistre demann yo.","error");
+  else if(!hasApprovedLimit)message("#cardProgramNotice","Kliyan an pa chwazi klasman. Apre verifikasyon ekip LakayGo, sistèm nan ap asiyen klasman ak etwal otomatikman.","");
+  else if(activeApplication)message("#cardProgramNotice","Demann ou anrejistre pou "+assignedTier.display_name+" "+starText(assignment.star_level)+". Sa poko vle di yon kat apwouve oswa emèt.","success");
+  else if(!assignedTier.application_open)message("#cardProgramNotice","Demann kat pou klasman sa a fèmen tanporèman.","");
+  else message("#cardProgramNotice","Klasman ou deja detèmine otomatikman. Chwazi sèlman si ou enterese nan kat vityèl, fizik oswa toude.","success");
+  const status=$("#cardApplicationStatus");
+  if(application){status.textContent="Estati demann: "+statusText(application.status)+" · "+(assignedTier?.display_name||application.tier_code)+" · "+starText(application.star_level)+" · "+application.requested_form+" · Plafon lè demann: "+formatHtgLimit(application.approved_limit_htg)+" · "+new Date(application.created_at).toLocaleDateString("fr-HT");status.hidden=false;}
+  else{status.textContent="";status.hidden=true;}
 }
 
 function renderProfile(session) {
@@ -1411,36 +1377,21 @@ function wireActions() {
     }
   });
 
-  $("#cardTierGrid").addEventListener("click", function (event) {
-    const button = event.target.closest("[data-card-tier-select]");
-    if (!button || button.disabled) return;
-    $("#cardTierSelect").value = button.dataset.cardTierSelect;
-    $$("#cardTierGrid [data-card-tier-select]").forEach(function (node) {
-      node.setAttribute("aria-pressed", String(node === button));
-    });
-  });
 
-  $("#cardInterestForm").addEventListener("submit", async function (event) {
+  $("#cardInterestForm").addEventListener("submit", async function(event) {
     event.preventDefault();
-    const button = $("#cardInterestSubmit");
-    const tierCode = $("#cardTierSelect").value;
-    const requestedForm = $("#cardFormSelect").value;
-    button.disabled = true;
-    message("#cardProgramNotice", "Ap anrejistre enterè kat ou…", "");
+    const button=$("#cardInterestSubmit");
+    const requestedForm=$("#cardFormSelect").value;
+    button.disabled=true;
+    message("#cardProgramNotice","Ap soumèt demann kat la sou klasman sistèm nan te asiyen pou ou…","");
     try {
-      const result = await api("/api/cards", {
-        method: "POST",
-        body: { tier_code: tierCode, requested_form: requestedForm }
-      });
-      currentCardProgram.application = result.application || null;
-      currentCardProgram.schema_ready = true;
+      const result=await api("/api/cards",{method:"POST",body:{requested_form:requestedForm}});
+      currentCardProgram.application=result.application||null;
       renderCardProgram();
-      message("#cardProgramNotice", result.already_registered
-        ? "Ou te deja sou lis enterè a. Men estati demann ou an."
-        : "Enterè ou anrejistre sou lis LakayGo Card la. Sa pa emèt yon kat ni pa aktive peman.", "success");
-    } catch (error) {
-      message("#cardProgramNotice", translateError(error.code || error.message), "error");
-      button.disabled = !currentCardProgram.schema_ready;
+      message("#cardProgramNotice",result.already_registered?"Ou te deja gen yon demann kat ki an kou.":"Demann ou anrejistre sou klasman LakayGo sistèm nan te detèmine a. Pa gen kat ki emèt.","success");
+    } catch(error) {
+      message("#cardProgramNotice",translateError(error.code||error.message),"error");
+      button.disabled=!currentCardProgram.schema_ready||!currentCardProgram.assigned_tier;
     }
   });
   $("#refreshButton").addEventListener("click", async function () {

@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#071421">
   <title>LakayGoPay — Executive Control Center</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/admin/admin.css?v=20261118-hardening-05">
+  <link rel="stylesheet" href="/admin/admin.css?v=20261119-card-01">
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -150,6 +150,7 @@
       <a href="#adminAnalyticsPanel">Evolisyon & aktivite</a>
       <a href="#adminRecordsPanel">Dosye</a>
       <a href="#systemHealthPanel">Sante sistèm</a>
+      <a href="#adminCardProgramPanel">Kat LakayGo</a>
       <a href="#adminFinancePanel">Finans & bous</a>
       <a href="#adminTeamPanel">Ekip & wòl</a>
       <a href="#adminSecretariatPanel">Sekretarya</a>
@@ -231,6 +232,37 @@
         <article><b>05 · Apwobasyon final</b><p>Gwo chanjman finansye ak tarif mande validasyon Super Administratè.</p></article>
         <article><b>06 · Dwa selon wòl</b><p>Chak moun jwenn sèlman modil backend li gen otorizasyon pou itilize.</p></article>
       </div>
+    </section>
+
+
+    <section class="surface-card card-limit-admin-panel" id="adminCardProgramPanel" hidden>
+      <div class="section-head">
+        <div><p class="eyebrow">RISK REVIEW · LAKAYGO CARD</p><h2>Plafon ak klasman otomatik</h2></div>
+        <span class="read-only-tag">SUPER ADMIN / RISK · MFA</span>
+      </div>
+      <p class="muted small">Admin otorize a antre plafon HTG ki fin verifye pou kliyan an. Bazdone a klase kliyan an otomatikman nan Basic, Mwayèn, Gold oswa Elite Gold epi li ba li 1, 2 oswa 3 etwal. Chak chanjman antre nan istwa audit.</p>
+      <div class="card-band-summary">
+        <article><b>Basic</b><span>0 — 999,999.99 HTG</span><small>1★ / 2★ / 3★</small></article>
+        <article><b>Mwayèn</b><span>1,000,000 — 29,999,999.99 HTG</span><small>1★ / 2★ / 3★</small></article>
+        <article><b>Gold</b><span>30,000,000 — 100,000,000 HTG</span><small>1★ / 2★ / 3★</small></article>
+        <article><b>Elite Gold</b><span>Plis pase 100,000,000 HTG</span><small>1★ / 2★ / 3★</small></article>
+      </div>
+      <form id="cardLimitAssignmentForm" class="card-limit-form">
+        <label>ID kont kliyan an<input id="cardLimitUserId" required autocomplete="off" placeholder="UUID kont kliyan an"></label>
+        <label>Plafon HTG apwouve<input id="cardLimitAmount" type="number" min="0" max="999999999999999999.99" step="0.01" inputmode="decimal" required placeholder="Egzanp: 30000000"></label>
+        <label class="card-limit-reason">Rezon ak baz verifikasyon<input id="cardLimitReason" maxlength="300" minlength="10" required placeholder="Egzanp: Revizyon KYC ak sous fon valide"></label>
+        <button id="cardLimitSubmit" class="button button-primary" type="submit">Apwouve plafon epi klase kliyan</button>
+      </form>
+      <div id="cardLimitNotice" class="notice" role="status" aria-live="polite">Done plafon kliyan yo ap chaje apre MFA.</div>
+      <div class="section-head card-limit-list-head">
+        <div><h3>Plafon ki deja apwouve</h3><p class="muted small">Dènye evalyasyon yo. Chwazi yon liy pou mete UUID kont lan nan fòm ki anlè a.</p></div>
+        <button id="cardLimitRefresh" class="button button-quiet" type="button">Rafrechi lis la</button>
+      </div>
+      <div class="admin-record-table-wrap"><table class="admin-record-table">
+        <thead><tr><th>Kliyan</th><th>ID kont</th><th>Plafon valide</th><th>Klasman</th><th>Etwal</th><th>Dènye revizyon</th><th>Aksyon</th></tr></thead>
+        <tbody id="cardLimitAssignmentsBody"><tr><td colspan="7" class="muted">Ap tann bazdone a…</td></tr></tbody>
+      </table></div>
+      <p class="muted small card-limit-safety">Plafon sa a se yon limit pwodwi ki apwouve apre evalyasyon; li pa balans aktyèl kliyan an. Faz 1 lan klase an HTG sèlman. Pa konvèti USD/EUR otomatikman pandan FX pa valide.</p>
     </section>
 
     <section class="surface-card finance-control-panel" id="adminFinancePanel" hidden>
@@ -751,6 +783,6 @@
     <footer class="admin-footer"><span>LakayGoPay · Sant Kontwòl</span><span>Entèfas administrasyon prive · Rejim tès</span></footer>
   </main>
 
-  <script type="module" src="/admin/admin.js?v=20261118-hardening-07"></script>
+  <script type="module" src="/admin/admin.js?v=20261119-card-01"></script>
 </body>
 </html>
