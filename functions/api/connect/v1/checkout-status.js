@@ -1,0 +1,3 @@
+import { json,callRpc } from "../../../../_shared/superbase.js";
+import { authenticatePartner,connectError,validConnectReference } from "../../../../_shared/connect.js";
+export async function onRequestGet({request,env}){try{const a=await authenticatePartner(request,env);if(a.error)return a.error;const ref=new URL(request.url).searchParams.get("external_reference");if(!validConnectReference(ref))return json({error:"CONNECT_EXTERNAL_REFERENCE_INVALID"},400);const checkout=await callRpc(env,"connect_partner_checkout_status",{p_app_id:a.app.id,p_external_reference:ref});return json({ok:true,mode:"sandbox",checkout});}catch(e){return connectError(e);}}
