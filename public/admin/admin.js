@@ -253,7 +253,9 @@ async function loadOverview(session) {
   $("#adminFinancePanel").hidden = !canSeeFinance;
   $("#adminTeamPanel").hidden = !isSuper;
   const canManageCardLimits = isSuper || roleSet.has("risk_admin");
+  const canManageConnect = isSuper || roleSet.has("risk_admin") || roleSet.has("finance_admin");
   $("#adminCardProgramPanel").hidden = !canManageCardLimits;
+  $("#adminConnectPanel").hidden = !canManageConnect;
   $("#adminSecretariatPanel").hidden = !canSeeSecretariat;
   $("#adminAnalyticsPanel").hidden = !canSeeAnalytics;
   $("#systemHealthPanel").hidden = !canSeeSystemHealth;
@@ -286,6 +288,7 @@ async function loadOverview(session) {
     if (canSeeOperations) setNotice("#adminRecordsNotice", lockMessage, "");
     if (canSeeAnalytics) setNotice("#analyticsNotice", lockMessage, "");
     if (canManageCardLimits) setNotice("#cardLimitNotice", lockMessage, "");
+    if (canManageConnect) setNotice("#connectAppsNotice", lockMessage, "");
     if (canSeeSystemHealth) setNotice("#systemHealthNotice", lockMessage, "error");
     setNotice("#dashboardNotice", "Aksè bazik la konfime. KPI yo ak tout done operasyonèl, finansye, ekip ak sekretarya rete kache jiskaske ou verifye TOTP nan kat “Verifikasyon MFA”.", "");
     $("#adminMfaPanel").classList.add("mfa-needs-action");
@@ -308,6 +311,7 @@ async function loadOverview(session) {
   }
   if (isSuper) moduleLoads.push(loadTeamRoles(session));
   if (canManageCardLimits) moduleLoads.push(loadCardLimitAssignments(session));
+  if (canManageConnect) moduleLoads.push(loadConnectApps(session));
   if (canSeeSecretariat) moduleLoads.push(loadSecretariatItems(session));
   await Promise.allSettled(moduleLoads);
 
@@ -1175,6 +1179,75 @@ function renderCardLimitAssignments(rows) {
     action.append(choose);row.append(name,id,limit,tier,stars,updated,action);body.append(row);
   });
 }
+
+function renderConnectApps(rows) {
+  const list = $("#connectAppsList");
+  if (!list) return;
+  list.replaceChildren();
+  if (!rows.length) {
+    const empty = document.createElement("p");
+    empty.className = "muted small";
+    empty.textContent = "Pa gen aplikasyon patnè ki soumèt pou kounye a.";
+    list.append(empty);
+    return;
+  }
+  rows.forEach((app) => {
+    const card = document.createElement("article");
+    card.className = "surface-card";
+    card.style.marginTop = "12px";
+    const heading = document.createElement("h3");
+    heading.textContent = app.app_name || "Aplikasyon san non";
+    const merchant = Array.isArray(app.merchants) ? app.merchants[0] : app.merchants;
+    const info = document.createElement("p");
+    info.className = "muted small";
+    info.textContent = "Machann: " + (merchant?.business_name || app.merchant_id) +
+      " · Pwopriyetè ID: " + app.owner_user_id + " · Sit: " + app.website_url;
+    const state = document.createElement("p");
+    state.className = "muted small";
+    state.textContent = "Estati: " + app.status.toUpperCase() + " · Mòd: " + app.mode.toUpperCase() +
+      " · Kapasite: " + (Array.isArray(app.capabilities) ? app.capabilities.join(", ") : "—");
+    card.append(heading, info, state);
+    if (app.review_note) {
+      const note = document.createElement("p");
+      note.className = "muted small";
+      note.textContent = "Dènye nòt: " + app.review_note;
+      card.append(note);
+    }
+    const actions = document.createElement("div");
+    actions.className = "admin-action-grid";
+    const options = app.status === "pending" ? [
+      ["approve","Apwouve pou Sandbox"], ["reject","Rejte aplikasyon"]
+    ] : app.status === "active" ? [
+      ["suspend","Sispann aksè"]
+    ] : app.status === "suspended" ? [
+      ["reactivate","Reaktive nan Sandbox"]
+    ] : [];
+    options.forEach(([decision,label]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "button " + (decision === "reject" || decision === "suspend" ? "button-quiet" : "button-primary");
+      button.textContent = label;
+      button.dataset.connectDecision = decision;
+      button.dataset.connectAppId = app.id;
+      actions.append(button);
+    });
+    if (actions.childElementCount) card.append(actions);
+    list.append(card);
+  });
+}
+async function loadConnectApps(session) {
+  setNotice("#connectAppsNotice", "Ap chaje aplikasyon patnè yo…", "");
+  try {
+    const data = await adminRequest("/api/admin/connect/apps", session);
+    const rows = Array.isArray(data.apps) ? data.apps : [];
+    renderConnectApps(rows);
+    setNotice("#connectAppsNotice", rows.length + " aplikasyon patnè jwenn. Apwobasyon yo bay aksè Sandbox sèlman.", "success");
+  } catch (error) {
+    renderConnectApps([]);
+    setNotice("#connectAppsNotice", explainError(error.code || error.message), "error");
+  }
+}
+
 async function loadCardLimitAssignments(session){
   setNotice("#cardLimitNotice","Ap chaje plafon kliyan ak klasman yo…","");
   try{const data=await adminRequest("/api/admin/cards/limits",session);const rows=Array.isArray(data.assignments)?data.assignments:[];renderCardLimitAssignments(rows);setNotice("#cardLimitNotice",rows.length+" plafon HTG klase otomatikman. Chanjman yo antre nan audit.","success");}
@@ -1833,6 +1906,41 @@ async function boot() {
     finally{button.disabled=false;}
   });
 
+
+
+  $("#connectAppsRefresh").addEventListener("click", async () => {
+    const session = await currentSession();
+    if (session) await loadConnectApps(session);
+  });
+  $("#connectAppsList").addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-connect-decision]");
+    if (!button) return;
+    const appId = button.dataset.connectAppId;
+    const decision = button.dataset.connectDecision;
+    const labels = {
+      approve: "apwouve aplikasyon sa a pou Sandbox",
+      reject: "rejte aplikasyon sa a",
+      suspend: "sispann aksè aplikasyon sa a",
+      reactivate: "reaktive aplikasyon sa a nan Sandbox"
+    };
+    if (!window.confirm("Ou konfime desizyon sa a: " + (labels[decision] || decision) + "?")) return;
+    const note = window.prompt("Nòt revizyon (opsyonèl):", "") || "";
+    button.disabled = true;
+    try {
+      const session = await requireMfaForAdminAction();
+      if (!session) return;
+      await adminRequest("/api/admin/connect/apps", session, {
+        app_id: appId, decision, note: note.slice(0,500)
+      });
+      setNotice("#connectAppsNotice", "Desizyon an anrejistre avèk tras audit.", "success");
+      await loadConnectApps(session);
+    } catch (error) {
+      setNotice("#connectAppsNotice", explainError(error.code || error.message), "error");
+      if (error.code === "MFA_REQUIRED") setNotice("#adminMfaStatus", "Sesyon MFA a ekspire. Verifye TOTP ankò.", "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
 
   $("#adminUserStatusForm").addEventListener("submit", async (event) => {
     event.preventDefault();

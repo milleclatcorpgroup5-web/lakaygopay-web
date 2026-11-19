@@ -7,7 +7,7 @@ function format(v,c){return Number(v).toLocaleString("fr-HT",{minimumFractionDig
 async function loadCheckout(session){const d=await api("/api/connect/checkout-session?id="+encodeURIComponent(checkoutId),session);checkout=d.checkout;
  $("#merchantName").textContent=checkout.merchant_name||checkout.app_name||"Machann LakayGoPay";$("#amount").textContent=format(checkout.amount,checkout.currency);$("#description").textContent=checkout.description||"Peman atravè LakayGoPay Connect";
  if(checkout.status!=="pending"){notice("Estati demann sa a: "+checkout.status+". Li pa kapab peye ankò.",checkout.status==="paid"?"success":"error");$("#payForm").hidden=true;return;}
- const w=await api("/api/wallets",session);const choices=(w.wallets||[]).filter(x=>x.currency===checkout.currency&&!x.is_system&&x.status==="active");$("#wallet").replaceChildren();
+ const w=await api("/api/wallets",session);const choices=(w.wallets||[]).filter(x=>x.currency===checkout.currency&&x.owner_user_id===session.user.id);$("#wallet").replaceChildren();
  choices.forEach(x=>{const o=document.createElement("option");o.value=x.wallet_id;o.textContent=x.currency+" · "+Number(x.balance||0).toLocaleString("fr-HT",{minimumFractionDigits:2,maximumFractionDigits:2})+" disponib";$("#wallet").append(o);});
  if(!choices.length){notice("Ou pa gen bous aktif nan "+checkout.currency+" pou peye demann sa a.","error");$("#payButton").disabled=true;}
  $("#checkoutLogin").hidden=true;$("#checkoutDetails").hidden=false;notice("Verifye detay yo. Peman an ap fèt sèlman apre ou antre PIN ou epi konfime.","");

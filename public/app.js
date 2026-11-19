@@ -11,6 +11,7 @@ let currentMerchants = [];
 let currentWithdrawals = [];
 let currentMerchantPayments = [];
 let currentCardProgram = { schema_ready: false, tiers: [], application: null };
+let currentConnectPayouts = [];
 
 const FALLBACK_CARD_TIERS = [
   {tier_code:"BASIC",display_name:"LakayGo Basic",sort_order:1,min_limit_htg:0,max_limit_htg:999999.99,description:"Plafon HTG: 0 rive 999,999.99.",benefits:["Kat klas baz","Bous HTG, USD ak EUR","Kontwòl sekirite"],star_levels:[{star_level:1,star_label:"Basic 1 etwal",min_limit_htg:0,max_limit_htg:333333.33},{star_level:2,star_label:"Basic 2 etwal",min_limit_htg:333333.34,max_limit_htg:666666.66},{star_level:3,star_label:"Basic 3 etwal",min_limit_htg:666666.67,max_limit_htg:999999.99}],application_open:true,issuance_enabled:false,virtual_supported:true,physical_supported:true},
@@ -159,7 +160,9 @@ async function api(path, options) {
   if (session && session.access_token) headers.authorization = "Bearer " + session.access_token;
   if (options.body !== undefined) headers["content-type"] = "application/json";
   const keyName = "lgp-request:" + method + ":" + path;
-  if (options.idempotency) {
+  if (options.idempotencyKey) {
+    headers["Idempotency-Key"] = options.idempotencyKey;
+  } else if (options.idempotency) {
     const key = sessionStorage.getItem(keyName) || crypto.randomUUID();
     sessionStorage.setItem(keyName, key);
     headers["Idempotency-Key"] = key;
@@ -209,7 +212,8 @@ async function loadDashboard(session) {
     api("/api/pin/status"),
     api("/api/withdrawals"),
     api("/api/payments"),
-    api("/api/cards")
+    api("/api/cards"),
+    api("/api/connect/payouts")
   ]);
   if (results[0].status === "rejected") throw results[0].reason;
   if (results[1].status === "rejected") throw results[1].reason;
@@ -222,6 +226,7 @@ async function loadDashboard(session) {
   currentCardProgram = results[7].status === "fulfilled"
     ? results[7].value
     : { schema_ready: false, tiers: FALLBACK_CARD_TIERS, application: null };
+  currentConnectPayouts = results[8].status === "fulfilled" ? (results[8].value.payouts || []) : [];
   const ownedMerchantIds = new Set(currentMerchants.map(function (merchant) { return merchant.id; }));
   currentMerchantPayments = paymentRecords.filter(function (payment) {
     return ownedMerchantIds.has(payment.merchant_id);
@@ -233,6 +238,7 @@ async function loadDashboard(session) {
   renderProfile(session);
   renderWallets();
   renderCardProgram();
+  renderConnectPayouts();
   renderMerchants(session);
   renderWithdrawals(currentWithdrawals);
   renderMerchantPayments(currentMerchantPayments);
@@ -250,6 +256,60 @@ async function loadDashboard(session) {
   }
 }
 
+
+
+function renderConnectPayouts() {
+  const section = $("#connectPayoutsSection");
+  const list = $("#connectPayoutList");
+  if (!section || !list) return;
+  list.replaceChildren();
+  const rows = Array.isArray(currentConnectPayouts) ? currentConnectPayouts : [];
+  section.hidden = rows.length === 0;
+  if (!rows.length) return;
+
+  rows.forEach(function (payout) {
+    const card = document.createElement("article");
+    card.className = "surface-card";
+    card.dataset.connectPayoutCard = payout.payout_id || "";
+    card.style.marginTop = "12px";
+
+    const heading = document.createElement("h3");
+    heading.textContent = payout.app_name || "Aplikasyon patnè";
+    const amount = document.createElement("strong");
+    amount.textContent = formatMoney(payout.amount, payout.currency) + " " + payout.currency;
+    const description = document.createElement("p");
+    description.className = "field-hint";
+    description.textContent = payout.description || "Demann peman atravè LakayGoPay Connect.";
+    const details = document.createElement("p");
+    details.className = "field-hint";
+    details.textContent = "Referans: " + (payout.external_reference || "—") +
+      " · Estati: " + statusText(payout.status) +
+      (payout.created_at ? " · " + new Date(payout.created_at).toLocaleString("fr-HT") : "");
+    card.append(heading, amount, description, details);
+
+    if (payout.status === "pending") {
+      const label = document.createElement("label");
+      label.textContent = "PIN tranzaksyon LakayGoPay · 4 chif";
+      const pin = document.createElement("input");
+      pin.type = "password";
+      pin.inputMode = "numeric";
+      pin.pattern = "[0-9]{4}";
+      pin.maxLength = 4;
+      pin.autocomplete = "one-time-code";
+      pin.placeholder = "••••";
+      pin.dataset.connectPayoutPin = "";
+      label.append(pin);
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "button button-primary";
+      button.dataset.connectPayoutId = payout.payout_id || "";
+      button.textContent = "Verifye epi resevwa lajan";
+      card.append(label, button);
+    }
+    list.append(card);
+  });
+}
 
 function formatHtgLimit(value) {
   return Number(value || 0).toLocaleString("fr-HT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " HTG";
@@ -1382,6 +1442,46 @@ function wireActions() {
   });
 
 
+
+  $("#connectPayoutList").addEventListener("click", async function(event) {
+    const button = event.target.closest("[data-connect-payout-id]");
+    if (!button) return;
+    const card = button.closest("[data-connect-payout-card]");
+    const pinInput = card ? card.querySelector("[data-connect-payout-pin]") : null;
+    const pin = pinInput ? pinInput.value : "";
+    if (!/^[0-9]{4}$/.test(pin)) {
+      message("#connectPayoutNotice", "Antre PIN tranzaksyon 4 chif ou a.", "error");
+      return;
+    }
+    const payout = currentConnectPayouts.find(function(item) {
+      return item.payout_id === button.dataset.connectPayoutId;
+    });
+    if (!payout || payout.status !== "pending") {
+      message("#connectPayoutNotice", "Demann sa a pa disponib ankò. Rafrechi kont ou.", "error");
+      return;
+    }
+    if (!window.confirm("Ou aksepte resevwa " + formatMoney(payout.amount, payout.currency) + " " + payout.currency +
+      " soti nan " + (payout.app_name || "aplikasyon patnè") + "?")) return;
+
+    button.disabled = true;
+    message("#connectPayoutNotice", "Ap verifye PIN ou epi anrejistre transfè a…", "");
+    try {
+      const result = await api("/api/connect/payouts/accept", {
+        method: "POST",
+        body: { payout_id: payout.payout_id, pin },
+        idempotency: true
+      });
+      message("#connectPayoutNotice", "Lajan an resevwa nan bous LakayGoPay ou. Referans: " +
+        (result.payout?.reference || result.payout?.ledger_transaction_id || "OK"), "success");
+      await loadDashboard(await sessionNow());
+    } catch (error) {
+      message("#connectPayoutNotice", translateError(error.code || error.message), "error");
+      button.disabled = false;
+    } finally {
+      if (pinInput) pinInput.value = "";
+    }
+  });
+
   $("#cardInterestForm").addEventListener("submit", async function(event) {
     event.preventDefault();
     const button=$("#cardInterestSubmit");
@@ -1506,7 +1606,7 @@ async function init() {
   const session = await sessionNow();
   await syncSession(session);
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js?v=20261119-card-03").catch(function () {});
+    navigator.serviceWorker.register("/service-worker.js?v=20261119-connect-01").catch(function () {});
   }
 }
 init().catch(function (error) {
