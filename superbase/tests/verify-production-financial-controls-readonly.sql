@@ -54,8 +54,8 @@ from pg_class c
 join pg_namespace n on n.oid=c.relnamespace
 where n.nspname='public'
   and c.relname in (
-    'user_roles','wallets','ledger_transactions','ledger_entries',
-    'withdrawal_requests','withdrawal_approvals','user_security',
+    'user_roles','wallets','ledger_transactions','ledger_entries','idempotency_keys',
+    'withdrawal_requests','withdrawal_approvals','platform_settings','user_security',
     'admin_security','admin_pin_reset_challenges','audit_logs'
   )
 order by c.relname;
@@ -158,6 +158,14 @@ left join lateral (
 ) r on true
 where coalesce(wb.balance,0)-coalesce(r.reserved,0)<0;
 
+-- 10) Withdrawal maker-checker: each administrator may approve a request
+-- only once. The default threshold should require two distinct approvers.
+select conname,pg_get_constraintdef(oid) as definition
+from pg_constraint
+where conrelid='public.withdrawal_approvals'::regclass
+  and contype in ('u','p')
+order by conname;
+
 -- 10) Confirm the independent currency-ledger constraint and critical flags.
 select conname,pg_get_constraintdef(oid) as definition
 from pg_constraint
@@ -169,7 +177,7 @@ select setting_key,setting_value
 from public.platform_settings
 where setting_key in (
   'test_mode_enabled','external_payments_enabled',
-  'payments_enabled','automatic_fee_posting_enabled'
+  'payments_enabled','automatic_fee_posting_enabled','withdrawal_two_person_threshold_htg'
 )
 order by setting_key;
 
