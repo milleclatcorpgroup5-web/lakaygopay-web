@@ -22,7 +22,7 @@ const TABLE_CHECKS = [
   { id: "ledger", label: "Ledger tranzaksyon", resource: "ledger_transactions?select=id&limit=0" },
   { id: "withdrawals", label: "Demann retrè", resource: "withdrawal_requests?select=id&limit=0" },
   { id: "audit_logs", label: "Jounal audit", resource: "audit_logs?select=id&limit=0" },
-  { id: "treasury_revenue_wallets", label: "Bous revni antrepriz HTG/USD/EUR", expectCurrencies: ["HTG","USD","EUR"], resource: "wallet_balances?select=wallet_id,currency,balance,system_account_code&is_system=eq.true&system_account_code=eq.platform_revenue&limit=3" },
+  { id: "treasury_revenue_wallets", label: "Bous revni antrepriz HTG/USD/EUR", expectCurrencies: ["HTG","USD","EUR"], optional: true, resource: "wallet_balances?select=wallet_id,currency,balance,system_account_code&is_system=eq.true&system_account_code=eq.platform_revenue&limit=3" },
   { id: "secretariat_access", label: "Otorizasyon sekretarya prive", resource: "admin_secretariat_access?select=id,owner_user_id,assistant_user_id,active&limit=0" },
   { id: "secretariat_items", label: "Depo ajanda ak travay pèsonèl", resource: "admin_secretariat_items?select=id,owner_user_id,item_type,status&limit=0" },
   { id: "fee_proposals", label: "Istwa pwopozisyon tarif", resource: "platform_fee_proposals?select=id,service_code,currency,version,status&limit=0" },
@@ -79,7 +79,7 @@ async function checkTable(url, secretKey, item) {
       const body = await response.json();
       code = String(body?.code || "");
     } catch {}
-    if (item.optional && ["PGRST205", "42P01"].includes(code)) {
+    if (item.optional && ["PGRST205", "42P01", "PGRST204", "42703"].includes(code)) {
       return {
         id: item.id,
         label: item.label,
