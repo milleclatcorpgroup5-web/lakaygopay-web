@@ -60,7 +60,6 @@ function statusText(value) {
     withdrawn: "Retire",
     closed: "Fèmen",
     submitted: "Soumèt",
-    under_review: "An revizyon",
     approved: "Apwouve",
     cancelled: "Anile"
   };
@@ -395,7 +394,7 @@ function renderCardProgram() {
   else if(!hasApprovedLimit)message("#cardProgramNotice","Klasman ak etwal ou poko apwouve. Ou pap wè lòt kat klasman yo; se sèlman kat nivo pa ou a k ap parèt apre validasyon.","");
   else if(activeApplication)message("#cardProgramNotice","Demann ou anrejistre pou "+assignedTier.display_name+" "+starText(assignment.star_level)+". Sa poko vle di yon kat apwouve oswa emèt.","success");
   else if(!assignedTier.application_open)message("#cardProgramNotice","Demann kat pou klasman sa a fèmen tanporèman.","");
-  else message("#cardProgramNotice","Ou wè sèlman kat ki koresponn ak klasman ak etwal LakayGo apwouve pou kont ou.","success");
+  else message("#cardProgramNotice","Ou wè sèlman klasman ak etwal LakayGo apwouve pou kont ou. Sa se yon demann enterè sèlman: pa gen okenn kat fizik oswa vityèl k ap emèt, aktive oswa sèvi pou peye kounye a.","success");
 
   const status=$("#cardApplicationStatus");
   if(application){status.textContent="Estati demann: "+statusText(application.status)+" · "+(assignedTier?.display_name||application.tier_code)+" · "+starText(application.star_level)+" · "+application.requested_form+" · Plafon lè demann: "+formatHtgLimit(application.approved_limit_htg)+" · "+new Date(application.created_at).toLocaleDateString("fr-HT");status.hidden=false;}
