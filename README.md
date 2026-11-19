@@ -100,7 +100,7 @@ La migration `202611190003_production_transfer_rpc_audit.sql` est une migration 
 - Pour les transferts, vérifier le débit/crédit correspondant, l'équilibre du ledger, l'audit et le comportement idempotent.
 - Conserver les rails de paiement externes et l'émission de cartes désactivés tant que les partenaires, autorisations, rapprochements et contrôles nécessaires ne sont pas validés.
 
-Tests actuellement présents :
-- `node --experimental-default-type=module --test tests/transfers.test.mjs`
+Tests présents :
+- `node --experimental-default-type=module --test tests/transfers.test.mjs tests/agent-card-readiness.test.mjs`
 
 L'existence d'un build Cloudflare réussi ne prouve pas à elle seule que tous les parcours utilisateur et les opérations de base de données sont validés.
