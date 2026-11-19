@@ -48,7 +48,7 @@ export async function onRequestGet({ request, env }) {
         source: "immutable_internal_ledger",
         read_only: true,
         automatic_fee_posting_active: false,
-        note: "Rapò yo baze sou ledger entèn. Nan beta a, mouvman ledger yo rete HTG sèlman; bous revni USD/EUR yo se kont preparasyon a zewo, san FX oswa peman deviz reyèl. Motè frè a pa poste revni otomatik."
+        note: "Rapò yo baze sou ledger entèn. HTG, USD ak EUR se ledger separe; tout ekriti dwe matche ak deviz bous la epi transfè yo rete nan menm deviz la. Pa gen konvèsyon FX, transfè ant deviz oswa règleman ekstèn. Balans USD/EUR pa pwouve gen lajan ekstèn ki disponib. Motè frè a pa poste revni otomatik."
       },
       roles: access.roles,
       generated_at: new Date().toISOString()
