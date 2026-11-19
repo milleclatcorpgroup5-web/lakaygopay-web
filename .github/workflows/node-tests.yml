@@ -21,6 +21,6 @@ jobs:
         with:
           node-version: 24
       - name: Enable Node ESM for Cloudflare Pages Functions
-        run: printf '{"private":true,"type":"module"}\\n' > package.json
+        run: printf '%s' '{"private":true,"type":"module"}' > package.json
       - name: Run backend and frontend contract tests
         run: node --test tests/transfers.test.mjs tests/agent-card-readiness.test.mjs
