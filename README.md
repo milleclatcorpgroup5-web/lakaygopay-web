@@ -101,6 +101,6 @@ La migration `202611190003_production_transfer_rpc_audit.sql` est une migration 
 - Conserver les rails de paiement externes et l'émission de cartes désactivés tant que les partenaires, autorisations, rapprochements et contrôles nécessaires ne sont pas validés.
 
 Tests présents :
-- `node --experimental-default-type=module --test tests/transfers.test.mjs tests/agent-card-readiness.test.mjs`
+- Les tests Node sont exécutés par GitHub Actions sur chaque pull request et chaque push vers `main`. Le workflow crée un marqueur ESM temporaire, puis exécute `node --test tests/transfers.test.mjs tests/agent-card-readiness.test.mjs`.
 
 L'existence d'un build Cloudflare réussi ne prouve pas à elle seule que tous les parcours utilisateur et les opérations de base de données sont validés.
