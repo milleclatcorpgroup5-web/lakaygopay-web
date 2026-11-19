@@ -17,3 +17,13 @@ Production rollout:
 4. Approve one test app and issue sandbox credentials.
 5. Test checkout and payout using test accounts/internal test funds.
 6. Integrate MC-MARKETPLACE as the first partner only after these tests pass.
+
+
+## Partner payout reserve and recipient choice
+When a partner requests a payout, LakayGoPay verifies that the linked merchant wallet has enough available balance and reserves the requested amount while the request is pending. This prevents the same merchant funds from being promised to multiple customers or spent twice. The customer sees the partner name, amount, currency and external reference in their LakayGoPay account. They can accept with their transaction PIN or reject the request. Rejection releases the reserve and does not create a ledger transfer. Acceptance posts one balanced debit/credit pair in the selected currency.
+
+## Integration boundary
+A partner must only fulfill its own game credits, Marketplace order, subscription or customer balance after its backend polls the Connect checkout status and receives a final \`paid\` result. Do not trust a browser redirect or client-side success flag. Payout requests are not final until the recipient accepts them. This iteration uses a partner's internal LakayGoPay merchant wallet and a recipient's internal LakayGoPay wallet; it is not a bank transfer or external cash-out.
+
+## Production readiness status
+Source code may be deployed on the Production domain while the Connect operating mode remains \`sandbox\`. The Connect database migration must be applied after prerequisite financial, multi-currency, merchant-payment and Admin migrations are verified. Until then, partner onboarding, checkout settlement and payout workflows are unavailable. No real-money production capability is enabled by this release.
