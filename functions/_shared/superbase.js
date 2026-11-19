@@ -28,8 +28,9 @@ async function requireUser(request, env) {
   const match = authorization.match(/^Bearer\s+(.+)$/i);
   if (!match) return { error: json({ error: "AUTH_REQUIRED" }, 401) };
 
+  const accessToken = match[1];
   const response = await fetch(`${url}/auth/v1/user`, {
-    headers: { apikey: publishableKey, authorization: `Bearer ${match[1]}` },
+    headers: { apikey: publishableKey, authorization: `Bearer ${accessToken}` },
   });
   if (!response.ok) return { error: json({ error: "INVALID_OR_EXPIRED_SESSION" }, 401) };
   const user = await response.json();
@@ -52,7 +53,9 @@ async function requireUser(request, env) {
   if (accountStatus !== "active") {
     return { error: json({ error: accountStatus === "suspended" ? "ACCOUNT_SUSPENDED" : "ACCOUNT_NOT_ACTIVE" }, 403) };
   }
-  return { user, accessToken: match[1] };
+  // Keep the verified user's access token. Financial RPCs that derive their
+  // actor from auth.uid() must receive this JWT, never the service-role key.
+  return { user, accessToken };
 }
 
 async function callUserRest(env, accessToken, resourceAndQuery) {
@@ -75,6 +78,45 @@ async function callUserRest(env, accessToken, resourceAndQuery) {
   return data;
 }
 
+// Call a user-scoped RPC with the access token that requireUser() already
+// validated. Postgres auth.uid() will therefore resolve to the real user.
+async function callUserRpc(env, accessToken, functionName, payload) {
+  if (typeof accessToken !== "string" || !accessToken) {
+    throw Object.assign(new Error("INVALID_OR_EXPIRED_SESSION"), { status: 401 });
+  }
+  if (typeof functionName !== "string" || !/^[a-z][a-z0-9_]*$/i.test(functionName)) {
+    throw Object.assign(new Error("RPC_NAME_INVALID"), { status: 400 });
+  }
+
+  const { url, publishableKey } = config(env);
+  const response = await fetch(`${url}/rest/v1/rpc/${functionName}`, {
+    method: "POST",
+    headers: {
+      apikey: publishableKey,
+      authorization: `Bearer ${accessToken}`,
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  const raw = await response.text();
+  let data;
+  try { data = raw ? JSON.parse(raw) : null; } catch { data = null; }
+  if (!response.ok) {
+    const message = String(data?.message || data?.hint || "");
+    const code = message.match(/[A-Z][A-Z0-9_]{3,}/)?.[0] ||
+      (response.status === 401 ? "INVALID_OR_EXPIRED_SESSION" : "BACKEND_OPERATION_FAILED");
+    const err = new Error(code);
+    err.status = response.status === 401 ? 401
+      : response.status === 403 ? 403
+      : response.status >= 500 ? 503 : 400;
+    throw err;
+  }
+  return data;
+}
+
+// Service-role RPCs remain available for trusted server-only operations such
+// as recording PIN attempts. Never use this helper for a user-owned transfer.
 async function callRpc(env, functionName, payload) {
   const { url, secretKey } = config(env);
   const response = await fetch(`${url}/rest/v1/rpc/${encodeURIComponent(functionName)}`, {
@@ -140,4 +182,4 @@ function fail(error) {
   return json({ error: code }, status);
 }
 
-export { json, config, requireUser, callUserRest, callRpc, readJson, validUuid, validAmount, idempotencyKey, fail };
+export { json, config, requireUser, callUserRest, callUserRpc, callRpc, readJson, validUuid, validAmount, idempotencyKey, fail };
