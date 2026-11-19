@@ -6,6 +6,8 @@ let adminPinVerifiedUserId = null;
 let pinGateSession = null;
 let currentAdminRoles = [];
 let teamDirectoryRows = [];
+let liveLogsTimer = null;
+let liveLogsSession = null;
 
 function setNotice(selector, message, kind) {
   const node = $(selector);
@@ -143,7 +145,9 @@ function explainError(code) {
     CONNECT_PAYOUT_WALLET_UNAVAILABLE: "Bous patnè a oswa bous kliyan an pa disponib.",
     CONNECT_RECIPIENT_NOT_ACTIVE: "Kont kliyan k ap resevwa a pa aktif.",
     CONNECT_RECIPIENT_WALLET_NOT_FOUND: "Kliyan an pa gen yon bous aktif nan lajan sa a.",
-    CONNECT_CAPABILITY_DENIED: "Aplikasyon sa a pa gen kapasite operasyon sa a."
+    CONNECT_CAPABILITY_DENIED: "Aplikasyon sa a pa gen kapasite operasyon sa a.",
+    SYSTEM_LOGS_NOT_CONFIGURED: "Logs Live poko konekte ak bazdone a. Aplike migrasyon teknik la nan Supabase pou aktive jounal la.",
+    SYSTEM_LOGS_UNAVAILABLE: "Jounal Logs Live pa disponib kounye a."
   };
   return messages[code] || "Yon erè rive. Kòd: " + (code || "UNKNOWN");
 }
@@ -154,6 +158,7 @@ function showLogin(message, kind = "error") {
   $("#adminView").hidden = true;
   $("#refreshButton").hidden = true;
   $("#logoutButton").hidden = true;
+  stopLiveLogs();
   adminPinVerifiedUserId = null;
   pinGateSession = null;
   currentAdminRoles = [];
@@ -173,9 +178,14 @@ async function adminRequest(path, session, body, method) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.ok === false) {
-    const error = new Error(explainError(data.error));
+    const requestId = response.headers.get("x-request-id") || "";
+    const friendly = response.status >= 500
+      ? "Nou pa kapab trete demann ou an kounye a. Tanpri eseye ankò pita." + (requestId ? " Referans: " + requestId.slice(0, 16) : "")
+      : explainError(data.error);
+    const error = new Error(friendly);
     error.code = data.error;
     error.status = response.status;
+    error.requestId = requestId || null;
     error.lockedUntil = data.locked_until || null;
     error.diagnostic = typeof data.diagnostic === "string" ? data.diagnostic : null;
     throw error;
@@ -260,6 +270,7 @@ async function loadOverview(session) {
   const canSeeFinance = isSuper || ["finance_admin","accountant","auditor"].some((role) => roleSet.has(role));
   const canSeeSecretariat = isSuper || roleSet.has("secretary");
   const canSeeSystemHealth = isSuper || roleSet.has("admin");
+  const canSeeLogs = isSuper || ["admin", "risk_admin", "auditor"].some((role) => roleSet.has(role));
   const canSeeAnalytics = isSuper || ["admin","risk_admin","support_agent","finance_admin","accountant","auditor"].some((role) => roleSet.has(role));
 
   $("#adminRecordsPanel").hidden = !canSeeOperations;
@@ -277,6 +288,8 @@ async function loadOverview(session) {
   $("#adminSecretariatPanel").hidden = !canSeeSecretariat;
   $("#adminAnalyticsPanel").hidden = !canSeeAnalytics;
   $("#systemHealthPanel").hidden = !canSeeSystemHealth;
+  $("#liveLogsPanel").hidden = !canSeeLogs;
+  $("#liveLogsNav").hidden = !canSeeLogs;
 
   const firstName = String(admin.email || "Administratè").split("@")[0];
   $("#adminName").textContent = firstName;
@@ -308,6 +321,7 @@ async function loadOverview(session) {
     if (canManageCardLimits) setNotice("#cardLimitNotice", lockMessage, "");
     if (canManageConnect) setNotice("#connectAppsNotice", lockMessage, "");
     if (canSeeSystemHealth) setNotice("#systemHealthNotice", lockMessage, "error");
+    if (canSeeLogs) setNotice("#liveLogsNotice", "Verifikasyon MFA obligatwa anvan ou kapab konsilte Logs Live.", "error");
     setNotice("#dashboardNotice", "Aksè bazik la konfime. KPI yo ak tout done operasyonèl, finansye, ekip ak sekretarya rete kache jiskaske ou verifye TOTP nan kat “Verifikasyon MFA”.", "");
     $("#adminMfaPanel").classList.add("mfa-needs-action");
     return;
@@ -321,6 +335,7 @@ async function loadOverview(session) {
   // the report refresh button).
   const moduleLoads = [];
   if (canSeeSystemHealth) moduleLoads.push(loadSystemHealth(session));
+  if (canSeeLogs) moduleLoads.push(loadLiveLogs(session));
   if (canSeeAnalytics) moduleLoads.push(loadAdminAnalytics(session));
   if (canSeeFinance) {
     moduleLoads.push(loadFinanceOverview(session));
@@ -332,6 +347,7 @@ async function loadOverview(session) {
   if (canManageConnect) moduleLoads.push(loadConnectApps(session));
   if (canSeeSecretariat) moduleLoads.push(loadSecretariatItems(session));
   await Promise.allSettled(moduleLoads);
+  if (canSeeLogs) startLiveLogs(session); else stopLiveLogs();
 
   if (canSeeOperations) {
     const allowedRecords = new Set();
@@ -418,6 +434,86 @@ async function loadSystemHealth(session) {
   } finally {
     if (button) button.disabled = false;
   }
+}
+
+
+function renderLiveLogs(data) {
+  const body = $("#liveLogsBody");
+  if (!body) return;
+  body.replaceChildren();
+  const logs = Array.isArray(data.logs) ? data.logs : [];
+  if (!logs.length) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 7;
+    cell.className = "muted";
+    cell.textContent = "Pa gen pwoblèm anrejistre pou moman an.";
+    row.appendChild(cell);
+    body.appendChild(row);
+  }
+  logs.forEach((entry) => {
+    const row = document.createElement("tr");
+    const values = [
+      entry.created_at ? new Date(entry.created_at).toLocaleString("fr-HT") : "—",
+      entry.severity === "error" ? "ERÈ" : entry.severity === "warning" ? "AVÈTISMAN" : "INFO",
+      entry.area || "—",
+      entry.event_code || "SYSTEM_EVENT",
+      [entry.method, entry.path].filter(Boolean).join(" ") || "—",
+      entry.http_status ? "HTTP " + entry.http_status : "—",
+      entry.request_id ? String(entry.request_id).slice(0, 16) : "—"
+    ];
+    values.forEach((value, index) => {
+      const cell = document.createElement("td");
+      cell.textContent = String(value);
+      if (index === 1) cell.className = "log-level log-" + (entry.severity || "info");
+      if (index === 3) cell.className = "log-event";
+      if (index === 4) cell.className = "log-route";
+      row.appendChild(cell);
+    });
+    body.appendChild(row);
+  });
+  const errors = logs.filter((entry) => entry.severity === "error").length;
+  const warnings = logs.filter((entry) => entry.severity === "warning").length;
+  const summary = $("#liveLogsSummary");
+  summary.replaceChildren();
+  [[logs.length, "evènman vizib"], [errors, "erè"], [warnings, "avètisman"]].forEach(([count, label]) => {
+    const item = document.createElement("span");
+    const strong = document.createElement("b");
+    strong.textContent = String(count);
+    item.append(strong, document.createTextNode(label));
+    summary.appendChild(item);
+  });
+  $("#liveLogsUpdatedAt").textContent = data.checked_at
+    ? "Dènye mizajou: " + new Date(data.checked_at).toLocaleString("fr-HT") + " · Rafrechi otomatik chak 15 segonn."
+    : "";
+}
+
+async function loadLiveLogs(session, quiet = false) {
+  if (!quiet) setNotice("#liveLogsNotice", "Ap chaje dènye evènman teknik yo…", "");
+  try {
+    const data = await adminRequest("/api/admin/logs?limit=75", session);
+    renderLiveLogs(data);
+    setNotice("#liveLogsNotice", "Jounal teknik la ajou. " + (data.count || 0) + " evènman parèt.", "success");
+  } catch (error) {
+    const text = error.code === "SYSTEM_LOGS_NOT_CONFIGURED"
+      ? explainError(error.code)
+      : error.message || explainError(error.code);
+    setNotice("#liveLogsNotice", text, "error");
+  }
+}
+
+function startLiveLogs(session) {
+  liveLogsSession = session;
+  if (liveLogsTimer) clearInterval(liveLogsTimer);
+  liveLogsTimer = setInterval(() => {
+    if (!document.hidden && liveLogsSession) loadLiveLogs(liveLogsSession, true);
+  }, 15000);
+}
+
+function stopLiveLogs() {
+  if (liveLogsTimer) clearInterval(liveLogsTimer);
+  liveLogsTimer = null;
+  liveLogsSession = null;
 }
 
 function pinHexToBytes(value) {
@@ -2132,6 +2228,11 @@ async function boot() {
     if (session) await loadSecretariatItems(session);
   });
 
+  $("#liveLogsRefresh").addEventListener("click", async () => {
+    const session = await currentSession();
+    if (session) await loadLiveLogs(session);
+  });
+
   $("#systemHealthRefresh").addEventListener("click", async () => {
     const session = await currentSession();
     if (session) await loadSystemHealth(session);
@@ -2150,6 +2251,7 @@ async function boot() {
   });
 
   $("#logoutButton").addEventListener("click", async () => {
+    stopLiveLogs();
     adminPinVerifiedUserId = null;
     pinGateSession = null;
     await supabase.auth.signOut();
