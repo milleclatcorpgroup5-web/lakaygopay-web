@@ -143,7 +143,18 @@ function translateError(code) {
     CARD_FORMAT_INVALID: "Chwazi yon kalite kat ki valab.",
     CARD_PROGRAM_DATA_UNAVAILABLE: "Sèvis enfòmasyon kat la pa disponib kounye a.",
     CARD_FORMAT_UNAVAILABLE: "Kalite kat ou chwazi a poko disponib pou klasman sa a.",
-    CARD_APPLICATION_FAILED: "Nou pa kapab anrejistre enterè kat la kounye a."
+    CARD_APPLICATION_FAILED: "Nou pa kapab anrejistre enterè kat la kounye a.",
+    CONNECT_APP_NOT_ACTIVE: "Aplikasyon patnè sa a sispann oswa li poko aktive.",
+    CONNECT_CAPABILITY_DENIED: "Aplikasyon patnè sa a pa gen otorizasyon pou operasyon sa a.",
+    CONNECT_CHECKOUT_NOT_FOUND: "Nou pa jwenn demann peman sa a.",
+    CONNECT_CHECKOUT_NOT_PAYABLE: "Demann peman sa a ekspire, anile oswa deja trete.",
+    CONNECT_PAYOUT_NOT_FOUND: "Nou pa jwenn demann retrè aplikasyon patnè a.",
+    CONNECT_PAYOUT_FORBIDDEN: "Demann sa a pa pou kont ou.",
+    CONNECT_PAYOUT_NOT_PENDING: "Demann sa a pa an atant ankò.",
+    CONNECT_PAYOUT_EXPIRED: "Demann peman an ekspire.",
+    CONNECT_PAYOUT_WALLET_UNAVAILABLE: "Bous pou resevwa lajan an pa disponib.",
+    CONNECT_DATABASE_UNAVAILABLE: "Sèvis LakayGoPay Connect la poko disponib. Ekip la dwe verifye enstalasyon bazdone a.",
+    CONNECT_PAYOUT_RECIPIENT_REQUIRED: "Idantifyan kliyan LakayGoPay la obligatwa."
   };
   return map[code] || map[String(code || "").toUpperCase()] || code || "Yon erè rive. Eseye ankò.";
 }

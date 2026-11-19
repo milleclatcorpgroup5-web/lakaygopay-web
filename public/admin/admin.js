@@ -125,7 +125,23 @@ function explainError(code) {
     ADMIN_PIN_RESET_UNAVAILABLE: "Rekiperasyon PIN lan pa disponib kounye a. Verifye migrasyon sekirite Admin lan.",
     ADMIN_PIN_RESET_CHALLENGE_INVALID: "Demann reset PIN lan ekspire oswa pa koresponn ak sesyon an. Rekòmanse rekiperasyon an.",
     ADMIN_PIN_NOT_SET: "Pa gen PIN Admin ki anrejistre pou kont sa a.",
-    MFA_FACTOR_LIMIT_REACHED: "Limit kantite authenticator sekou yo rive. Pa efase yon aparèy verifye san plan rekiperasyon."
+    MFA_FACTOR_LIMIT_REACHED: "Limit kantite authenticator sekou yo rive. Pa efase yon aparèy verifye san plan rekiperasyon.",
+    CONNECT_DATABASE_UNAVAILABLE: "Tab Connect yo poko disponib. Verifye migrasyon LakayGoPay Connect la.",
+    CONNECT_APP_NOT_FOUND: "Nou pa jwenn aplikasyon patnè sa a.",
+    CONNECT_APP_NOT_PENDING: "Aplikasyon an pa nan estati pou resevwa desizyon sa a.",
+    CONNECT_APP_NOT_ACTIVE: "Aplikasyon an pa aktif nan Sandbox.",
+    CONNECT_APP_NOT_SUSPENDED: "Aplikasyon sa a pa sispann.",
+    CONNECT_REVIEW_DECISION_INVALID: "Desizyon revizyon an pa valab.",
+    CONNECT_ACTIVE_MERCHANT_OWNER_REQUIRED: "Devlopè a dwe posede yon kont machann aktif.",
+    CONNECT_APP_NAME_INVALID: "Non aplikasyon an dwe gen ant 2 ak 100 karaktè.",
+    CONNECT_HTTPS_URL_REQUIRED: "Adrès aplikasyon an dwe yon URL HTTPS valab.",
+    CONNECT_PAYOUT_NOT_FOUND: "Demann peman an pa egziste.",
+    CONNECT_PAYOUT_NOT_PENDING: "Demann sa a pa an atant ankò.",
+    CONNECT_PAYOUT_EXPIRED: "Demann sa a ekspire.",
+    CONNECT_PAYOUT_WALLET_UNAVAILABLE: "Bous patnè a oswa bous kliyan an pa disponib.",
+    CONNECT_RECIPIENT_NOT_ACTIVE: "Kont kliyan k ap resevwa a pa aktif.",
+    CONNECT_RECIPIENT_WALLET_NOT_FOUND: "Kliyan an pa gen yon bous aktif nan lajan sa a.",
+    CONNECT_CAPABILITY_DENIED: "Aplikasyon sa a pa gen kapasite operasyon sa a."
   };
   return messages[code] || "Yon erè rive. Kòd: " + (code || "UNKNOWN");
 }

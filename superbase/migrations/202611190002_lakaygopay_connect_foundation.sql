@@ -214,6 +214,11 @@ begin
   if v_session.id is null then raise exception 'CONNECT_CHECKOUT_NOT_FOUND'; end if;
   if v_session.status='paid' then return jsonb_build_object('status','paid','ledger_transaction_id',v_session.ledger_transaction_id); end if;
   if v_session.status<>'pending' or v_session.expires_at<=now() then raise exception 'CONNECT_CHECKOUT_NOT_PAYABLE'; end if;
+  if not exists (
+    select 1 from public.connect_apps a
+    join public.merchants m on m.id=a.merchant_id
+    where a.id=v_session.app_id and a.status='active' and a.mode='sandbox' and m.status='active'
+  ) then raise exception 'CONNECT_APP_NOT_ACTIVE'; end if;
   select * into v_request from public.payment_requests where id=v_session.payment_request_id;
   if v_request.id is null or v_request.status<>'pending' then raise exception 'CONNECT_CHECKOUT_NOT_PAYABLE'; end if;
   v_result := public.pay_merchant_payment_request(p_actor_user_id,v_request.public_token,p_payer_wallet_id,v_session.amount,p_idempotency_key);
@@ -244,6 +249,7 @@ declare v_app public.connect_apps%rowtype; v_merchant_wallet public.wallets%rowt
 begin
   select * into v_app from public.connect_apps where id=p_app_id and status='active';
   if v_app.id is null or v_app.mode<>'sandbox' then raise exception 'CONNECT_APP_NOT_ACTIVE'; end if;
+  if not exists (select 1 from public.merchants where id=v_app.merchant_id and status='active') then raise exception 'MERCHANT_NOT_ACTIVE'; end if;
   if not ('payout'=any(v_app.capabilities)) then raise exception 'CONNECT_CAPABILITY_DENIED'; end if;
   if p_external_reference is null or length(p_external_reference) not between 1 and 120 then raise exception 'CONNECT_EXTERNAL_REFERENCE_INVALID'; end if;
   if p_idempotency_key is null or length(p_idempotency_key) not between 8 and 128 then raise exception 'INVALID_IDEMPOTENCY_KEY'; end if;
@@ -292,6 +298,11 @@ begin
     return coalesce(v_payout.result,jsonb_build_object('status','accepted','ledger_transaction_id',v_payout.ledger_transaction_id));
   end if;
   if v_payout.status<>'pending' then raise exception 'CONNECT_PAYOUT_NOT_PENDING'; end if;
+  if not exists (
+    select 1 from public.connect_apps a
+    join public.merchants m on m.id=a.merchant_id
+    where a.id=v_payout.app_id and a.status='active' and a.mode='sandbox' and m.status='active'
+  ) then raise exception 'CONNECT_APP_NOT_ACTIVE'; end if;
   if v_payout.expires_at<=now() then update public.connect_payout_requests set status='expired' where id=p_payout_id; raise exception 'CONNECT_PAYOUT_EXPIRED'; end if;
   select * into v_source from public.wallets where id=v_payout.merchant_wallet_id;
   select * into v_target from public.wallets where owner_user_id=p_actor_user_id and currency=v_payout.currency and status='active';
