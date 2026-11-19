@@ -268,15 +268,19 @@ function renderCardProgram() {
   const activeApplication=application&&["waitlist","under_review","eligible"].includes(application.status);
   const schemaReady=Boolean(program.schema_ready);
   const hasApprovedLimit=Boolean(assignment&&assignment.assessment_status==="approved"&&assignedTier&&assignedStar);
+  const visibleTier=hasApprovedLimit?(tiers.find(function(tier){return tier.tier_code===assignedTier.tier_code;})||assignedTier):null;
   const banner=$("#cardAssignmentBanner");
-  if(!schemaReady){banner.textContent="Pwogram kat la deja parèt. Klasman otomatik la ap aktive lè migrasyon kat la fin enstale nan Supabase.";banner.className="card-assignment-banner pending";}
-  else if(!hasApprovedLimit){banner.textContent="Plafon finansye ou poko evalye oswa apwouve. Ekip LakayGo dwe verifye dosye kont ou anvan sistèm nan asiyen klasman ak etwal ou.";banner.className="card-assignment-banner pending";}
+  if(!schemaReady){banner.textContent="Pwogram kat la ap tann enstalasyon ak verifikasyon bazdone a.";banner.className="card-assignment-banner pending";}
+  else if(!hasApprovedLimit){banner.textContent="Plafon finansye ou poko evalye oswa apwouve. Kat pa disponib pou afiche jiskaske ekip LakayGo fin verifye dosye ou.";banner.className="card-assignment-banner pending";}
   else{banner.textContent="PLAFON LAKAYGO VALIDE: "+formatHtgLimit(assignment.approved_limit_htg)+" · KLASMAN: "+assignedTier.display_name+" · NIVO: "+starText(assignment.star_level)+" ("+assignedStar.star_label+").";banner.className="card-assignment-banner assigned";}
-  const grid=$("#cardTierGrid");grid.replaceChildren();
-  tiers.forEach(function(tier){
+
+  const grid=$("#cardTierGrid");
+  grid.replaceChildren();
+  grid.hidden=!visibleTier;
+  if(visibleTier){
+    const tier=visibleTier;
     const article=document.createElement("article");
-    const isAssigned=Boolean(hasApprovedLimit&&tier.tier_code===assignedTier.tier_code);
-    article.className="card-tier-card tier-"+String(tier.tier_code||"").toLowerCase()+(isAssigned?" is-assigned":"");
+    article.className="card-tier-card tier-"+String(tier.tier_code||"").toLowerCase()+" is-assigned";
     const visual=document.createElement("div");visual.className="card-visual";
     const brand=document.createElement("div");brand.className="card-visual-brand";brand.textContent="LAKAYGO";
     const chip=document.createElement("span");chip.className="card-chip";chip.setAttribute("aria-hidden","true");
@@ -284,32 +288,32 @@ function renderCardProgram() {
     const mark=document.createElement("div");mark.className="card-visual-mark";mark.textContent="L";visual.append(brand,chip,level,mark);
     const title=document.createElement("h3");title.textContent=tier.display_name||("LakayGo "+tier.tier_code);
     const range=document.createElement("div");range.className="card-tier-range";range.textContent=formatHtgLimit(tier.min_limit_htg)+" — "+(tier.max_limit_htg==null?"San plafon siperyè":formatHtgLimit(tier.max_limit_htg));
-    const badge=document.createElement("span");badge.className="card-tier-assigned-badge";badge.textContent="KLASMAN OU";badge.hidden=!isAssigned;
+    const badge=document.createElement("span");badge.className="card-tier-assigned-badge";badge.textContent="KLASMAN OU";
     const description=document.createElement("p");description.className="card-tier-description";description.textContent=tier.description||"";
     const starList=document.createElement("div");starList.className="card-star-levels";
-    (Array.isArray(tier.star_levels)?tier.star_levels:[]).forEach(function(star){
-      const row=document.createElement("div");row.className="card-star-row";
-      const label=document.createElement("span");label.textContent=starText(star.star_level)+" · "+star.star_label;
-      const limit=document.createElement("small");limit.textContent=formatHtgLimit(star.min_limit_htg)+" — "+(star.max_limit_htg==null?"plis":formatHtgLimit(star.max_limit_htg));
-      row.append(label,limit);starList.append(row);
-    });
+    const row=document.createElement("div");row.className="card-star-row";
+    const starLabel=document.createElement("span");starLabel.textContent=starText(assignment.star_level)+" · "+(assignedStar.star_label||"Etwal ou");
+    const starLimit=document.createElement("small");starLimit.textContent="Plafon apwouve: "+formatHtgLimit(assignment.approved_limit_htg);
+    row.append(starLabel,starLimit);starList.append(row);
     const list=document.createElement("ul");
     (Array.isArray(tier.benefits)?tier.benefits:[]).forEach(function(benefit){const item=document.createElement("li");item.textContent=String(benefit);list.append(item);});
     article.append(visual,badge,title,range,description,starList,list);grid.append(article);
-  });
-  const format=$("#cardFormSelect"),submit=$("#cardInterestSubmit");
+  }
+
+  const format=$("#cardFormSelect"),submit=$("#cardInterestSubmit"),interestForm=$("#cardInterestForm");
   const canApply=schemaReady&&hasApprovedLimit&&Boolean(assignedTier.application_open)&&!activeApplication;
+  interestForm.hidden=!canApply;
   format.disabled=!canApply;submit.disabled=!canApply;
-  if(!schemaReady)message("#cardProgramNotice","Klasman yo parèt. Migrasyon Supabase la nesesè pou verifye plafon, asiyen etwal epi anrejistre demann yo.","error");
-  else if(!hasApprovedLimit)message("#cardProgramNotice","Kliyan an pa chwazi klasman. Apre verifikasyon ekip LakayGo, sistèm nan ap asiyen klasman ak etwal otomatikman.","");
+  if(!schemaReady)message("#cardProgramNotice","Pwogram kat la poko pare nan bazdone a. Ekip LakayGo ap verifye enstalasyon an.","error");
+  else if(!hasApprovedLimit)message("#cardProgramNotice","Klasman ak etwal ou poko apwouve. Ou pap wè lòt kat klasman yo; se sèlman kat nivo pa ou a k ap parèt apre validasyon.","");
   else if(activeApplication)message("#cardProgramNotice","Demann ou anrejistre pou "+assignedTier.display_name+" "+starText(assignment.star_level)+". Sa poko vle di yon kat apwouve oswa emèt.","success");
   else if(!assignedTier.application_open)message("#cardProgramNotice","Demann kat pou klasman sa a fèmen tanporèman.","");
-  else message("#cardProgramNotice","Klasman ou deja detèmine otomatikman. Chwazi sèlman si ou enterese nan kat vityèl, fizik oswa toude.","success");
+  else message("#cardProgramNotice","Ou wè sèlman kat ki koresponn ak klasman ak etwal LakayGo apwouve pou kont ou.","success");
+
   const status=$("#cardApplicationStatus");
   if(application){status.textContent="Estati demann: "+statusText(application.status)+" · "+(assignedTier?.display_name||application.tier_code)+" · "+starText(application.star_level)+" · "+application.requested_form+" · Plafon lè demann: "+formatHtgLimit(application.approved_limit_htg)+" · "+new Date(application.created_at).toLocaleDateString("fr-HT");status.hidden=false;}
   else{status.textContent="";status.hidden=true;}
 }
-
 function renderProfile(session) {
   const profile = currentProfile || {};
   const name = profile.full_name || session.user.user_metadata?.full_name || session.user.email || "Itilizatè";
@@ -1502,7 +1506,7 @@ async function init() {
   const session = await sessionNow();
   await syncSession(session);
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js?v=20261119-card-02").catch(function () {});
+    navigator.serviceWorker.register("/service-worker.js?v=20261119-card-03").catch(function () {});
   }
 }
 init().catch(function (error) {
