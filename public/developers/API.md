@@ -55,10 +55,12 @@ JSON body:
       "description": "Marketplace withdrawal"
     }
 
-The recipient receives a pending request inside LakayGoPay. No debit occurs until they sign in and accept with their transaction PIN.
+The recipient receives a pending request inside LakayGoPay. Pending payout requests reserve the required amount from the partner merchant wallet so the same funds cannot be promised twice. No debit/credit is posted until the recipient signs in and accepts with their transaction PIN. The recipient can also reject the request, which releases the reserve.
 
 Check status:
 GET /api/connect/v1/payouts?external_reference=MC-WITHDRAW-808
+
+The user can accept with their PIN or reject the request from their LakayGoPay account.
 
 ## Test checklist
 1. Use only a test app approved by the LakayGoPay team.

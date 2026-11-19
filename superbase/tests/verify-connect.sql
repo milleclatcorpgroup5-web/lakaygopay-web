@@ -7,7 +7,7 @@ where n.nspname='public' and c.relname in ('connect_apps','connect_checkout_sess
 select status,mode,count(*) app_count from public.connect_apps group by status,mode order by status;
 select count(*) filter(where status='pending') pending_checkouts,count(*) filter(where status='paid') paid_checkouts,
  count(*) filter(where status='expired') expired_checkouts from public.connect_checkout_sessions;
-select count(*) filter(where status='pending') pending_payouts,count(*) filter(where status='accepted') accepted_payouts,
+select count(*) filter(where status='pending') pending_payouts,count(*) filter(where status='accepted') accepted_payouts,count(*) filter(where status='rejected') rejected_payouts,
  count(*) filter(where status='expired') expired_payouts from public.connect_payout_requests;
 select count(*) invalid_non_sandbox_apps from public.connect_apps where mode<>'sandbox';
 select p.proname function_name from pg_proc p join pg_namespace n on n.oid=p.pronamespace

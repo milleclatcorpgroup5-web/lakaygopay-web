@@ -245,7 +245,7 @@ create or replace function public.connect_create_payout_request(
 )
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare v_app public.connect_apps%rowtype; v_merchant_wallet public.wallets%rowtype;
-  v_existing public.connect_payout_requests%rowtype; v_id uuid; v_fingerprint text;
+  v_existing public.connect_payout_requests%rowtype; v_id uuid; v_fingerprint text; v_available numeric(20,2);
 begin
   select * into v_app from public.connect_apps where id=p_app_id and status='active';
   if v_app.id is null or v_app.mode<>'sandbox' then raise exception 'CONNECT_APP_NOT_ACTIVE'; end if;
@@ -258,7 +258,7 @@ begin
   if p_currency not in ('HTG','USD','EUR') then raise exception 'CONNECT_CURRENCY_NOT_SUPPORTED'; end if;
   if p_description is not null and length(p_description)>140 then raise exception 'DESCRIPTION_TOO_LONG'; end if;
   if not exists (select 1 from public.profiles where id=p_recipient_user_id and account_status='active') then raise exception 'CONNECT_RECIPIENT_NOT_ACTIVE'; end if;
-  select * into v_merchant_wallet from public.wallets where merchant_id=v_app.merchant_id and currency=p_currency and status='active' and is_system=false;
+  select * into v_merchant_wallet from public.wallets where merchant_id=v_app.merchant_id and currency=p_currency and status='active' and is_system=false for update;
   if v_merchant_wallet.id is null then raise exception 'MERCHANT_WALLET_NOT_FOUND'; end if;
   if not exists (select 1 from public.wallets where owner_user_id=p_recipient_user_id and currency=p_currency and status='active') then
     raise exception 'CONNECT_RECIPIENT_WALLET_NOT_FOUND';
@@ -270,6 +270,20 @@ begin
     return jsonb_build_object('payout_id',v_existing.id,'external_reference',v_existing.external_reference,
       'amount',v_existing.amount,'currency',v_existing.currency,'status',v_existing.status,'expires_at',v_existing.expires_at);
   end if;
+
+  -- Reserve pending payouts against the merchant wallet so requests cannot
+  -- oversubscribe the same internal balance.
+  select
+    coalesce((select sum(case when direction='credit' then amount else -amount end)
+              from public.ledger_entries where wallet_id=v_merchant_wallet.id),0)
+    - coalesce((select sum(amount) from public.withdrawal_requests
+                where wallet_id=v_merchant_wallet.id
+                  and status in ('submitted','awaiting_second_approval','approved','processing')),0)
+    - coalesce((select sum(amount) from public.connect_payout_requests
+                where merchant_wallet_id=v_merchant_wallet.id and status='pending' and expires_at>now()),0)
+    into v_available;
+  if v_available < p_amount then raise exception 'INSUFFICIENT_AVAILABLE_FUNDS'; end if;
+
   insert into public.connect_payout_requests(app_id,partner_app_name,external_reference,idempotency_key,request_fingerprint,
     recipient_user_id,merchant_wallet_id,amount,currency,description)
   values (p_app_id,v_app.app_name,trim(p_external_reference),p_idempotency_key,v_fingerprint,
@@ -284,6 +298,25 @@ begin
   return jsonb_build_object('payout_id',v_id,'external_reference',trim(p_external_reference),'amount',p_amount,
     'currency',p_currency,'status','pending','expires_at',now()+interval '30 minutes');
 end; $$;
+
+
+create or replace function public.connect_reject_payout(p_actor_user_id uuid,p_payout_id uuid)
+returns jsonb language plpgsql security definer set search_path = '' as $
+declare v_payout public.connect_payout_requests%rowtype;
+begin
+  select * into v_payout from public.connect_payout_requests where id=p_payout_id for update;
+  if v_payout.id is null then raise exception 'CONNECT_PAYOUT_NOT_FOUND'; end if;
+  if v_payout.recipient_user_id<>p_actor_user_id then raise exception 'CONNECT_PAYOUT_FORBIDDEN'; end if;
+  if v_payout.status='rejected' then
+    return jsonb_build_object('payout_id',v_payout.id,'status','rejected');
+  end if;
+  if v_payout.status<>'pending' then raise exception 'CONNECT_PAYOUT_NOT_PENDING'; end if;
+  update public.connect_payout_requests set status='rejected' where id=v_payout.id;
+  insert into public.audit_logs(actor_user_id,action,resource_type,resource_id,metadata)
+  values (p_actor_user_id,'connect.payout.rejected','connect_payout',v_payout.id,
+    jsonb_build_object('app_id',v_payout.app_id,'amount',v_payout.amount,'currency',v_payout.currency));
+  return jsonb_build_object('payout_id',v_payout.id,'status','rejected');
+end; $;
 
 create or replace function public.connect_accept_payout(p_actor_user_id uuid,p_payout_id uuid,p_idempotency_key text)
 returns jsonb language plpgsql security definer set search_path = '' as $$
@@ -310,10 +343,15 @@ begin
   if v_source.status<>'active' or v_source.is_system or v_target.is_system then raise exception 'WALLET_NOT_ACTIVE'; end if;
   if v_source.currency<>v_target.currency then raise exception 'CURRENCY_MISMATCH'; end if;
   perform id from public.wallets where id in (v_source.id,v_target.id) order by id for update;
-  select coalesce(sum(case when direction='credit' then amount else -amount end),0)
+  select
+    coalesce((select sum(case when direction='credit' then amount else -amount end)
+              from public.ledger_entries where wallet_id=v_source.id),0)
     - coalesce((select sum(amount) from public.withdrawal_requests where wallet_id=v_source.id
-      and status in ('submitted','awaiting_second_approval','approved','processing')),0)
-    into v_available from public.ledger_entries where wallet_id=v_source.id;
+                and status in ('submitted','awaiting_second_approval','approved','processing')),0)
+    - coalesce((select sum(amount) from public.connect_payout_requests
+                where merchant_wallet_id=v_source.id and status='pending'
+                  and expires_at>now() and id<>v_payout.id),0)
+    into v_available;
   if v_available<v_payout.amount then raise exception 'INSUFFICIENT_AVAILABLE_FUNDS'; end if;
   v_ledger_id:=gen_random_uuid();
   v_reference:='LGP-CONNECT-'||upper(substr(replace(gen_random_uuid()::text,'-',''),1,16));
@@ -382,6 +420,7 @@ revoke all on function public.connect_create_checkout_session(uuid,text,text,num
 revoke all on function public.connect_get_checkout_for_customer(uuid,uuid) from public,anon,authenticated;
 revoke all on function public.connect_pay_checkout_session(uuid,uuid,uuid,text) from public,anon,authenticated;
 revoke all on function public.connect_create_payout_request(uuid,text,text,uuid,numeric,text,text) from public,anon,authenticated;
+revoke all on function public.connect_reject_payout(uuid,uuid) from public,anon,authenticated;
 revoke all on function public.connect_accept_payout(uuid,uuid,text) from public,anon,authenticated;
 revoke all on function public.connect_list_my_payouts(uuid) from public,anon,authenticated;
 revoke all on function public.connect_partner_checkout_status(uuid,text) from public,anon,authenticated;
@@ -394,6 +433,7 @@ grant execute on function public.connect_create_checkout_session(uuid,text,text,
 grant execute on function public.connect_get_checkout_for_customer(uuid,uuid) to service_role;
 grant execute on function public.connect_pay_checkout_session(uuid,uuid,uuid,text) to service_role;
 grant execute on function public.connect_create_payout_request(uuid,text,text,uuid,numeric,text,text) to service_role;
+grant execute on function public.connect_reject_payout(uuid,uuid) to service_role;
 grant execute on function public.connect_accept_payout(uuid,uuid,text) to service_role;
 grant execute on function public.connect_list_my_payouts(uuid) to service_role;
 grant execute on function public.connect_partner_checkout_status(uuid,text) to service_role;
