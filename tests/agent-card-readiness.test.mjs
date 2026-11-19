@@ -50,3 +50,13 @@ test("card tiers remain server-assigned and card issuance stays disabled", () =>
   assert.match(systemHealth, /card_program_tiers/);
   assert.match(systemHealth, /card_customer_limits/);
 });
+
+test("Admin read views avoid columns absent from the Production schema", () => {
+  const records = read("../functions/api/admin/records.js");
+  const analytics = read("../functions/api/admin/analytics.js");
+  assert.doesNotMatch(records, /reference_code|is_system|system_account_code/);
+  assert.match(records, /ledger_transactions\?select=id,transaction_type,status,created_at/);
+  assert.doesNotMatch(analytics, /initiated_by/);
+  assert.match(analytics, /users_with_service: null/);
+  assert.match(analytics, /user_activity_metric_available: false/);
+});
