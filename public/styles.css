@@ -155,3 +155,32 @@ input[readonly]{background:#f3f7f8;color:#718593}
 .verification-email{display:block;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#f6fafb;color:var(--navy);font-size:13px;overflow-wrap:anywhere}
 #merchantOtpCode{font-size:22px;letter-spacing:8px;text-align:center;font-weight:800}
 #merchantOtpCode::placeholder{letter-spacing:5px}
+
+
+/* LakayGo Card program — tier showcase and pre-issuance interest registration. */
+.card-program{display:grid;gap:16px;overflow:hidden}
+.card-program-intro{max-width:760px;margin:-4px 0 0;color:var(--muted);font-size:13px;line-height:1.65}
+.card-tier-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.card-tier-card{display:grid;align-content:start;gap:11px;min-width:0;padding:13px;border:1px solid var(--line);border-radius:17px;background:#fff}
+.card-visual{position:relative;display:grid;align-content:space-between;min-height:154px;aspect-ratio:1.586;padding:15px;border-radius:14px;overflow:hidden;color:#fff;box-shadow:0 10px 24px rgba(4,28,45,.16)}
+.card-visual:after{content:"";position:absolute;width:150px;height:150px;right:-54px;bottom:-76px;border:1px solid rgba(255,255,255,.2);border-radius:50%;box-shadow:0 0 0 18px rgba(255,255,255,.035),0 0 0 38px rgba(255,255,255,.025)}
+.tier-basic .card-visual{background:linear-gradient(135deg,#082f49,#12617a 58%,#0d344c)}
+.tier-standard .card-visual{color:#183849;background:linear-gradient(135deg,#eef2f4,#c7d2da 52%,#f8fafb);border:1px solid #cbd5dc}
+.tier-gold .card-visual{background:linear-gradient(135deg,#101820,#36332b 48%,#9a7532)}
+.card-visual-brand{font-size:11px;font-weight:900;letter-spacing:2px}
+.card-chip{width:27px;height:21px;border:1px solid rgba(255,255,255,.55);border-radius:5px;background:linear-gradient(135deg,rgba(255,255,255,.48),rgba(255,255,255,.1))}
+.tier-standard .card-chip{border-color:#8d9ca5;background:linear-gradient(135deg,#dfe5e8,#aebcc4)}
+.card-visual-level{font-size:17px;font-weight:900;letter-spacing:1.5px}
+.card-visual-mark{position:absolute;right:15px;bottom:12px;font-size:34px;font-weight:900;opacity:.18}
+.card-tier-card h3{margin:0;color:var(--navy);font-size:17px}
+.card-tier-description{min-height:38px;margin:0;color:var(--muted);font-size:11px;line-height:1.55}
+.card-tier-card ul{display:grid;gap:7px;margin:0;padding:0 0 0 17px;color:#3e596a;font-size:11px;line-height:1.5}
+.card-tier-choose{width:100%;margin-top:auto}
+.card-interest-form{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;padding-top:3px}
+.card-interest-form label{display:grid;gap:7px;color:#35566a;font-size:11px;font-weight:750}
+.card-interest-form select{width:100%;min-width:0;border:1px solid #d6e2e8;border-radius:10px;background:#fff;color:#173b50;padding:12px 13px;font:inherit}
+.card-interest-form .button{min-width:190px}
+.card-application-status{padding:12px 14px;border:1px solid #c9e4df;border-radius:12px;background:#f2faf7;color:#165b4c;font-size:12px;font-weight:700;line-height:1.6}
+.card-program-disclaimer{margin:0;font-size:10px;line-height:1.65}
+@media(max-width:760px){.card-tier-grid{grid-template-columns:1fr}.card-tier-card{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);align-items:start}.card-tier-card .card-visual{grid-row:span 4;min-height:135px}.card-tier-card h3{align-self:end}.card-tier-card ul{padding-left:15px}.card-tier-choose{grid-column:2}.card-interest-form{grid-template-columns:1fr 1fr}.card-interest-form .button{grid-column:1/-1;width:100%}}
+@media(max-width:460px){.card-tier-card{grid-template-columns:1fr}.card-tier-card .card-visual{grid-row:auto;min-height:160px}.card-tier-card h3{align-self:auto}.card-tier-choose{grid-column:auto}.card-interest-form{grid-template-columns:1fr}.card-interest-form .button{grid-column:auto}}

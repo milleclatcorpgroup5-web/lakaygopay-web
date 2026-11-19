@@ -10,7 +10,7 @@
   <title>LakayGoPay — Peman senp, lavi senp</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="stylesheet" href="/styles.css?v=20261117-02">
+  <link rel="stylesheet" href="/styles.css?v=20261118-card-01">
 </head>
 <body>
   <header class="topbar">
@@ -153,6 +153,35 @@
       <p class="field-hint">Chak lajan kenbe pwòp balans li. LakayGoPay pa fè konvèsyon otomatik ant HTG, USD ak EUR.</p>
     </section>
 
+
+    <section id="cardProgramSection" class="surface-card card-program">
+      <div class="section-heading">
+        <div><p class="eyebrow">YON GWO PRIyorite LAKAYGOPAY</p><h2>Kat LakayGo</h2></div>
+        <span class="subtle-tag">3 KLASMAN</span>
+      </div>
+      <p class="card-program-intro">Chwazi klasman kat ou ta renmen genyen an. LakayGo ap prepare pwogram Basic, Standard ak Gold pou kat vityèl ak kat fizik.</p>
+      <div id="cardTierGrid" class="card-tier-grid" aria-label="Klasman kat LakayGo"></div>
+      <form id="cardInterestForm" class="card-interest-form">
+        <label>Klasman ou chwazi
+          <select id="cardTierSelect" required>
+            <option value="BASIC">LakayGo Basic</option>
+            <option value="STANDARD">LakayGo Standard</option>
+            <option value="GOLD">LakayGo Gold</option>
+          </select>
+        </label>
+        <label>Kalite kat ki enterese w
+          <select id="cardFormSelect" required>
+            <option value="virtual">Kat vityèl</option>
+            <option value="physical">Kat fizik</option>
+            <option value="both">Toude: vityèl ak fizik</option>
+          </select>
+        </label>
+        <button id="cardInterestSubmit" class="button button-primary full" type="submit">Enskri enterè mwen</button>
+      </form>
+      <div id="cardProgramNotice" class="notice" role="status" aria-live="polite"></div>
+      <div id="cardApplicationStatus" class="card-application-status" aria-live="polite" hidden></div>
+      <p class="field-hint card-program-disclaimer">Enskripsyon sa a se yon deklarasyon enterè sèlman. Li pa kreye yon kat, li pa bay yon nimewo kat, epi li pa otorize peman. Emisyon reyèl ap fèt sèlman atravè yon patnè ki otorize, apre verifikasyon legal ak sekirite.</p>
+    </section>
 
     <section id="exchangeQuoteSection" class="surface-card exchange-quote-card">
       <div class="section-heading">
@@ -373,6 +402,6 @@
     </footer>
   </main>
 
-  <script type="module" src="/app.js?v=20261117-03"></script>
+  <script type="module" src="/app.js?v=20261118-card-01"></script>
 </body>
 </html>
