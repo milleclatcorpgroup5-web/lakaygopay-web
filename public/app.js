@@ -1502,7 +1502,7 @@ async function init() {
   const session = await sessionNow();
   await syncSession(session);
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js?v=20261118-card-01").catch(function () {});
+    navigator.serviceWorker.register("/service-worker.js?v=20261119-card-02").catch(function () {});
   }
 }
 init().catch(function (error) {
