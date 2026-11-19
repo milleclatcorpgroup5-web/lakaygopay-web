@@ -20,5 +20,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Enable Node ESM for Cloudflare Pages Functions
+        run: printf '{"private":true,"type":"module"}\\n' > package.json
       - name: Run backend and frontend contract tests
-        run: node --experimental-default-type=module --test tests/transfers.test.mjs tests/agent-card-readiness.test.mjs
+        run: node --test tests/transfers.test.mjs tests/agent-card-readiness.test.mjs
