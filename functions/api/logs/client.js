@@ -75,5 +75,7 @@ export async function onRequestPost({ request, env }) {
     details
   });
 
-  if (!stored) return json({ error: "SYSTEM_LOGS_UNAVAILABLE" }, 503);\n\n  return json({ ok: true, received: true }, 202);
+  if (!stored) return json({ error: "SYSTEM_LOGS_UNAVAILABLE" }, 503);
+
+  return json({ ok: true, received: true }, 202);
 }
