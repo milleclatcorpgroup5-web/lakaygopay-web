@@ -686,7 +686,7 @@ function syncMfaVerifyButton() {
   const input = $("#adminMfaCode");
   if (!button || !input) return;
   const code = input.value.trim();
-  button.disabled = !mfaCanVerify || !/^\\d{6}$/.test(code) || button.dataset.verifying === "true";
+  button.disabled = !mfaCanVerify || !/^\d{6}$/.test(code) || button.dataset.verifying === "true";
 }
 
 async function updateMfaStatus() {
