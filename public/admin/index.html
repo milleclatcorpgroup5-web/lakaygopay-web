@@ -474,34 +474,49 @@
 
 
     <section class="admin-workspace">
-      <section class="surface-card admin-mfa-panel" id="adminMfaPanel">
+      <section class="surface-card admin-mfa-panel" id="adminMfaPanel" aria-labelledby="adminMfaHeading">
         <div class="section-head">
-          <div><p class="eyebrow">SEKIRITE POU AKSYON SANSIB</p><h2>Verifikasyon MFA (TOTP)</h2></div>
-          <span id="adminMfaBadge" class="read-only-tag">MFA obligatwa pou aksyon</span>
+          <div><p class="eyebrow">PWOTEKSYON KONT · AKSYON SANSIB</p><h2 id="adminMfaHeading">Authenticator Admin</h2></div>
+          <span id="adminMfaBadge" class="read-only-tag">MFA obligatwa</span>
         </div>
-        <p id="adminMfaStatus" class="muted admin-mfa-copy">Pou debloke dosye yo, aktive authenticator la oswa antre kòd 6 chif li epi peze Verifye MFA.</p>
+        <p id="adminMfaStatus" class="muted admin-mfa-copy" role="status" aria-live="polite">Pou pwoteje kont la, mete Authenticator an plas epi verifye yon kòd 6 chif.</p>
+        <div class="mfa-step-grid" aria-label="Etap konfigirasyon MFA">
+          <article class="mfa-step"><span>ETAP 1</span><b>Kreye aparèy la</b><small>Jenere yon kle prive pou kont Admin ou.</small></article>
+          <article class="mfa-step"><span>ETAP 2</span><b>Konekte aplikasyon an</b><small>Eskane QR la oswa antre kle manyèl la.</small></article>
+          <article class="mfa-step"><span>ETAP 3</span><b>Konfime kòd la</b><small>Antre kòd 6 chif aplikasyon an bay.</small></article>
+        </div>
         <div class="admin-mfa-actions">
-          <button id="adminMfaEnrollButton" class="button button-quiet" type="button">Kreye / aktive MFA</button>
+          <button id="adminMfaEnrollButton" class="button button-primary" type="button">Kreye nouvo authenticator</button>
           <button id="adminMfaBackupEnrollButton" class="button button-quiet" type="button" hidden>Ajoute authenticator sekou</button>
-          <div id="adminMfaQrWrap" class="mfa-manual-setup" hidden>
-            <p class="small muted">Pa bezwen eskane okenn QR. Nan Google Authenticator, peze +, chwazi “Antre yon kle konfigirasyon” (Enter a setup key), mete non kont lan, kole kle ki anba a epi chwazi “Time based”.</p>
-            <p id="adminMfaSecret" class="small muted" aria-live="polite"></p>
-            <button id="adminMfaCopySecret" class="button button-quiet" type="button">Kopye kle sekrè a</button>
-          </div>
           <label id="adminMfaFactorLabel" for="adminMfaFactorSelect" hidden>Chwazi aparèy authenticator
             <select id="adminMfaFactorSelect"></select>
           </label>
           <form id="adminMfaVerifyForm" class="admin-mfa-verify-form">
-            <label for="adminMfaCode">Kòd authenticator 6 chif
-              <input id="adminMfaCode" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="000000">
+            <label for="adminMfaCode">Kòd authenticator · 6 chif
+              <input id="adminMfaCode" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" placeholder="000000" aria-label="Kòd authenticator 6 chif">
             </label>
             <button id="adminMfaVerifyButton" class="button button-primary" type="submit" disabled>Verifye MFA</button>
           </form>
         </div>
-        <div class="mfa-diagnostics">
-          <button id="adminMfaDiagnosticsButton" class="button button-quiet" type="button">Tcheke koneksyon MFA</button>
-          <pre id="adminMfaDiagnostics" class="muted small" aria-live="polite" style="white-space:pre-wrap">Dyagnostik sa a ap sèlman li pwojè Supabase, imèl sesyon an ak kantite authenticator yo. Li pa chanje okenn done.</pre>
+        <div id="adminMfaQrWrap" class="mfa-setup-card" hidden>
+          <div class="mfa-qr-frame"><img id="adminMfaQrImage" alt="QR code pou ajoute LakayGoPay Admin nan aplikasyon Authenticator" hidden></div>
+          <div class="mfa-setup-copy">
+            <strong>Ajoute LakayGoPay Admin nan Authenticator</strong>
+            <p class="small muted">Nan Google Authenticator: peze +, chwazi “Eskane yon QR code”. Si sa pa mache, antre kle manyèl la anba a epi chwazi “Time based”.</p>
+            <details class="mfa-manual-key">
+              <summary>Montre kle konfigirasyon manyèl</summary>
+              <p id="adminMfaSecret" class="small" aria-live="polite"></p>
+              <button id="adminMfaCopySecret" class="button button-quiet" type="button">Kopye kle manyèl la</button>
+            </details>
+            <p class="mfa-secret-warning">Kle a se yon sekrè. Pa voye l bay pèsonn ni pa pran screenshot li.</p>
+          </div>
         </div>
+        <details class="mfa-diagnostics">
+          <summary>Dyagnostik teknik (pa chanje done)</summary>
+          <p class="muted small">Li sèlman pwojè Supabase, idantite sesyon an ak kantite faktè Authenticator yo.</p>
+          <button id="adminMfaDiagnosticsButton" class="button button-quiet" type="button">Tcheke koneksyon MFA</button>
+          <pre id="adminMfaDiagnostics" class="muted small" aria-live="polite">Pa gen dyagnostik kouri.</pre>
+        </details>
       </section>
 
       <section class="surface-card admin-records-panel" id="adminRecordsPanel">
@@ -824,6 +839,6 @@
   </main>
 
   <script src="/observability.js?v=20261119-logs-01"></script>
-  <script type="module" src="/admin/admin.js?v=20261120-mfa-auth-diagnostic-06"></script>
+  <script type="module" src="/admin/admin.js?v=20261120-mfa-flow-v2-07"></script>
 </body>
 </html>

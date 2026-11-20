@@ -16,7 +16,7 @@ test("initial MFA state errors are visible to the Admin user", () => {
 });
 
 test("Admin page loads the new MFA control logic without stale cache", () => {
-  assert.ok(adminHtml.includes("admin/admin.js?v=20261120-mfa-auth-diagnostic-06"));
+  assert.ok(adminHtml.includes("admin/admin.js?v=20261120-mfa-flow-v2-07"));
 });
 
 test("the MFA verify control remains usable when factor discovery temporarily fails", () => {
@@ -69,4 +69,30 @@ test("MFA enrollment never silently deletes an unverified factor", () => {
   assert.ok(backup.includes('throw new Error("MFA_PENDING_FACTOR_EXISTS")'));
   assert.ok(!primary.includes("mfa.unenroll"));
   assert.ok(!backup.includes("mfa.unenroll"));
+});
+
+
+test("MFA flow v2 saves the Supabase-issued factor ID instead of relying on listFactors rediscovery", () => {
+  assert.ok(adminJs.includes('const ADMIN_MFA_FACTOR_STORAGE_KEY = "lakaygopay_admin_mfa_factor_v1";'));
+  assert.ok(adminJs.includes('saveAdminMfaFactorBinding(userId, factorId, "unverified", friendlyName)'));
+  const start = adminJs.indexOf("async function completeTotpVerification(factorId, code)");
+  const end = adminJs.indexOf("\nasync function verifyAdminMfa()", start);
+  const block = adminJs.slice(start, end);
+  assert.ok(block.includes('supabase.auth.mfa.challenge({ factorId: selectedFactorId })'));
+  assert.ok(!block.includes("listFactors()"));
+  assert.ok(block.includes('runMfaStep("SERVER_AAL2_CHECK"'));
+});
+
+test("MFA v2 renders the actual Supabase QR code and protects the manual key", () => {
+  assert.ok(adminHtml.includes('id="adminMfaQrImage"'));
+  assert.ok(adminHtml.includes('id="adminMfaSecret"'));
+  assert.ok(adminHtml.includes("<summary>Montre kle konfigirasyon manyèl</summary>"));
+  assert.ok(adminJs.includes("data?.totp?.qr_code"));
+  assert.ok(adminJs.includes('secretNode.dataset.secret = secret'));
+});
+
+test("MFA success clears the setup secret and binds the factor ID to the admin identity and project", () => {
+  assert.ok(adminJs.includes("clearAdminMfaSetupMaterial();"));
+  assert.ok(adminJs.includes('saveAdminMfaFactorBinding(userId, selectedFactorId, "verified"'));
+  assert.ok(adminJs.includes("binding.userId !== userId || binding.projectRef !== supabaseProjectRef"));
 });
