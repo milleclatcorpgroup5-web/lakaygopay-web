@@ -835,39 +835,6 @@ async function updateMfaStatus() {
   const session = await currentSession();
   if (!session?.user?.id) throw new Error("AUTH_REQUIRED");
 
-  // The server-issued HttpOnly cookie remembers this browser for 30 days.
-  // It survives an explicit Supabase sign-out without persisting the auth token.
-  let trustedDevice = null;
-  try {
-    const trustResponse = await fetch("/api/admin/mfa/trust", {
-      headers: { accept: "application/json", authorization: "Bearer " + session.access_token },
-      cache: "no-store"
-    });
-    if (trustResponse.ok) {
-      const trustData = await trustResponse.json().catch(() => ({}));
-      if (trustData.trusted === true && trustData.expires_at) trustedDevice = trustData;
-    }
-  } catch {
-    // Fail closed: without a confirmed server-side trust record, normal MFA remains required.
-  }
-  if (trustedDevice) {
-    const expiry = new Date(trustedDevice.expires_at).toLocaleDateString("fr-HT", {
-      year: "numeric", month: "long", day: "numeric"
-    });
-    $("#adminMfaBadge").textContent = "MFA konfime · Aparèy rekonèt";
-    $("#adminMfaBadge").className = "read-only-tag mfa-active";
-    $("#adminMfaStatus").textContent = "MFA te verifye sou aparèy sa a. Ou pap bezwen antre yon lòt kòd anvan " + expiry + ". Aksyon ki pi sansib yo ka toujou mande yon verifikasyon fre.";
-    const enroll = $("#adminMfaEnrollButton");
-    if (enroll) { enroll.disabled = true; enroll.textContent = "Authenticator prensipal verifye"; }
-    const backup = $("#adminMfaBackupEnrollButton");
-    if (backup) backup.disabled = true;
-    $("#adminMfaVerifyButton").textContent = "Verifye MFA kounye a (opsyonèl)";
-    mfaCanVerify = true;
-    syncMfaVerifyButton();
-    $("#adminLedgerAuditButton").disabled = false;
-    return true;
-  }
-
   let currentLevel = decodeJwtPayload(session.access_token)?.aal || "aal1";
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (assurance.error) throw assurance.error;
@@ -897,6 +864,42 @@ async function updateMfaStatus() {
 
   const verifiedFactors = totpFactors.filter((factor) => factor.status === "verified");
   const pendingFactors = totpFactors.filter((factor) => factor.status === "unverified");
+
+  // A remembered browser only substitutes for a fresh prompt while at least
+  // one verified TOTP factor still exists in Supabase. If all factors were
+  // removed or factor discovery failed, do not honor the device cookie.
+  let trustedDevice = null;
+  if (!factorLookupError && verifiedFactors.length > 0) {
+    try {
+      const trustResponse = await fetch("/api/admin/mfa/trust", {
+        headers: { accept: "application/json", authorization: "Bearer " + session.access_token },
+        cache: "no-store"
+      });
+      if (trustResponse.ok) {
+        const trustData = await trustResponse.json().catch(() => ({}));
+        if (trustData.trusted === true && trustData.expires_at) trustedDevice = trustData;
+      }
+    } catch {
+      // Without a confirmed server-side trust record, normal MFA remains required.
+    }
+  }
+  if (trustedDevice) {
+    const expiry = new Date(trustedDevice.expires_at).toLocaleDateString("fr-HT", {
+      year: "numeric", month: "long", day: "numeric"
+    });
+    $("#adminMfaBadge").textContent = "MFA konfime · Aparèy rekonèt";
+    $("#adminMfaBadge").className = "read-only-tag mfa-active";
+    $("#adminMfaStatus").textContent = "MFA te verifye sou aparèy sa a. Ou pap bezwen antre yon lòt kòd anvan " + expiry + ". Aksyon ki pi sansib yo ka toujou mande yon verifikasyon fre.";
+    const enroll = $("#adminMfaEnrollButton");
+    if (enroll) { enroll.disabled = true; enroll.textContent = "Authenticator prensipal verifye"; }
+    const backup = $("#adminMfaBackupEnrollButton");
+    if (backup) backup.disabled = true;
+    $("#adminMfaVerifyButton").textContent = "Verifye MFA kounye a (opsyonèl)";
+    mfaCanVerify = true;
+    syncMfaVerifyButton();
+    $("#adminLedgerAuditButton").disabled = false;
+    return true;
+  }
   const primaryVerified = verifiedFactors.length > 0 || primaryBinding?.status === "verified";
   const primaryPending = primaryBinding?.status === "unverified";
   const backupVerified = backupBinding?.status === "verified" ||
