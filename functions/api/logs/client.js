@@ -1,5 +1,24 @@
 import { json, readJson, requireUser } from "../../_shared/superbase.js";
-import { systemLogArea, systemLogPath, writeSystemLog } from "../../_shared/system-logs.js";
+import { systemLogPath, writeSystemLog } from "../../_shared/system-logs.js";
+
+const USER_EVENT_BUCKETS = new Map();
+
+function allowUserEvent(userId) {
+  const now = Date.now();
+  const current = USER_EVENT_BUCKETS.get(userId);
+  if (!current || now - current.startedAt >= 60000) {
+    USER_EVENT_BUCKETS.set(userId, { startedAt: now, count: 1 });
+    return true;
+  }
+  if (current.count >= 120) return false;
+  current.count += 1;
+  if (USER_EVENT_BUCKETS.size > 3000) {
+    USER_EVENT_BUCKETS.forEach((bucket, key) => {
+      if (now - bucket.startedAt >= 60000) USER_EVENT_BUCKETS.delete(key);
+    });
+  }
+  return true;
+}
 
 function sameOrigin(request) {
   const origin = request.headers.get("origin");
@@ -27,7 +46,7 @@ export async function onRequestPost({ request, env }) {
     return json({ error: "INVALID_LOG_EVENT" }, 400);
   }
 
-  const path = systemLogPath(body.path);
+  if (!allowUserEvent(auth.user.id)) return json({ error: "LOG_RATE_LIMITED" }, 429);\n\n  const path = systemLogPath(body.path);
   const eventCode = String(body.event_code || "").toUpperCase();
   if (!/^[A-Z][A-Z0-9_]{2,79}$/.test(eventCode)) {
     return json({ error: "INVALID_LOG_EVENT" }, 400);
