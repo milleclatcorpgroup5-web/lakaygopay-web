@@ -335,7 +335,8 @@ async function loadOverview(session) {
   // the report refresh button).
   const moduleLoads = [];
   if (canSeeSystemHealth) moduleLoads.push(loadSystemHealth(session));
-  let liveLogsReady = false;\n  if (canSeeLogs) moduleLoads.push(loadLiveLogs(session).then((ready) => { liveLogsReady = ready; }));
+  let liveLogsReady = false;
+  if (canSeeLogs) moduleLoads.push(loadLiveLogs(session).then((ready) => { liveLogsReady = ready; }));
   if (canSeeAnalytics) moduleLoads.push(loadAdminAnalytics(session));
   if (canSeeFinance) {
     moduleLoads.push(loadFinanceOverview(session));
@@ -494,11 +495,13 @@ async function loadLiveLogs(session, quiet = false) {
     const data = await adminRequest("/api/admin/logs?limit=75", session);
     renderLiveLogs(data);
     setNotice("#liveLogsNotice", "Jounal teknik la ajou. " + (data.count || 0) + " evènman parèt.", "success");
+    return true;
   } catch (error) {
     const text = error.code === "SYSTEM_LOGS_NOT_CONFIGURED"
       ? explainError(error.code)
       : error.message || explainError(error.code);
     setNotice("#liveLogsNotice", text, "error");
+    return false;
   }
 }
 
