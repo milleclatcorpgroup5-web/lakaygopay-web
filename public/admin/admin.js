@@ -9,6 +9,7 @@ let teamDirectoryRows = [];
 let liveLogsTimer = null;
 let liveLogsSession = null;
 let mfaCanVerify = false;
+let supabaseProjectRef = "unknown";
 
 function setNotice(selector, message, kind) {
   const node = $(selector);
@@ -119,6 +120,7 @@ function explainError(code) {
     ANALYTICS_DATABASE_QUERY_FAILED: "Bazdone a pa t kapab bay done analiz yo.",
     MFA_CODE_MUST_BE_6_DIGITS: "Kòd authenticator lan dwe gen 6 chif.",
     MFA_FACTOR_NOT_ENROLLED: "Pa gen faktè authenticator. Klike Kreye / aktive MFA an premye.",
+    MFA_PENDING_FACTOR_EXISTS: "Gen yon authenticator ki poko verifye deja pou kont sa a. Pa kreye yon lòt; dyagnostike koneksyon an epi sèvi ak kle ki te pwodwi pou faktè sa a.",
     USER_STATUS_INVALID: "Estati kont lan pa valab.",
     ADMIN_CANNOT_SUSPEND_SELF: "Ou pa kapab sispann pwòp kont administratè ou.",
     LAST_SUPER_ADMIN_PROTECTED: "Ou pa kapab sispann dènye Super administratè aktif la.",
@@ -823,6 +825,52 @@ async function updateMfaStatus() {
   return aal2;
 }
 
+async function runAdminMfaDiagnostics() {
+  const button = $("#adminMfaDiagnosticsButton");
+  const output = $("#adminMfaDiagnostics");
+  if (!button || !output || !supabase) return;
+
+  button.disabled = true;
+  output.textContent = "Ap li enfòmasyon sesyon ak Auth yo san chanje okenn done…";
+  try {
+    const sessionResult = await supabase.auth.getSession();
+    if (sessionResult.error) throw sessionResult.error;
+    const session = sessionResult.data?.session;
+    if (!session?.user?.id) throw new Error("AUTH_REQUIRED");
+
+    const [userResult, factorResult] = await Promise.all([
+      supabase.auth.getUser(),
+      supabase.auth.mfa.listFactors()
+    ]);
+    if (userResult.error) throw userResult.error;
+    if (factorResult.error) throw factorResult.error;
+
+    const sessionUser = session.user;
+    const authUser = userResult.data?.user || {};
+    const factors = Array.isArray(factorResult.data?.totp) ? factorResult.data.totp : [];
+    const verified = factors.filter((factor) => factor.status === "verified").length;
+    const pending = factors.filter((factor) => factor.status === "unverified").length;
+    const sameUser = Boolean(authUser.id && sessionUser.id === authUser.id);
+
+    output.textContent = [
+      "Pwojè Supabase Production: " + supabaseProjectRef,
+      "Imèl sesyon an: " + (sessionUser.email || "Pa disponib"),
+      "Imèl Auth konfime: " + (authUser.email || "Pa disponib"),
+      "ID sesyon ak Auth koresponn: " + (sameUser ? "WI" : "NON / PA DISPONIB"),
+      "Authenticator TOTP jwenn: " + factors.length,
+      "Verifye: " + verified + " · An atant: " + pending,
+      "Tan dyagnostik: " + new Date().toLocaleString("fr-HT")
+    ].join("\n");
+  } catch (error) {
+    const code = String(error?.code || error?.name || "DIAGNOSTIC_FAILED")
+      .replace(/[^A-Za-z0-9_.-]/g, "")
+      .slice(0, 60);
+    output.textContent = "Dyagnostik la pa fini. Kòd: " + (code || "DIAGNOSTIC_FAILED");
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function uniqueMfaFriendlyName(baseName) {
   // Supabase requires each MFA factor for one user to have a distinct friendly name.
   // Use a fresh suffix for every enrollment, including repeated enrollments on one day.
@@ -841,10 +889,7 @@ async function enrollAdminMfa() {
     return;
   }
   const pending = (factorsResult.data?.totp || []).find((factor) => factor.status === "unverified");
-  if (pending) {
-    const removed = await supabase.auth.mfa.unenroll({ factorId: pending.id });
-    if (removed.error) throw removed.error;
-  }
+  if (pending) throw new Error("MFA_PENDING_FACTOR_EXISTS");
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
     friendlyName: uniqueMfaFriendlyName("LakayGoPay Admin Primary")
@@ -872,10 +917,7 @@ async function enrollAdminMfaBackup() {
   }
   if (totpFactors.length >= 10) throw new Error("MFA_FACTOR_LIMIT_REACHED");
   const pending = totpFactors.find((factor) => factor.status === "unverified");
-  if (pending) {
-    const removed = await supabase.auth.mfa.unenroll({ factorId: pending.id });
-    if (removed.error) throw removed.error;
-  }
+  if (pending) throw new Error("MFA_PENDING_FACTOR_EXISTS");
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
     friendlyName: uniqueMfaFriendlyName("LakayGoPay Admin Backup")
@@ -1955,6 +1997,15 @@ async function boot() {
 
   // Admin session is isolated from the customer/merchant app and the PIN
   // verification flag is memory-only, so a page reload asks for the PIN again.
+  try {
+    const configHost = new URL(config.supabaseUrl).hostname.toLowerCase();
+    supabaseProjectRef = configHost.endsWith(".supabase.co")
+      ? configHost.replace(/\.supabase\.co$/, "")
+      : configHost;
+  } catch {
+    supabaseProjectRef = "invalid-supabase-url";
+  }
+
   supabase = createClient(config.supabaseUrl, config.publishableKey, {
     auth: {
       storage: window.sessionStorage,
@@ -2060,6 +2111,8 @@ async function boot() {
       button.disabled = false;
     }
   });
+
+  $("#adminMfaDiagnosticsButton")?.addEventListener("click", runAdminMfaDiagnostics);
 
   $("#adminMfaCopySecret")?.addEventListener("click", async () => {
     const secret = $("#adminMfaSecret")?.dataset.secret || "";
