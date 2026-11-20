@@ -73,6 +73,14 @@ async function callUserRest(env, accessToken, resourceAndQuery) {
   if (!response.ok) {
     const err = new Error("USER_DATA_READ_FAILED");
     err.status = response.status === 401 ? 401 : 400;
+    err.databaseStatus = response.status;
+    const databaseCode = typeof data?.code === "string" && /^[A-Z0-9]{4,10}$/i.test(data.code)
+      ? data.code.toUpperCase()
+      : "UNKNOWN";
+    const resource = String(resourceAndQuery || "").split("?")[0]
+      .replace(/[^A-Za-z0-9_]/g, "").slice(0, 40);
+    err.databaseCode = databaseCode;
+    err.resource = /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(resource) ? resource : "UNKNOWN";
     throw err;
   }
   return data;
