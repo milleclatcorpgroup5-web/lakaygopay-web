@@ -34,7 +34,10 @@ function safeCode(value) {
 function safeDetails(value) {
   const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
   const details = {};
-  if (typeof source.diagnostic === "string" && /^[A-Z][A-Z0-9_]{2,79}$/.test(source.diagnostic)) {\n    details.diagnostic = source.diagnostic;\n  }\n  if (typeof source.error_name === "string") {
+  if (typeof source.diagnostic === "string" && /^[A-Z][A-Z0-9_]{2,79}$/.test(source.diagnostic)) {
+    details.diagnostic = source.diagnostic;
+  }
+  if (typeof source.error_name === "string") {
     details.error_name = source.error_name.replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 60);
   }
   if (typeof source.cf_ray === "string") {
