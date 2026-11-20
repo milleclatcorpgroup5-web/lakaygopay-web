@@ -309,7 +309,14 @@ async function loadOverview(session) {
   const date = new Date(data.generated_at || Date.now());
   $("#generatedAt").textContent = "Dènye mizajou: " + date.toLocaleString("fr-HT");
   setNotice("#dashboardNotice", "Aksè admin konfime sou sèvè a. PIN Admin verifye.", "success");
-  const mfaReady = await updateMfaStatus().catch(() => false);
+  let mfaReady = false;
+  try {
+    mfaReady = await updateMfaStatus();
+  } catch (mfaError) {
+    setNotice("#adminMfaStatus", explainMfaError(mfaError), "error");
+    mfaCanVerify = false;
+    syncMfaVerifyButton();
+  }
 
   if (!mfaReady) {
     setProtectedAdminControls(false);
@@ -764,12 +771,12 @@ async function updateMfaStatus() {
   $("#adminMfaBadge").textContent = aal2 ? "MFA verifye · AAL2" : "MFA obligatwa";
   $("#adminMfaBadge").className = aal2 ? "read-only-tag mfa-active" : "read-only-tag";
   $("#adminMfaStatus").textContent = aal2
-    ? "MFA konfime sou sesyon sa a. Done operasyonèl yo ka chaje selon wòl ou."
+    ? "MFA deja konfime sou sesyon sa a. Ou kapab antre yon nouvo kòd 6 chif epi verifye ankò pou otorize yon lòt aksyon sansib."
     : hasVerifiedFactor
-      ? "Authenticator aktif. Chwazi aparèy ou vle itilize a, antre kòd 6 chif aktyèl la epi verifye MFA."
+      ? "Authenticator aktif. Antre kòd 6 chif aktyèl la epi verifye MFA."
       : hasPendingFactor
-        ? "Gen yon konfigirasyon authenticator ki poko verifye. Rekòmanse konfigirasyon an epi verifye kòd la."
-        : "Kreye authenticator prensipal ou, eskane QR la, epi verifye kòd 6 chif la.";
+        ? "Authenticator la poko verifye. Antre kòd 6 chif aktyèl la pou fini konfigirasyon an."
+        : "Pa gen authenticator ki anrejistre. Klike Kreye / aktive MFA pou kòmanse.";
 
   $("#adminMfaEnrollButton").textContent = aal2 ? "MFA deja verifye" : hasVerifiedFactor ? "Authenticator deja aktive" : "Kreye / aktive MFA";
   $("#adminMfaEnrollButton").disabled = aal2 || hasVerifiedFactor;
@@ -781,8 +788,16 @@ async function updateMfaStatus() {
       ? "Verifye MFA sou sesyon sa a anvan ou ajoute yon aparèy sekou."
       : totpFactors.length >= 10 ? "Limit faktè MFA yo rive." : "Ajoute yon dezyèm authenticator sekou.";
   }
-  mfaCanVerify = totpFactors.length > 0 && !(aal2 && !hasPendingFactor);
+  // Keep the verify control usable even after the session has reached AAL2.
+  // A verified TOTP factor can be challenged again for explicit step-up actions.
+  mfaCanVerify = totpFactors.some((factor) =>
+    factor.status === "verified" || factor.status === "unverified"
+  );
   syncMfaVerifyButton();
+  $("#adminMfaVerifyButton").textContent = aal2 ? "Verifye ankò" : "Verifye MFA";
+  $("#adminMfaVerifyButton").title = mfaCanVerify
+    ? "Antre nouvo kòd 6 chif aktyèl la pou verifye authenticator la."
+    : "Pa gen authenticator aktif. Kreye authenticator la an premye.";
   $("#adminLedgerAuditButton").disabled = !aal2;
   return aal2;
 }
