@@ -671,6 +671,9 @@ function explainMfaError(error) {
   const status = Number(error?.status ?? error?.statusCode ?? 0);
   const raw = [code, error?.message, error?.name].filter(Boolean).join(" ").toLowerCase();
 
+  if (code === "mfa_factor_name_conflict") {
+    return "Non authenticator sa deja egziste pou kont sa a. Nouvo enskripsyon an ap bezwen yon non inik; pa efase okenn authenticator ki deja verifye.";
+  }
   if (code === "mfa_verification_failed" ||
       /invalid.*(otp|totp|token|code)|(otp|totp|token|code).*invalid/.test(raw)) {
     return "Kòd authenticator la pa kòrèk oswa li ekspire. Tann nouvo kòd 6 chif la parèt epi antre l.";
@@ -784,6 +787,14 @@ async function updateMfaStatus() {
   return aal2;
 }
 
+function uniqueMfaFriendlyName(baseName) {
+  // Supabase requires each MFA factor for one user to have a distinct friendly name.
+  // Use a fresh suffix for every enrollment, including repeated enrollments on one day.
+  const suffix = globalThis.crypto?.randomUUID?.() ||
+    (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10));
+  return baseName + " " + suffix;
+}
+
 async function enrollAdminMfa() {
   const factorsResult = await supabase.auth.mfa.listFactors();
   if (factorsResult.error) throw factorsResult.error;
@@ -800,7 +811,7 @@ async function enrollAdminMfa() {
   }
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
-    friendlyName: "LakayGoPay Admin Primary"
+    friendlyName: uniqueMfaFriendlyName("LakayGoPay Admin Primary")
   });
   if (error) throw error;
   $("#adminMfaQr").src = data.totp.qr_code;
@@ -830,7 +841,7 @@ async function enrollAdminMfaBackup() {
   }
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
-    friendlyName: "LakayGoPay Admin Backup " + new Date().toISOString().slice(0, 10)
+    friendlyName: uniqueMfaFriendlyName("LakayGoPay Admin Backup")
   });
   if (error) throw error;
   $("#adminMfaQr").src = data.totp.qr_code;
