@@ -1,6 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#27b8d0"/><stop offset="1" stop-color="#08789d"/></linearGradient></defs>
-  <rect width="128" height="128" rx="29" fill="#082f49"/>
-  <rect x="16" y="16" width="96" height="96" rx="24" fill="url(#g)"/>
-  <path d="M43 34v60h14V72l28 22h19L69 63l32-29H82L57 57V34z" fill="#fff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="lakay-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3157f5"/>
+      <stop offset="0.52" stop-color="#5140ee"/>
+      <stop offset="1" stop-color="#8b22e8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="126" fill="url(#lakay-gradient)"/>
+  <g fill="#fff">
+    <path fill-rule="evenodd" d="M139 123h70a23 23 0 0 1 23 23v70a23 23 0 0 1-23 23h-70a23 23 0 0 1-23-23v-70a23 23 0 0 1 23-23zm2 25v66h66v-66z"/>
+    <path fill-rule="evenodd" d="M303 123h70a23 23 0 0 1 23 23v70a23 23 0 0 1-23 23h-70a23 23 0 0 1-23-23v-70a23 23 0 0 1 23-23zm2 25v66h66v-66z"/>
+    <path fill-rule="evenodd" d="M139 297h70a23 23 0 0 1 23 23v70a23 23 0 0 1-23 23h-70a23 23 0 0 1-23-23v-70a23 23 0 0 1 23-23zm2 25v66h66v-66z"/>
+    <rect x="245" y="245" width="31" height="31"/>
+    <rect x="297" y="297" width="41" height="41"/>
+    <rect x="348" y="348" width="41" height="41"/>
+  </g>
 </svg>
