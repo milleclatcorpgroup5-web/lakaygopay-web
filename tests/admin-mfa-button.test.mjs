@@ -170,6 +170,15 @@ test("ordinary Admin reads accept a trusted device while high-impact changes dem
   }
 });
 
+test("Admin TOTP assurance expires after 30 days even when the same session remains open", async () => {
+  const security = await readFile(new URL("../functions/_shared/security.js", import.meta.url), "utf8");
+  assert.ok(security.includes("const ADMIN_TOTP_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000"));
+  assert.ok(security.includes("hasRecentAdminTotp(auth.claims)"));
+  assert.ok(security.includes('claims.aal === "aal2" && hasRecentAdminTotp(claims)'));
+  assert.ok(adminJs.includes("hasRecentAdminTotpSession(session)"));
+  assert.ok(adminJs.includes('currentLevel === "aal2" && hasRecentAdminTotpSession(session)'));
+});
+
 test("trusted-device records are server-hashed, HttpOnly, Secure, and expire after 30 days", async () => {
   const helper = await readFile(new URL("../functions/_shared/admin-trusted-device.js", import.meta.url), "utf8");
   const migration = await readFile(new URL("../superbase/migrations/202611200001_admin_trusted_devices.sql", import.meta.url), "utf8");
