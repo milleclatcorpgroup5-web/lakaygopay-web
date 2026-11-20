@@ -671,58 +671,77 @@ function setProtectedAdminControls(enabled) {
   });
 }
 
+function withMfaStage(error, stage) {
+  const target = error instanceof Error ? error : new Error(String(error?.message || error || "MFA_OPERATION_FAILED"));
+  try { target.mfaStage = stage; } catch {}
+  return target;
+}
+
+async function runMfaStep(stage, operation) {
+  try {
+    const result = await operation();
+    if (result?.error) throw result.error;
+    return result;
+  } catch (error) {
+    throw withMfaStage(error, stage);
+  }
+}
+
 function explainMfaError(error) {
-  // Supabase Auth errors expose a stable code and HTTP status. Prefer those
-  // fields over message matching so Production failures are diagnosable.
   const code = String(error?.code || error?.errorCode || "").trim().toLowerCase();
   const status = Number(error?.status ?? error?.statusCode ?? 0);
-  const raw = [code, error?.message, error?.name].filter(Boolean).join(" ").toLowerCase();
+  const message = String(error?.message || "").trim();
+  const messageKey = /^[A-Za-z][A-Za-z0-9_]{2,64}$/.test(message) ? message.toUpperCase() : "";
+  const stage = String(error?.mfaStage || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40);
+  const raw = [code, message, error?.name].filter(Boolean).join(" ").toLowerCase();
 
   if (code === "mfa_factor_name_conflict") {
     return "Non authenticator sa deja egziste pou kont sa a. Nouvo enskripsyon an ap bezwen yon non inik; pa efase okenn authenticator ki deja verifye.";
+  }
+  if (code === "mfa_required" || messageKey === "MFA_REQUIRED") {
+    return "Sèvè LakayGoPay la resevwa sesyon an kòm AAL1, li poko wè konfimasyon MFA AAL2. Sa pa pwouve kòd la pa bon. Rekonekte yon sèl fwa, epi teste ankò. Etap: " + (stage || "MFA_SESSION") + ".";
   }
   if (code === "mfa_verification_failed" ||
       /invalid.*(otp|totp|token|code)|(otp|totp|token|code).*invalid/.test(raw)) {
     return "Kòd authenticator la pa kòrèk oswa li ekspire. Tann nouvo kòd 6 chif la parèt epi antre l.";
   }
   if (code === "mfa_challenge_expired") {
-    return "Demann MFA a ekspire. Peze “Verifye MFA” ankò pou sistèm nan kreye yon nouvo demann, epi antre kòd aktyèl la.";
+    return "Demann MFA a ekspire. Rekòmanse verifikasyon an pou kreye yon nouvo demann.";
   }
   if (code === "mfa_totp_verify_not_enabled") {
-    return "Supabase Production pa aktive verifikasyon TOTP. Administratè pwojè a dwe aktive MFA TOTP nan Authentication > Multi-Factor Authentication.";
+    return "Supabase Production pa aktive verifikasyon TOTP. Verifye Authentication > Multi-Factor Authentication.";
   }
   if (code === "mfa_totp_enroll_not_enabled") {
-    return "Supabase Production pa aktive enskripsyon TOTP. Aktive TOTP nan Authentication > Multi-Factor Authentication.";
+    return "Supabase Production pa aktive enskripsyon TOTP. Verifye Authentication > Multi-Factor Authentication.";
   }
   if (code === "mfa_ip_address_mismatch") {
-    return "Adrès entènèt la chanje ant kreyasyon MFA ak verifikasyon an. Kenbe menm koneksyon Wi-Fi oswa done mobil la, epi rekòmanse enskripsyon MFA a.";
+    return "Adrès entènèt la chanje ant kreyasyon MFA ak verifikasyon an. Kenbe menm koneksyon an epi rekòmanse.";
   }
   if (code === "mfa_verification_rejected") {
-    return "Règ sekirite MFA Supabase la refize verifikasyon an. Administratè a dwe verifye MFA Verification Hook nan Authentication > Hooks.";
+    return "Règ sekirite MFA Supabase la refize verifikasyon an. Verifye MFA Verification Hook nan Authentication > Hooks.";
   }
   if (code === "mfa_factor_not_found" || /factor.*(not found|not verified)|not.*factor/.test(raw)) {
-    return "Authenticator sa a pa koresponn ak yon faktè ki aktif ankò. Rekòmanse enskripsyon an sèlman si pa gen okenn authenticator deja verifye.";
+    return "Authenticator sa a pa koresponn ak yon faktè aktif ankò. Pa efase lòt authenticator verifye yo.";
   }
   if (code === "too_many_enrolled_mfa_factors" || /factor.*limit|maximum.*factor|too many factors/.test(raw)) {
-    return "Limit kantite authenticator sekou yo rive. Pa efase yon aparèy verifye san plan rekiperasyon.";
+    return "Limit kantite authenticator sekou yo rive. Pa efase okenn aparèy verifye san plan rekiperasyon.";
   }
   if (code === "over_request_rate_limit" || status === 429 || /rate|too many|attempt/.test(raw)) {
-    return "Gen twòp demann verifikasyon. Pa kontinye eseye kounye a; tann kèk minit anvan yon lòt tantativ.";
+    return "Gen twòp demann verifikasyon. Tann kèk minit anvan yon lòt tantativ.";
   }
   if (code === "conflict") {
-    return "Sesyon sekirite a antre an konfli pandan li t ap renouvle. Rekonekte nan Admin lan yon sèl fwa, epi eseye ankò.";
+    return "Sesyon sekirite a antre an konfli pandan li t ap renouvle. Rekonekte yon sèl fwa, epi teste ankò.";
   }
   if (code === "unexpected_failure" || status >= 500) {
-    return "Sèvis Auth Supabase la rankontre yon erè sèvè. Sa pa nesesèman vle di kòd la pa bon. Eseye ankò pita.";
+    return "Sèvis Auth Supabase la rankontre yon erè sèvè. Etap: " + (stage || "MFA_AUTH") + ".";
   }
   if (status === 403 || status === 501) {
-    return "Supabase refize operasyon MFA sa a paske fonksyon an pa disponib oswa pa aktive pou pwojè a.";
+    return "Supabase refize operasyon MFA sa a. Etap: " + (stage || "MFA_AUTH") + " · HTTP " + status + ".";
   }
 
-  const reference = code || (status ? "HTTP_" + status : "MFA_REQUIRED");
-  return "Nou pa kapab fini verifikasyon MFA a kounye a. Kòd dyagnostik: " + reference + ". Pa pataje kòd authenticator ou.";
+  const diagnostic = code || messageKey || (status ? "HTTP_" + status : String(error?.name || "UNKNOWN_MFA_ERROR").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40));
+  return "Verifikasyon MFA a echwe nan etap " + (stage || "MFA_UNKNOWN") + ". Dyagnostik: " + diagnostic + ". Pa pataje kòd authenticator ou.";
 }
-
 function syncMfaVerifyButton() {
   const button = $("#adminMfaVerifyButton");
   const input = $("#adminMfaCode");
@@ -871,47 +890,51 @@ async function enrollAdminMfaBackup() {
 
 async function completeTotpVerification(factorId, code) {
   if (!factorId || !/^\d{6}$/.test(code)) throw new Error("MFA_CODE_MUST_BE_6_DIGITS");
-  const factorsResult = await supabase.auth.mfa.listFactors();
-  if (factorsResult.error) throw factorsResult.error;
+  const factorsResult = await runMfaStep("FACTOR_LOOKUP", () => supabase.auth.mfa.listFactors());
   const factor = (factorsResult.data?.totp || []).find((item) => item.id === factorId);
   if (!factor) throw new Error("MFA_FACTOR_NOT_ENROLLED");
   if (factor.status !== "verified" && factor.status !== "unverified") throw new Error("MFA_FACTOR_NOT_ENROLLED");
 
   setNotice("#adminMfaStatus", "Etap 2/3: authenticator la jwenn. Ap kreye demann verifikasyon an…", "");
-  const challenge = await supabase.auth.mfa.challenge({ factorId: factor.id });
-  if (challenge.error) throw challenge.error;
+  const challenge = await runMfaStep("TOTP_CHALLENGE", () => supabase.auth.mfa.challenge({ factorId: factor.id }));
   setNotice("#adminMfaStatus", "Etap 3/3: demann lan kreye. Ap verifye kòd 6 chif la…", "");
-  const verified = await supabase.auth.mfa.verify({
+  const verified = await runMfaStep("TOTP_VERIFY", () => supabase.auth.mfa.verify({
     factorId: factor.id,
     challengeId: challenge.data.id,
     code
-  });
-  if (verified.error) throw verified.error;
+  }));
 
   // The MFA verify response/session storage is the source of truth here.
   // Do not force a second refresh-token exchange immediately after verification:
   // refresh tokens are single-use and overlapping exchanges can invalidate a session.
-  const session = verified.data?.session || (await currentSession());
+  const session = verified.data?.session || (await runMfaStep("SESSION_AFTER_VERIFY", () => currentSession()));
   if (!session?.access_token) {
-    throw new Error("MFA_VERIFICATION_INCOMPLETE");
+    throw withMfaStage(new Error("MFA_VERIFICATION_INCOMPLETE"), "SESSION_AFTER_VERIFY");
   }
 
-  const serverCheck = await fetch("/api/admin/me", {
-    headers: { accept: "application/json", authorization: "Bearer " + session.access_token },
-    cache: "no-store"
+  const serverData = await runMfaStep("SERVER_AAL2_CHECK", async () => {
+    const serverCheck = await fetch("/api/admin/me", {
+      headers: { accept: "application/json", authorization: "Bearer " + session.access_token },
+      cache: "no-store"
+    });
+    const data = await serverCheck.json().catch(() => ({}));
+    if (!serverCheck.ok) {
+      const failure = new Error(data.error || "ADMIN_MFA_SERVER_CHECK_FAILED");
+      failure.status = serverCheck.status;
+      throw failure;
+    }
+    if (data.aal2 !== true || data.is_admin !== true) {
+      throw new Error(data.is_admin !== true ? "ADMIN_ACCOUNT_NOT_CONFIRMED" : "AAL2_NOT_CONFIRMED");
+    }
+    return data;
   });
-  const serverData = await serverCheck.json().catch(() => ({}));
-  if (!serverCheck.ok || serverData.aal2 !== true || serverData.is_admin !== true) {
-    throw new Error("MFA_VERIFICATION_INCOMPLETE");
-  }
   return session;
 }
 
 async function verifyAdminMfa() {
   const code = $("#adminMfaCode").value.trim();
   setNotice("#adminMfaStatus", "Etap 1/3: ap chèche authenticator ki asosye ak kont Admin lan…", "");
-  const factorsResult = await supabase.auth.mfa.listFactors();
-  if (factorsResult.error) throw factorsResult.error;
+  const factorsResult = await runMfaStep("FACTOR_LIST", () => supabase.auth.mfa.listFactors());
   const factors = factorsResult.data?.totp || [];
   const selectedId = $("#adminMfaFactorSelect")?.value;
   const factor = factors.find((item) => item.id === selectedId) ||
@@ -921,8 +944,13 @@ async function verifyAdminMfa() {
 
   const session = await completeTotpVerification(factor.id, code);
   $("#adminMfaCode").value = "";
-  const ready = await updateMfaStatus();
-  if (!ready) throw new Error("MFA_VERIFICATION_INCOMPLETE");
+  let ready = false;
+  try {
+    ready = await updateMfaStatus();
+  } catch (error) {
+    throw withMfaStage(error, "ASSURANCE_REFRESH");
+  }
+  if (!ready) throw withMfaStage(new Error("AAL2_NOT_CONFIRMED"), "ASSURANCE_REFRESH");
   setNotice("#adminMfaStatus", "MFA verifye sou sèvè a. Modil ou gen otorizasyon pou yo ap chaje kounye a.", "success");
   setNotice("#adminActionNotice", "MFA verifye. Aksyon admin yo toujou pase verifikasyon sou sèvè a.", "success");
   await refreshCurrent();
