@@ -23,11 +23,11 @@ export async function onRequest(context) {
   try {
     response = await context.next();
   } catch (error) {
-    if (isApi && !isLogEndpoint) {
+    if (!isLogEndpoint) {
       scheduleSystemLog(context, {
         source: "server",
         severity: "error",
-        event_code: "UNHANDLED_SERVER_EXCEPTION",
+        event_code: isApi ? "UNHANDLED_SERVER_EXCEPTION" : "PAGE_RENDER_EXCEPTION",
         path: safePath,
         method: request.method,
         http_status: 500,
@@ -37,6 +37,8 @@ export async function onRequest(context) {
           cf_ray: request.headers.get("cf-ray") || ""
         }
       });
+    }
+    if (isApi) {
       response = new Response(JSON.stringify({
         ok: false,
         error: "TEMPORARY_UNAVAILABLE",
@@ -57,7 +59,7 @@ export async function onRequest(context) {
     }
   }
 
-  if (isApi && response.status >= 500 && !isLogEndpoint) {
+  if (response.status >= 500 && !isLogEndpoint) {
     const logTask = response.clone().json().catch(() => ({})).then((body) => {
       const candidate = String(body?.error || body?.code || "");
       const diagnostic = String(body?.diagnostic || "");
@@ -66,7 +68,7 @@ export async function onRequest(context) {
       return writeSystemLog(context.env, {
         source: "server",
         severity: "error",
-        event_code: knownCode ? candidate : "API_HTTP_" + response.status,
+        event_code: knownCode ? candidate : (isApi ? "API_HTTP_" : "PAGE_HTTP_") + response.status,
         path: safePath,
         method: request.method,
         http_status: response.status,
