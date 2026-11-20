@@ -13,6 +13,10 @@ const adminPage = read("../public/admin/index.html");
 const app = read("../public/app.js");
 const adminApp = read("../public/admin/admin.js");
 const migration = read("../superbase/migrations/202611190004_system_logs.sql");
+import { systemLogPath, systemLogArea } from "../functions/_shared/system-logs.js";
+import { onRequestGet as adminLogsGet } from "../functions/api/admin/logs.js";
+import { onRequestPost as clientLogsPost } from "../functions/api/logs/client.js";
+import { onRequest as middlewareRequest } from "../functions/_middleware.js";
 
 test("technical logs are written server-side and sensitive payloads are not stored", () => {
   assert.match(middleware, /writeSystemLog/);
@@ -44,4 +48,13 @@ test("public and Admin APIs present a friendly temporary error, not raw server d
   assert.match(app, /Nou pa kapab trete demann ou an kounye a/);
   assert.match(adminApp, /Nou pa kapab trete demann ou an kounye a/);
   assert.match(middleware, /TEMPORARY_UNAVAILABLE/);
+});
+
+test("logging routes and middleware are valid ESM modules and paths are sanitized", () => {
+  assert.equal(systemLogPath("/api/users/123e4567-e89b-42d3-a456-426614174000?email=a@b.com"), "/api/users/:id");
+  assert.equal(systemLogArea("/api/admin/logs"), "admin");
+  assert.equal(systemLogArea("/api/agents/status"), "agent");
+  assert.equal(typeof adminLogsGet, "function");
+  assert.equal(typeof clientLogsPost, "function");
+  assert.equal(typeof middlewareRequest, "function");
 });
