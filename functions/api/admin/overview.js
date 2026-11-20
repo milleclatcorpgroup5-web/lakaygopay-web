@@ -1,6 +1,6 @@
 import { json, config } from "../../_shared/superbase.js";
 import { requireAdminPinSession } from "../../_shared/admin-pin.js";
-import { requireAdminAal2 } from "../../_shared/security.js";
+import { requireAdminTrustedAal2 } from "../../_shared/security.js";
 
 async function countRows(url, secretKey, table, column = "id") {
   try {
@@ -27,10 +27,10 @@ export async function onRequestGet({ request, env }) {
   if (access.error) return access.error;
 
   // The PIN opens the basic Admin shell, but platform-wide KPI counts are
-  // withheld until this same session has completed TOTP/AAL2 verification.
+  // withheld until this same session has completed MFA on this session or has a valid 30-day trusted-device grant.
   let metricsAvailable = false;
   try {
-    const elevated = await requireAdminAal2(request, env);
+    const elevated = await requireAdminTrustedAal2(request, env);
     metricsAvailable = !elevated.error && elevated.user?.id === access.user.id;
   } catch {
     // Fail closed: transient Auth/network errors must not disclose KPIs.
