@@ -56,7 +56,7 @@ test("MFA diagnostic is read-only and reports only safe identity and factor meta
   assert.ok(block.includes("supabase.auth.mfa.listFactors()"));
   assert.ok(block.includes("supabaseProjectRef"));
   assert.ok(!block.includes("totp.secret"));
-  assert.ok(block.includes("storedBinding"));
+  assert.ok(block.includes("readAdminMfaFactorBinding(sessionUser.id)"));
 });
 
 test("MFA enrollment never silently deletes an unverified factor", () => {
