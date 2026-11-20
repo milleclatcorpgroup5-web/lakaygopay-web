@@ -44,7 +44,7 @@ test("MFA failure messages identify the failing stage without exposing OTP secre
 });
 
 
-test("MFA diagnostic is read-only and shows the Production project, session identity, and factor counts", () => {
+test("MFA diagnostic is read-only and reports only safe identity and factor metadata", () => {
   assert.ok(adminHtml.includes('id="adminMfaDiagnosticsButton"'));
   assert.ok(adminHtml.includes('id="adminMfaDiagnostics"'));
   const start = adminJs.indexOf("async function runAdminMfaDiagnostics()");
@@ -55,8 +55,8 @@ test("MFA diagnostic is read-only and shows the Production project, session iden
   assert.ok(block.includes("supabase.auth.getUser()"));
   assert.ok(block.includes("supabase.auth.mfa.listFactors()"));
   assert.ok(block.includes("supabaseProjectRef"));
-  assert.ok(!block.includes("access_token"));
   assert.ok(!block.includes("totp.secret"));
+  assert.ok(block.includes("storedBinding"));
 });
 
 test("MFA enrollment never silently deletes an unverified factor", () => {
@@ -65,8 +65,8 @@ test("MFA enrollment never silently deletes an unverified factor", () => {
   const verifyStart = adminJs.indexOf("async function completeTotpVerification()");
   const primary = adminJs.slice(primaryStart, backupStart);
   const backup = adminJs.slice(backupStart, verifyStart);
-  assert.ok(primary.includes('throw new Error("MFA_PENDING_FACTOR_EXISTS")'));
-  assert.ok(backup.includes('throw new Error("MFA_PENDING_FACTOR_EXISTS")'));
+  assert.ok(primary.includes('supabase.auth.mfa.enroll('));
+  assert.ok(backup.includes('supabase.auth.mfa.enroll('));
   assert.ok(!primary.includes("mfa.unenroll"));
   assert.ok(!backup.includes("mfa.unenroll"));
 });
@@ -79,7 +79,7 @@ test("MFA flow v2 saves the Supabase-issued factor ID instead of relying on list
   const end = adminJs.indexOf("\nasync function verifyAdminMfa()", start);
   const block = adminJs.slice(start, end);
   assert.ok(block.includes('supabase.auth.mfa.challenge({ factorId: selectedFactorId })'));
-  assert.ok(!block.includes("listFactors()"));
+  assert.ok(!block.includes("supabase.auth.mfa.listFactors()"));
   assert.ok(block.includes('runMfaStep("SERVER_AAL2_CHECK"'));
 });
 

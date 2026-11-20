@@ -916,7 +916,7 @@ async function runAdminMfaDiagnostics() {
       "Imèl sesyon an: " + (session.user.email || "Pa disponib"),
       "Imèl Auth konfime: " + (user.email || "Pa disponib"),
       "ID sesyon ak Auth koresponn: " + (user.id === session.user.id ? "WI" : "NON / PA DISPONIB"),
-      "AAL aktyèl: " + (ar.data?.currentLevel || decodeJwtPayload(session.access_token)?.aal || "unknown"),
+      "AAL aktyèl: " + (ar.data?.currentLevel || "unknown"),
       "Faktè TOTP nan listFactors(): " + factors.length,
       "Faktè sou pwofil Auth: " + (Array.isArray(user.factors) ? user.factors.length : "pa disponib"),
       "Verifye: " + factors.filter((f) => f.status === "verified").length +
