@@ -8,6 +8,7 @@ let currentAdminRoles = [];
 let teamDirectoryRows = [];
 let liveLogsTimer = null;
 let liveLogsSession = null;
+let mfaCanVerify = false;
 
 function setNotice(selector, message, kind) {
   const node = $(selector);
@@ -680,7 +681,18 @@ function explainMfaError(error) {
   return explainError(error?.code || error?.message || "MFA_REQUIRED");
 }
 
+function syncMfaVerifyButton() {
+  const button = $("#adminMfaVerifyButton");
+  const input = $("#adminMfaCode");
+  if (!button || !input) return;
+  const code = input.value.trim();
+  button.disabled = !mfaCanVerify || !/^\\d{6}$/.test(code) || button.dataset.verifying === "true";
+}
+
 async function updateMfaStatus() {
+  // Fail closed while Supabase session/factor state is being refreshed.
+  mfaCanVerify = false;
+  syncMfaVerifyButton();
   const session = await currentSession();
   if (!session) throw new Error("AUTH_REQUIRED");
 
@@ -734,7 +746,8 @@ async function updateMfaStatus() {
       ? "Verifye MFA sou sesyon sa a anvan ou ajoute yon aparèy sekou."
       : totpFactors.length >= 10 ? "Limit faktè MFA yo rive." : "Ajoute yon dezyèm authenticator sekou.";
   }
-  $("#adminMfaVerifyButton").disabled = totpFactors.length === 0 || (aal2 && !hasPendingFactor);
+  mfaCanVerify = totpFactors.length > 0 && !(aal2 && !hasPendingFactor);
+  syncMfaVerifyButton();
   $("#adminLedgerAuditButton").disabled = !aal2;
   return aal2;
 }
@@ -1978,15 +1991,22 @@ async function boot() {
     }
   });
 
+  $("#adminMfaCode").addEventListener("input", syncMfaVerifyButton);
+
   $("#adminMfaVerifyButton").addEventListener("click", async () => {
     const button = $("#adminMfaVerifyButton");
-    button.disabled = true;
+    button.dataset.verifying = "true";
+    syncMfaVerifyButton();
     try {
       await verifyAdminMfa();
     } catch (error) {
       setNotice("#adminMfaStatus", explainMfaError(error), "error");
     } finally {
-      button.disabled = await updateMfaStatus().catch(() => false);
+      button.dataset.verifying = "false";
+      await updateMfaStatus().catch(() => {
+        mfaCanVerify = false;
+      });
+      syncMfaVerifyButton();
     }
   });
 
