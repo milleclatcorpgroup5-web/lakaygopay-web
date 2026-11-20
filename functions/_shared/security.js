@@ -15,6 +15,19 @@ function decodeJwtPayload(token) {
   }
 }
 
+const ADMIN_TOTP_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+function hasRecentAdminTotp(claims, now = Date.now()) {
+  if (!Array.isArray(claims?.amr)) return false;
+  return claims.amr.some((entry) => {
+    if (!entry || !["totp", "mfa/totp"].includes(entry.method)) return false;
+    const timestamp = Number(entry.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return false;
+    const verifiedAt = timestamp * 1000;
+    return verifiedAt <= now + 60_000 && now - verifiedAt <= ADMIN_TOTP_MAX_AGE_MS;
+  });
+}
+
 // requireUser validates the bearer token against Supabase Auth before we inspect
 // its signed AAL claim. Never trust an unverified JWT payload on its own.
 export async function requireAal2(request, env) {
@@ -30,6 +43,9 @@ export async function requireAal2(request, env) {
 export async function requireAdminAal2(request, env) {
   const auth = await requireAal2(request, env);
   if (auth.error) return auth;
+  if (!hasRecentAdminTotp(auth.claims)) {
+    return { error: json({ error: "MFA_REQUIRED", required_level: "aal2", reauthentication_required: true }, 403) };
+  }
   const pinned = await requireAdminPinSession(request, env);
   if (pinned.error) return pinned;
   if (pinned.user?.id !== auth.user.id) {
@@ -47,7 +63,9 @@ export async function requireAdminTrustedAal2(request, env) {
   if (!claims || claims.sub !== pinned.user?.id) {
     return { error: json({ error: "MFA_REQUIRED", required_level: "aal2" }, 403) };
   }
-  if (claims.aal === "aal2") return { ...pinned, claims, mfaMethod: "aal2" };
+  if (claims.aal === "aal2" && hasRecentAdminTotp(claims)) {
+    return { ...pinned, claims, mfaMethod: "aal2" };
+  }
 
   try {
     const trusted = await findTrustedAdminDevice(request, env, pinned.user.id);
