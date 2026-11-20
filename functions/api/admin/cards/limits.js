@@ -17,7 +17,7 @@ export async function onRequestGet({request,env}){
  }catch(e){return json({error:e?.schemaMissing?"CARD_LIMIT_SCHEMA_NOT_READY":"CARD_LIMIT_ASSIGNMENTS_UNAVAILABLE"},503);}
 }
 export async function onRequestPost({request,env}){
- const access=await requireAdminRoles(request,env,["risk_admin"]);if(access.error)return access.error;
+ const access=await requireAdminRoles(request, env, ["risk_admin"], { requireFreshMfa: true });if(access.error)return access.error;
  try{
   const body=await readJson(request,3000);const userId=String(body?.target_user_id||"").trim();const amount=String(body?.approved_limit_htg??"").trim();const reason=String(body?.reason||"").trim();
   if(!validUuid(userId))return json({error:"INVALID_USER_ID"},400);
