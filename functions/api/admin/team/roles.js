@@ -47,7 +47,7 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequestPost({ request, env }) {
-  const access = await requireAdminRoles(request, env, []);
+  const access = await requireAdminRoles(request, env, [], { requireFreshMfa: true });
   if (access.error) return access.error;
   try {
     const body = await readJson(request, 4000);
