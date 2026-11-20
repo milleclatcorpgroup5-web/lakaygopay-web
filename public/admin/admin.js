@@ -665,20 +665,52 @@ function setProtectedAdminControls(enabled) {
 }
 
 function explainMfaError(error) {
-  const raw = [error?.code, error?.message, error?.name].filter(Boolean).join(" ").toLowerCase();
-  if (/invalid.*(otp|totp|token|code)|(otp|totp|token|code).*invalid/.test(raw)) {
-    return "Kòd la pa kòrèk oswa li ekspire. Gade dènye kòd 6 chif aplikasyon authenticator la bay epi antre l ankò.";
+  // Supabase Auth errors expose a stable code and HTTP status. Prefer those
+  // fields over message matching so Production failures are diagnosable.
+  const code = String(error?.code || error?.errorCode || "").trim().toLowerCase();
+  const status = Number(error?.status ?? error?.statusCode ?? 0);
+  const raw = [code, error?.message, error?.name].filter(Boolean).join(" ").toLowerCase();
+
+  if (code === "mfa_verification_failed" ||
+      /invalid.*(otp|totp|token|code)|(otp|totp|token|code).*invalid/.test(raw)) {
+    return "Kòd authenticator la pa kòrèk oswa li ekspire. Tann nouvo kòd 6 chif la parèt epi antre l.";
   }
-  if (/factor.*limit|maximum.*factor|too many factors/.test(raw)) {
+  if (code === "mfa_challenge_expired") {
+    return "Demann MFA a ekspire. Peze “Verifye MFA” ankò pou sistèm nan kreye yon nouvo demann, epi antre kòd aktyèl la.";
+  }
+  if (code === "mfa_totp_verify_not_enabled") {
+    return "Supabase Production pa aktive verifikasyon TOTP. Administratè pwojè a dwe aktive MFA TOTP nan Authentication > Multi-Factor Authentication.";
+  }
+  if (code === "mfa_totp_enroll_not_enabled") {
+    return "Supabase Production pa aktive enskripsyon TOTP. Aktive TOTP nan Authentication > Multi-Factor Authentication.";
+  }
+  if (code === "mfa_ip_address_mismatch") {
+    return "Adrès entènèt la chanje ant kreyasyon MFA ak verifikasyon an. Kenbe menm koneksyon Wi-Fi oswa done mobil la, epi rekòmanse enskripsyon MFA a.";
+  }
+  if (code === "mfa_verification_rejected") {
+    return "Règ sekirite MFA Supabase la refize verifikasyon an. Administratè a dwe verifye MFA Verification Hook nan Authentication > Hooks.";
+  }
+  if (code === "mfa_factor_not_found" || /factor.*(not found|not verified)|not.*factor/.test(raw)) {
+    return "Authenticator sa a pa koresponn ak yon faktè ki aktif ankò. Rekòmanse enskripsyon an sèlman si pa gen okenn authenticator deja verifye.";
+  }
+  if (code === "too_many_enrolled_mfa_factors" || /factor.*limit|maximum.*factor|too many factors/.test(raw)) {
     return "Limit kantite authenticator sekou yo rive. Pa efase yon aparèy verifye san plan rekiperasyon.";
   }
-  if (/rate|too many|attempt/.test(raw)) {
-    return "Gen twòp tantativ. Tann kèk minit, verifye lè telefòn nan kòrèk, epi eseye ankò.";
+  if (code === "over_request_rate_limit" || status === 429 || /rate|too many|attempt/.test(raw)) {
+    return "Gen twòp demann verifikasyon. Pa kontinye eseye kounye a; tann kèk minit anvan yon lòt tantativ.";
   }
-  if (/factor.*(not found|not verified)|not.*factor/.test(raw)) {
-    return "Authenticator la poko pare. Peze “Kreye / aktive MFA”, eskane nouvo QR la, epi verifye kòd la.";
+  if (code === "conflict") {
+    return "Sesyon sekirite a antre an konfli pandan li t ap renouvle. Rekonekte nan Admin lan yon sèl fwa, epi eseye ankò.";
   }
-  return explainError(error?.code || error?.message || "MFA_REQUIRED");
+  if (code === "unexpected_failure" || status >= 500) {
+    return "Sèvis Auth Supabase la rankontre yon erè sèvè. Sa pa nesesèman vle di kòd la pa bon. Eseye ankò pita.";
+  }
+  if (status === 403 || status === 501) {
+    return "Supabase refize operasyon MFA sa a paske fonksyon an pa disponib oswa pa aktive pou pwojè a.";
+  }
+
+  const reference = code || (status ? "HTTP_" + status : "MFA_REQUIRED");
+  return "Nou pa kapab fini verifikasyon MFA a kounye a. Kòd dyagnostik: " + reference + ". Pa pataje kòd authenticator ou.";
 }
 
 function syncMfaVerifyButton() {
@@ -825,10 +857,11 @@ async function completeTotpVerification(factorId, code) {
   });
   if (verified.error) throw verified.error;
 
-  const refreshed = await supabase.auth.refreshSession();
-  const session = refreshed.data?.session || verified.data?.session || (await currentSession());
+  // The MFA verify response/session storage is the source of truth here.
+  // Do not force a second refresh-token exchange immediately after verification:
+  // refresh tokens are single-use and overlapping exchanges can invalidate a session.
+  const session = verified.data?.session || (await currentSession());
   if (!session?.access_token) {
-    if (refreshed.error) throw refreshed.error;
     throw new Error("MFA_VERIFICATION_INCOMPLETE");
   }
 
