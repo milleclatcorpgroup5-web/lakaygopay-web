@@ -653,6 +653,18 @@ function decodeJwtPayload(token) {
     return null;
   }
 }
+function hasRecentAdminTotpSession(session, now = Date.now()) {
+  const amr = decodeJwtPayload(session?.access_token)?.amr;
+  if (!Array.isArray(amr)) return false;
+  const maxAgeMs = 30 * 24 * 60 * 60 * 1000;
+  return amr.some((entry) => {
+    if (!entry || !["totp", "mfa/totp"].includes(entry.method)) return false;
+    const timestamp = Number(entry.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return false;
+    const verifiedAt = timestamp * 1000;
+    return verifiedAt <= now + 60_000 && now - verifiedAt <= maxAgeMs;
+  });
+}
 async function currentSession() {
   const result = await supabase.auth.getSession();
   if (result.error) throw result.error;
@@ -839,7 +851,7 @@ async function updateMfaStatus() {
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (assurance.error) throw assurance.error;
   currentLevel = assurance.data?.currentLevel || currentLevel;
-  const aal2 = currentLevel === "aal2";
+  const aal2 = currentLevel === "aal2" && hasRecentAdminTotpSession(session);
 
   let totpFactors = [];
   let factorLookupError = null;
