@@ -335,7 +335,7 @@ async function loadOverview(session) {
   // the report refresh button).
   const moduleLoads = [];
   if (canSeeSystemHealth) moduleLoads.push(loadSystemHealth(session));
-  if (canSeeLogs) moduleLoads.push(loadLiveLogs(session));
+  let liveLogsReady = false;\n  if (canSeeLogs) moduleLoads.push(loadLiveLogs(session).then((ready) => { liveLogsReady = ready; }));
   if (canSeeAnalytics) moduleLoads.push(loadAdminAnalytics(session));
   if (canSeeFinance) {
     moduleLoads.push(loadFinanceOverview(session));
@@ -347,7 +347,7 @@ async function loadOverview(session) {
   if (canManageConnect) moduleLoads.push(loadConnectApps(session));
   if (canSeeSecretariat) moduleLoads.push(loadSecretariatItems(session));
   await Promise.allSettled(moduleLoads);
-  if (canSeeLogs) startLiveLogs(session); else stopLiveLogs();
+  if (canSeeLogs && liveLogsReady) startLiveLogs(session); else stopLiveLogs();
 
   if (canSeeOperations) {
     const allowedRecords = new Set();
