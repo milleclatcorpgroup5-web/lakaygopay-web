@@ -41,6 +41,13 @@ function explainError(code) {
     return "Supabase Production pa valide konbinezon imèl/modpas sa a. Verifye imèl la oswa itilize rekiperasyon modpas la.";
   }
   const messages = {
+    ADMIN_ACTION_MFA_REQUIRED: "Pou pwoteje aksyon sa a, antre kòd 6 chif authenticator ou a ankò.",
+    ADMIN_ACTION_MFA_CANCELLED: "Ou anile verifikasyon an. Okenn aksyon pa te egzekite.",
+    ADMIN_ACTION_MFA_CODE_REUSED: "Kòd verifikasyon an deja sèvi pou yon lòt etap. Tann nouvo kòd 6 chif la epi rekòmanse.",
+    ADMIN_ACTION_MFA_FRESH_CODE_REQUIRED: "Verifikasyon an twò ansyen. Antre nouvo kòd 6 chif la epi eseye ankò.",
+    ADMIN_ACTION_MFA_NOT_READY: "Verifikasyon pou aksyon sa a poko pare. Verifye migrasyon MFA aksyon an nan Supabase.",
+    ADMIN_ACTION_MFA_ACTION_INVALID: "Aksyon administratè a pa valab pou verifikasyon MFA.",
+    ADMIN_ACTION_MFA_INVALID: "Prèv sekirite aksyon an pa valab.",
     ADMIN_ACCESS_DENIED: "Kont sa a pa gen wòl administratè. Aksè a refize.",
     ADMIN_PERMISSION_DENIED: "Wòl kont sa a pa otorize pou ouvri modil sa a.",
     SUPER_ADMIN_REQUIRED: "Se Super Administratè sèlman ki ka fè chanjman sa a.",
@@ -165,16 +172,90 @@ function showLogin(message, kind = "error") {
   currentAdminRoles = [];
   if (message) setNotice("#loginNotice", message, kind);
 }
+const MUTATING_ADMIN_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+async function createAdminActionKey(path, method, serializedBody) {
+  const pathname = new URL(path, window.location.origin).pathname;
+  const payload = new TextEncoder().encode(serializedBody || "");
+  const digest = await crypto.subtle.digest("SHA-256", payload);
+  const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return String(method).toUpperCase() + ":" + pathname + ":" + hash;
+}
+
+async function requestAdminActionMfaGrant(session, actionKey) {
+  let code = window.prompt("Pou egzekite aksyon administratè sa a, antre kòd 6 chif ki parèt kounye a nan aplikasyon authenticator ou a. Chak aksyon mande yon nouvo verifikasyon.");
+  if (code === null) {
+    const cancelled = new Error("ADMIN_ACTION_MFA_CANCELLED");
+    cancelled.code = "ADMIN_ACTION_MFA_CANCELLED";
+    throw cancelled;
+  }
+  code = String(code).trim();
+  if (!/^\\d{6}$/.test(code)) {
+    const invalid = new Error("MFA_CODE_MUST_BE_6_DIGITS");
+    invalid.code = "MFA_CODE_MUST_BE_6_DIGITS";
+    throw invalid;
+  }
+
+  try {
+    const factorsResult = await supabase.auth.mfa.listFactors();
+    if (factorsResult.error) throw factorsResult.error;
+    const factor = (factorsResult.data?.totp || []).find((item) => item.status === "verified");
+    if (!factor) {
+      const missing = new Error("MFA_FACTOR_NOT_ENROLLED");
+      missing.code = "MFA_FACTOR_NOT_ENROLLED";
+      throw missing;
+    }
+
+    const elevatedSession = await completeTotpVerification(factor.id, code);
+    const response = await fetch("/api/admin/action-mfa/grant", {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        authorization: "Bearer " + elevatedSession.access_token
+      },
+      body: JSON.stringify({ action_key: actionKey }),
+      cache: "no-store"
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.grant_id) {
+      const error = new Error(data.error || "ADMIN_ACTION_MFA_NOT_READY");
+      error.code = data.error || "ADMIN_ACTION_MFA_NOT_READY";
+      error.status = response.status;
+      throw error;
+    }
+    return { session: elevatedSession, grantId: data.grant_id };
+  } finally {
+    code = "";
+  }
+}
+
 async function adminRequest(path, session, body, method) {
+  const requestMethod = String(method || (body === undefined ? "GET" : "POST")).toUpperCase();
+  const bodyText = body === undefined ? undefined : JSON.stringify(body);
   const headers = {
     accept: "application/json",
     authorization: "Bearer " + session.access_token
   };
-  if (body !== undefined) headers["content-type"] = "application/json";
+  if (bodyText !== undefined) headers["content-type"] = "application/json";
+
+  const pathname = new URL(path, window.location.origin).pathname;
+  const requiresActionMfa = MUTATING_ADMIN_METHODS.has(requestMethod) &&
+    pathname.startsWith("/api/admin/") &&
+    !pathname.startsWith("/api/admin/pin/") &&
+    pathname !== "/api/admin/action-mfa/grant";
+  if (requiresActionMfa) {
+    const actionKey = await createAdminActionKey(path, requestMethod, bodyText);
+    const grant = await requestAdminActionMfaGrant(session, actionKey);
+    session = grant.session;
+    headers.authorization = "Bearer " + session.access_token;
+    headers["x-admin-action-mfa-grant"] = grant.grantId;
+  }
+
   const response = await fetch(path, {
-    method: method || (body === undefined ? "GET" : "POST"),
+    method: requestMethod,
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: bodyText,
     cache: "no-store"
   });
   const data = await response.json().catch(() => ({}));
