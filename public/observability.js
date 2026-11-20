@@ -99,7 +99,7 @@
     var requestPath = cleanPath(requestUrl.pathname);
 
     return originalFetch(input, Object.assign({}, init, { headers: headers })).then(function (response) {
-      if (response.status >= 400) {
+      if (response.status >= 400 && !(response.status >= 500 && response.headers.get("x-request-id"))) {
         response.clone().json().then(function (data) {
           var suppliedCode = data && (data.error || data.code);
           var code = typeof suppliedCode === "string" && /^[A-Z][A-Z0-9_]{2,79}$/i.test(suppliedCode)
