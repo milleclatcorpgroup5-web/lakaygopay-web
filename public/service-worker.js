@@ -1,4 +1,4 @@
-const CACHE_NAME = "lakaygopay-shell-v26";
+const CACHE_NAME = "lakaygopay-shell-v27";
 const APP_SHELL = ["/", "/index.html", "/styles.css?v=20261119-card-02", "/app.js?v=20261119-connect-02", "/manifest.webmanifest", "/assets/icon.svg"];
 self.addEventListener("install", function (event) {
   event.waitUntil(caches.open(CACHE_NAME).then(function (cache) {

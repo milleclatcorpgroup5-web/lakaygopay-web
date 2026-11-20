@@ -241,7 +241,9 @@ async function loadDashboard(session) {
     api("/api/withdrawals"),
     api("/api/payments"),
     api("/api/cards"),
-    api("/api/connect/payouts"),
+    // Connect is intentionally closed with HTTP 503 until its isolated Sandbox is deployed.
+    // Do not poll the closed endpoint on every dashboard load.
+    Promise.resolve({ payouts: [] }),
     api("/api/agents/status")
   ]);
   if (results[0].status === "rejected") throw results[0].reason;

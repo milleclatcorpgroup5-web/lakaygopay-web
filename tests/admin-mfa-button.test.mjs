@@ -96,3 +96,22 @@ test("MFA success clears the setup secret and binds the factor ID to the admin i
   assert.ok(adminJs.includes('saveAdminMfaFactorBinding(userId, selectedFactorId, "verified"'));
   assert.ok(adminJs.includes("binding.userId !== userId || binding.projectRef !== supabaseProjectRef"));
 });
+
+
+test("primary and backup MFA factors use separate user/project-bound storage slots", () => {
+  assert.ok(adminJs.includes('const ADMIN_MFA_BACKUP_FACTOR_STORAGE_KEY = "lakaygopay_admin_mfa_backup_factor_v1";'));
+  assert.ok(adminJs.includes("mfaFactorStorageKey(purpose)"));
+  assert.ok(adminJs.includes('saveAdminMfaFactorBinding(userId, factorId, "unverified", friendlyName, purpose)'));
+  assert.ok(adminJs.includes('readAdminMfaFactorBinding(session.user.id, "primary")'));
+  assert.ok(adminJs.includes('readAdminMfaFactorBinding(session.user.id, "backup")'));
+  assert.ok(adminJs.includes('const purpose = backup?.factorId === selectedFactorId ? "backup" : "primary"'));
+});
+
+test("backup enrollment does not overwrite the primary factor binding", () => {
+  const start = adminJs.indexOf("async function enrollAdminMfaBackup()");
+  const end = adminJs.indexOf("\nasync function completeTotpVerification", start);
+  const block = adminJs.slice(start, end);
+  assert.ok(block.includes('readAdminMfaFactorBinding(session.user.id, "primary")'));
+  assert.ok(block.includes('readAdminMfaFactorBinding(session.user.id, "backup")'));
+  assert.ok(block.includes('renderAdminMfaSetup(data, session.user.id, "backup")'));
+});

@@ -12,6 +12,8 @@ const page = read("../public/index.html");
 const adminPage = read("../public/admin/index.html");
 const app = read("../public/app.js");
 const adminApp = read("../public/admin/admin.js");
+const activityApi = read("../functions/api/activity.js");
+const sharedSupabase = read("../functions/_shared/superbase.js");
 const migration = read("../superbase/migrations/202611190004_system_logs.sql");
 import { systemLogPath, systemLogArea } from "../functions/_shared/system-logs.js";
 import { onRequestGet as adminLogsGet } from "../functions/api/admin/logs.js";
@@ -57,4 +59,20 @@ test("logging routes and middleware are valid ESM modules and paths are sanitize
   assert.equal(typeof adminLogsGet, "function");
   assert.equal(typeof clientLogsPost, "function");
   assert.equal(typeof middlewareRequest, "function");
+});
+
+
+test("activity read failures record safe per-table PostgREST diagnostics", () => {
+  assert.match(activityApi, /ACTIVITY_READS/);
+  assert.match(activityApi, /ACTIVITY_.*_PG_/);
+  assert.match(activityApi, /writeSystemLog/);
+  assert.match(activityApi, /actor_user_id: userId/);
+  assert.match(sharedSupabase, /databaseCode/);
+  assert.match(sharedSupabase, /databaseStatus/);
+  assert.doesNotMatch(activityApi, /error\.details|error\.hint|error\.message/);
+});
+
+test("dashboard does not poll the intentionally disabled Connect payouts API", () => {
+  assert.match(app, /Promise\.resolve\(\{ payouts: \[\] \}\)/);
+  assert.doesNotMatch(app, /api\("\/api\/connect\/payouts"\)/);
 });
