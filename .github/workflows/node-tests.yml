@@ -31,4 +31,4 @@ jobs:
           node --check public/observability.js &&
           node --check public/app.js &&
           node --check public/admin/admin.js &&
-          node --test tests/transfers.test.mjs tests/agent-card-readiness.test.mjs tests/observability.test.mjs
+          node --test tests/transfers.test.mjs tests/agent-card-readiness.test.mjs tests/observability.test.mjs tests/admin-mfa-button.test.mjs
