@@ -63,7 +63,7 @@ export async function onRequestPost({ request, env }) {
   if (Number.isInteger(body.column) && body.column >= 0) details.column = Math.min(body.column, 10000000);
   if (typeof body.filename === "string") details.filename = systemLogPath(body.filename);
 
-  await writeSystemLog(env, {
+  const stored = await writeSystemLog(env, {
     source: "browser",
     severity: httpStatus === null || httpStatus === 0 || httpStatus >= 500 || eventCode.startsWith("JS_") ? "error" : "warning",
     event_code: eventCode,
@@ -75,5 +75,5 @@ export async function onRequestPost({ request, env }) {
     details
   });
 
-  return json({ ok: true, received: true }, 202);
+  if (!stored) return json({ error: "SYSTEM_LOGS_UNAVAILABLE" }, 503);\n\n  return json({ ok: true, received: true }, 202);
 }
