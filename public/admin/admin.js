@@ -149,7 +149,7 @@ function explainError(code) {
     SYSTEM_LOGS_NOT_CONFIGURED: "Logs Live poko konekte ak bazdone a. Aplike migrasyon teknik la nan Supabase pou aktive jounal la.",
     SYSTEM_LOGS_UNAVAILABLE: "Jounal Logs Live pa disponib kounye a."
   };
-  return messages[code] || "Yon erè rive. Kòd: " + (code || "UNKNOWN");
+  return messages[code] || "Nou pa kapab trete demann ou an kounye a. Tanpri eseye ankò pita.";
 }
 function showLogin(message, kind = "error") {
   $("#loginView").hidden = false;
