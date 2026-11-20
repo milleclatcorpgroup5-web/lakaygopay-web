@@ -799,7 +799,8 @@ async function updateMfaStatus() {
         : "Pa gen authenticator ki anrejistre. Klike Kreye / aktive MFA pou kòmanse.";
 
   $("#adminMfaEnrollButton").textContent = aal2 ? "MFA deja verifye" : hasVerifiedFactor ? "Authenticator deja aktive" : "Kreye / aktive MFA";
-  $("#adminMfaEnrollButton").disabled = aal2 || hasVerifiedFactor;
+  // Allow enrollment if no verified TOTP factor exists, even with a stale AAL2 session.
+  $("#adminMfaEnrollButton").disabled = hasVerifiedFactor;
   const backupButton = $("#adminMfaBackupEnrollButton");
   if (backupButton) {
     backupButton.hidden = !hasVerifiedFactor || totpFactors.length >= 10;
