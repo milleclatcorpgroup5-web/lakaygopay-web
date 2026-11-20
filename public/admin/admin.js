@@ -727,10 +727,11 @@ function syncMfaVerifyButton() {
   const button = $("#adminMfaVerifyButton");
   const input = $("#adminMfaCode");
   if (!button || !input) return;
+  // A temporary factor-list failure must not disable the only MFA control.
+  // Let Supabase return the actual factor/challenge error after submission.
   const code = input.value.trim();
-  button.disabled = !mfaCanVerify || !/^\d{6}$/.test(code) || button.dataset.verifying === "true";
+  button.disabled = !/^\d{6}$/.test(code) || button.dataset.verifying === "true";
 }
-
 async function updateMfaStatus() {
   // Fail closed while Supabase session/factor state is being refreshed.
   mfaCanVerify = false;
@@ -2069,10 +2070,22 @@ async function boot() {
     }
   });
 
-  $("#adminMfaCode").addEventListener("input", syncMfaVerifyButton);
+  $("#adminMfaCode").addEventListener("input", (event) => {
+    event.currentTarget.value = event.currentTarget.value.replace(/\D/g, "").slice(0, 6);
+    syncMfaVerifyButton();
+  });
 
-  $("#adminMfaVerifyButton").addEventListener("click", async () => {
+  // Form submission handles both a tap and the keyboard Enter key.
+  // It does not depend on the background listFactors result to enable the control.
+  $("#adminMfaVerifyForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
     const button = $("#adminMfaVerifyButton");
+    const code = $("#adminMfaCode").value.trim();
+    if (!/^\d{6}$/.test(code)) {
+      setNotice("#adminMfaStatus", explainMfaError({ code: "MFA_CODE_MUST_BE_6_DIGITS" }), "error");
+      syncMfaVerifyButton();
+      return;
+    }
     let failureMessage = "";
     button.dataset.verifying = "true";
     syncMfaVerifyButton();
@@ -2083,8 +2096,6 @@ async function boot() {
       failureMessage = explainMfaError(error);
     } finally {
       button.dataset.verifying = "false";
-      // Refresh the factor/session state after an error, but do not let that
-      // refresh overwrite the actual verification error the user needs to see.
       if (failureMessage) {
         await updateMfaStatus().catch(() => {
           mfaCanVerify = false;
