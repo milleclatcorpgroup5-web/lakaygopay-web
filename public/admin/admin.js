@@ -814,10 +814,11 @@ async function enrollAdminMfa() {
     friendlyName: uniqueMfaFriendlyName("LakayGoPay Admin Primary")
   });
   if (error) throw error;
-  $("#adminMfaQr").src = data.totp.qr_code;
-  $("#adminMfaSecret").textContent = "Kle manyèl (kenbe l prive): " + data.totp.secret;
+  $("#adminMfaSecret").textContent = "Kle konfigirasyon (kenbe l prive): " + data.totp.secret;
+  $("#adminMfaSecret").dataset.secret = data.totp.secret;
+  $("#adminMfaCopySecret").disabled = false;
   $("#adminMfaQrWrap").hidden = false;
-  $("#adminMfaStatus").textContent = "Eskane QR sa a nan Google Authenticator, Aegis oswa yon aplikasyon TOTP. Apre sa, antre kòd 6 chif la pou verifye.";
+  $("#adminMfaStatus").textContent = "Antre kle konfigirasyon an manyèlman nan aplikasyon authenticator ou. Chwazi Time based, epi antre kòd 6 chif li bay la.";
   $("#adminMfaCode").focus();
 }
 
@@ -844,10 +845,11 @@ async function enrollAdminMfaBackup() {
     friendlyName: uniqueMfaFriendlyName("LakayGoPay Admin Backup")
   });
   if (error) throw error;
-  $("#adminMfaQr").src = data.totp.qr_code;
   $("#adminMfaSecret").textContent = "Kle authenticator sekou (kenbe l prive): " + data.totp.secret;
+  $("#adminMfaSecret").dataset.secret = data.totp.secret;
+  $("#adminMfaCopySecret").disabled = false;
   $("#adminMfaQrWrap").hidden = false;
-  $("#adminMfaStatus").textContent = "Eskane QR sekou sa a sou yon dezyèm aparèy. Antre kòd li a epi verifye faktè a. Pa retire authenticator prensipal la.";
+  $("#adminMfaStatus").textContent = "Antre kle sekou a manyèlman nan dezyèm aplikasyon authenticator ou, ak opsyon Time based. Pa retire authenticator prensipal la.";
   $("#adminMfaCode").focus();
 }
 
@@ -2008,6 +2010,20 @@ async function boot() {
       $("#adminPinConfirm").value = "";
     } finally {
       button.disabled = false;
+    }
+  });
+
+  $("#adminMfaCopySecret")?.addEventListener("click", async () => {
+    const secret = $("#adminMfaSecret")?.dataset.secret || "";
+    if (!secret) {
+      setNotice("#adminMfaStatus", "Pa gen kle konfigirasyon ki disponib pou kopye.", "error");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(secret);
+      setNotice("#adminMfaStatus", "Kle a kopye. Kole l nan Google Authenticator, chwazi Time based, epi pa pataje kle sa a.", "success");
+    } catch {
+      setNotice("#adminMfaStatus", "Kopi otomatik la pa disponib sou navigatè sa a. Ou ka chwazi epi kopye kle ki parèt la manyèlman.", "error");
     }
   });
 
