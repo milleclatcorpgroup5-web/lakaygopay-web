@@ -56,7 +56,7 @@ test("MFA diagnostic is read-only and reports only safe identity and factor meta
   assert.ok(block.includes("supabase.auth.mfa.listFactors()"));
   assert.ok(block.includes("supabaseProjectRef"));
   assert.ok(!block.includes("totp.secret"));
-  assert.ok(block.includes("readAdminMfaFactorBinding(session.user.id)"));
+  assert.ok(block.includes('readAdminMfaFactorBinding(session.user.id, "primary")'));
 });
 
 test("MFA enrollment never silently deletes an unverified factor", () => {
@@ -74,7 +74,7 @@ test("MFA enrollment never silently deletes an unverified factor", () => {
 
 test("MFA flow v2 saves the Supabase-issued factor ID instead of relying on listFactors rediscovery", () => {
   assert.ok(adminJs.includes('const ADMIN_MFA_FACTOR_STORAGE_KEY = "lakaygopay_admin_mfa_factor_v1";'));
-  assert.ok(adminJs.includes('saveAdminMfaFactorBinding(userId, factorId, "unverified", friendlyName)'));
+  assert.ok(adminJs.includes('saveAdminMfaFactorBinding(userId, factorId, "unverified", friendlyName, purpose)'));
   const start = adminJs.indexOf("async function completeTotpVerification(factorId, code)");
   const end = adminJs.indexOf("\nasync function verifyAdminMfa()", start);
   const block = adminJs.slice(start, end);
