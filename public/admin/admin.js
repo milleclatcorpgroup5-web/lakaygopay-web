@@ -861,8 +861,10 @@ async function completeTotpVerification(factorId, code) {
   if (!factor) throw new Error("MFA_FACTOR_NOT_ENROLLED");
   if (factor.status !== "verified" && factor.status !== "unverified") throw new Error("MFA_FACTOR_NOT_ENROLLED");
 
+  setNotice("#adminMfaStatus", "Etap 2/3: authenticator la jwenn. Ap kreye demann verifikasyon an…", "");
   const challenge = await supabase.auth.mfa.challenge({ factorId: factor.id });
   if (challenge.error) throw challenge.error;
+  setNotice("#adminMfaStatus", "Etap 3/3: demann lan kreye. Ap verifye kòd 6 chif la…", "");
   const verified = await supabase.auth.mfa.verify({
     factorId: factor.id,
     challengeId: challenge.data.id,
@@ -891,6 +893,7 @@ async function completeTotpVerification(factorId, code) {
 
 async function verifyAdminMfa() {
   const code = $("#adminMfaCode").value.trim();
+  setNotice("#adminMfaStatus", "Etap 1/3: ap chèche authenticator ki asosye ak kont Admin lan…", "");
   const factorsResult = await supabase.auth.mfa.listFactors();
   if (factorsResult.error) throw factorsResult.error;
   const factors = factorsResult.data?.totp || [];
@@ -2055,18 +2058,26 @@ async function boot() {
 
   $("#adminMfaVerifyButton").addEventListener("click", async () => {
     const button = $("#adminMfaVerifyButton");
+    let failureMessage = "";
     button.dataset.verifying = "true";
     syncMfaVerifyButton();
+    setNotice("#adminMfaStatus", "Ap verifye authenticator la ak sèvè sekirite a…", "");
     try {
       await verifyAdminMfa();
     } catch (error) {
-      setNotice("#adminMfaStatus", explainMfaError(error), "error");
+      failureMessage = explainMfaError(error);
     } finally {
       button.dataset.verifying = "false";
-      await updateMfaStatus().catch(() => {
-        mfaCanVerify = false;
-      });
-      syncMfaVerifyButton();
+      // Refresh the factor/session state after an error, but do not let that
+      // refresh overwrite the actual verification error the user needs to see.
+      if (failureMessage) {
+        await updateMfaStatus().catch(() => {
+          mfaCanVerify = false;
+        });
+        setNotice("#adminMfaStatus", failureMessage, "error");
+      } else {
+        syncMfaVerifyButton();
+      }
     }
   });
 
