@@ -46,7 +46,9 @@ export async function onRequestPost({ request, env }) {
     return json({ error: "INVALID_LOG_EVENT" }, 400);
   }
 
-  if (!allowUserEvent(auth.user.id)) return json({ error: "LOG_RATE_LIMITED" }, 429);\n\n  const path = systemLogPath(body.path);
+  if (!allowUserEvent(auth.user.id)) return json({ error: "LOG_RATE_LIMITED" }, 429);
+
+  const path = systemLogPath(body.path);
   const eventCode = String(body.event_code || "").toUpperCase();
   if (!/^[A-Z][A-Z0-9_]{2,79}$/.test(eventCode)) {
     return json({ error: "INVALID_LOG_EVENT" }, 400);
