@@ -483,9 +483,10 @@
         <div class="admin-mfa-actions">
           <button id="adminMfaEnrollButton" class="button button-quiet" type="button">Kreye / aktive MFA</button>
           <button id="adminMfaBackupEnrollButton" class="button button-quiet" type="button" hidden>Ajoute authenticator sekou</button>
-          <div id="adminMfaQrWrap" hidden>
-            <img id="adminMfaQr" alt="QR pou aplikasyon authenticator">
-            <p id="adminMfaSecret" class="small muted"></p>
+          <div id="adminMfaQrWrap" class="mfa-manual-setup" hidden>
+            <p class="small muted">Pa bezwen eskane okenn QR. Nan Google Authenticator, peze +, chwazi “Antre yon kle konfigirasyon” (Enter a setup key), mete non kont lan, kole kle ki anba a epi chwazi “Time based”.</p>
+            <p id="adminMfaSecret" class="small muted" aria-live="polite"></p>
+            <button id="adminMfaCopySecret" class="button button-quiet" type="button">Kopye kle sekrè a</button>
           </div>
           <label id="adminMfaFactorLabel" for="adminMfaFactorSelect" hidden>Chwazi aparèy authenticator
             <select id="adminMfaFactorSelect"></select>
@@ -817,6 +818,6 @@
   </main>
 
   <script src="/observability.js?v=20261119-logs-01"></script>
-  <script type="module" src="/admin/admin.js?v=20261120-mfa-05"></script>
+  <script type="module" src="/admin/admin.js?v=20261120-mfa-manual-01"></script>
 </body>
 </html>
