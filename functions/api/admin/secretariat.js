@@ -54,7 +54,7 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequestPost({ request, env }) {
-  const access = await requireAdminRoles(request, env, ["secretary"]);
+  const access = await requireAdminRoles(request, env, ["secretary"], { requireFreshMfa: true });
   if (access.error) return access.error;
   try {
     const { url, secretKey } = config(env);
@@ -96,7 +96,7 @@ export async function onRequestPost({ request, env }) {
 }
 
 export async function onRequestPatch({ request, env }) {
-  const access = await requireAdminRoles(request, env, ["secretary"]);
+  const access = await requireAdminRoles(request, env, ["secretary"], { requireFreshMfa: true });
   if (access.error) return access.error;
   try {
     const { url, secretKey } = config(env);
