@@ -878,3 +878,7 @@ body:before{
 .live-logs-table .log-event{font-weight:800;color:#dcecf3}
 .live-logs-table .log-route{max-width:250px;overflow-wrap:anywhere;color:#9bb7c7}
 @media(max-width:600px){.live-logs-panel{padding:14px}.live-logs-panel .section-head{gap:10px}.live-logs-panel #liveLogsRefresh{width:100%}}
+
+/* Keep the MFA code field and submit control together on every screen size. */
+.admin-mfa-verify-form{display:flex;align-items:flex-end;flex-wrap:wrap;gap:11px;min-width:0}
+@media(max-width:650px){.admin-mfa-verify-form{width:100%}.admin-mfa-verify-form label{width:100%}.admin-mfa-verify-form button{width:100%}}
