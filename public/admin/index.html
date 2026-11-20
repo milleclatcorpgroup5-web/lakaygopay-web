@@ -498,6 +498,10 @@
             <button id="adminMfaVerifyButton" class="button button-primary" type="submit" disabled>Verifye MFA</button>
           </form>
         </div>
+        <div class="mfa-diagnostics">
+          <button id="adminMfaDiagnosticsButton" class="button button-quiet" type="button">Tcheke koneksyon MFA</button>
+          <pre id="adminMfaDiagnostics" class="muted small" aria-live="polite" style="white-space:pre-wrap">Dyagnostik sa a ap sèlman li pwojè Supabase, imèl sesyon an ak kantite authenticator yo. Li pa chanje okenn done.</pre>
+        </div>
       </section>
 
       <section class="surface-card admin-records-panel" id="adminRecordsPanel">
@@ -820,6 +824,6 @@
   </main>
 
   <script src="/observability.js?v=20261119-logs-01"></script>
-  <script type="module" src="/admin/admin.js?v=20261120-mfa-recovery-02nostic-05"></script>
+  <script type="module" src="/admin/admin.js?v=20261120-mfa-auth-diagnostic-06"></script>
 </body>
 </html>
