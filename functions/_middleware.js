@@ -17,13 +17,13 @@ export async function onRequest(context) {
   const safePath = systemLogPath(pathname);
   const requestId = getRequestId(request);
   const isApi = pathname.startsWith("/api/");
-  const isLogIngestion = pathname === "/api/logs/client";
+  const isLogEndpoint = pathname === "/api/logs/client" || pathname === "/api/admin/logs";
   let response;
 
   try {
     response = await context.next();
   } catch (error) {
-    if (isApi && !isLogIngestion) {
+    if (isApi && !isLogEndpoint) {
       scheduleSystemLog(context, {
         source: "server",
         severity: "error",
@@ -57,7 +57,7 @@ export async function onRequest(context) {
     }
   }
 
-  if (isApi && response.status >= 500 && !isLogIngestion) {
+  if (isApi && response.status >= 500 && !isLogEndpoint) {
     const logTask = response.clone().json().catch(() => ({})).then((body) => {
       const candidate = String(body?.error || body?.code || "");
       const diagnostic = String(body?.diagnostic || "");
