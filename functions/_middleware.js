@@ -58,16 +58,27 @@ export async function onRequest(context) {
   }
 
   if (isApi && response.status >= 500 && !isLogIngestion) {
-    scheduleSystemLog(context, {
-      source: "server",
-      severity: "error",
-      event_code: "API_HTTP_" + response.status,
-      path: safePath,
-      method: request.method,
-      http_status: response.status,
-      request_id: requestId,
-      details: { cf_ray: request.headers.get("cf-ray") || "" }
+    const logTask = response.clone().json().catch(() => ({})).then((body) => {
+      const candidate = String(body?.error || body?.code || "");
+      const diagnostic = String(body?.diagnostic || "");
+      const knownCode = /^[A-Z][A-Z0-9_]{2,79}$/.test(candidate);
+      const knownDiagnostic = /^[A-Z][A-Z0-9_]{2,79}$/.test(diagnostic);
+      return writeSystemLog(context.env, {
+        source: "server",
+        severity: "error",
+        event_code: knownCode ? candidate : "API_HTTP_" + response.status,
+        path: safePath,
+        method: request.method,
+        http_status: response.status,
+        request_id: requestId,
+        details: {
+          cf_ray: request.headers.get("cf-ray") || "",
+          diagnostic: knownDiagnostic ? diagnostic : undefined
+        }
+      });
     });
+    if (typeof context.waitUntil === "function") context.waitUntil(logTask);
+    else void logTask;
   }
 
   const headers = new Headers(response.headers);
