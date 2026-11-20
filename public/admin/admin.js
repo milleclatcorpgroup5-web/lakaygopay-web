@@ -653,6 +653,18 @@ function decodeJwtPayload(token) {
     return null;
   }
 }
+function hasRecentAdminTotpSession(session, now = Date.now()) {
+  const amr = decodeJwtPayload(session?.access_token)?.amr;
+  if (!Array.isArray(amr)) return false;
+  const maxAgeMs = 30 * 24 * 60 * 60 * 1000;
+  return amr.some((entry) => {
+    if (!entry || !["totp", "mfa/totp"].includes(entry.method)) return false;
+    const timestamp = Number(entry.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return false;
+    const verifiedAt = timestamp * 1000;
+    return verifiedAt <= now + 60_000 && now - verifiedAt <= maxAgeMs;
+  });
+}
 async function currentSession() {
   const result = await supabase.auth.getSession();
   if (result.error) throw result.error;
@@ -701,6 +713,12 @@ function explainMfaError(error) {
   const stage = String(error?.mfaStage || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40);
   const raw = [code, message, error?.name].filter(Boolean).join(" ").toLowerCase();
 
+  if (code === "admin_trust_schema_not_ready") {
+    return "Bazdone pou aparèy admin rekonèt yo poko enstale. Aplike migrasyon admin_trusted_devices la nan Supabase.";
+  }
+  if (code === "admin_trust_unavailable") {
+    return "MFA reyisi, men nou pa t kapab anrejistre aparèy sa a pou 30 jou. Verifye sèvis sekirite a epi eseye ankò.";
+  }
   if (code === "mfa_factor_name_conflict") {
     return "Non authenticator sa deja egziste pou kont sa a. Nouvo enskripsyon an ap bezwen yon non inik; pa efase okenn authenticator ki deja verifye.";
   }
@@ -783,6 +801,11 @@ function saveAdminMfaFactorBinding(userId, factorId, status, friendlyName, purpo
   return binding;
 }
 
+function clearAdminMfaFactorBinding(purpose = "primary") {
+  try { localStorage.removeItem(mfaFactorStorageKey(purpose)); } catch {}
+  if (purpose === "primary" && adminMfaActiveFactorId) adminMfaActiveFactorId = null;
+}
+
 function clearAdminMfaSetupMaterial() {
   const secret = $("#adminMfaSecret");
   if (secret) { secret.textContent = ""; delete secret.dataset.secret; }
@@ -828,7 +851,7 @@ async function updateMfaStatus() {
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (assurance.error) throw assurance.error;
   currentLevel = assurance.data?.currentLevel || currentLevel;
-  const aal2 = currentLevel === "aal2";
+  const aal2 = currentLevel === "aal2" && hasRecentAdminTotpSession(session);
 
   let totpFactors = [];
   let factorLookupError = null;
@@ -836,12 +859,59 @@ async function updateMfaStatus() {
   if (factorsResult.error) factorLookupError = factorsResult.error;
   else totpFactors = Array.isArray(factorsResult.data?.totp) ? factorsResult.data.totp : [];
 
-  const primaryBinding = readAdminMfaFactorBinding(session.user.id, "primary");
-  const backupBinding = readAdminMfaFactorBinding(session.user.id, "backup");
+  const activeFactorIds = new Set(totpFactors.map((factor) => factor.id));
+  const savedPrimaryBinding = readAdminMfaFactorBinding(session.user.id, "primary");
+  const savedBackupBinding = readAdminMfaFactorBinding(session.user.id, "backup");
+  if (!factorLookupError && savedPrimaryBinding && !activeFactorIds.has(savedPrimaryBinding.factorId)) {
+    clearAdminMfaFactorBinding("primary");
+  }
+  if (!factorLookupError && savedBackupBinding && !activeFactorIds.has(savedBackupBinding.factorId)) {
+    clearAdminMfaFactorBinding("backup");
+  }
+  const primaryBinding = savedPrimaryBinding &&
+    (factorLookupError || activeFactorIds.has(savedPrimaryBinding.factorId)) ? savedPrimaryBinding : null;
+  const backupBinding = savedBackupBinding &&
+    (factorLookupError || activeFactorIds.has(savedBackupBinding.factorId)) ? savedBackupBinding : null;
   if (primaryBinding) adminMfaActiveFactorId = primaryBinding.factorId;
 
   const verifiedFactors = totpFactors.filter((factor) => factor.status === "verified");
   const pendingFactors = totpFactors.filter((factor) => factor.status === "unverified");
+
+  // A remembered browser only substitutes for a fresh prompt while at least
+  // one verified TOTP factor still exists in Supabase. If all factors were
+  // removed or factor discovery failed, do not honor the device cookie.
+  let trustedDevice = null;
+  if (!factorLookupError && verifiedFactors.length > 0) {
+    try {
+      const trustResponse = await fetch("/api/admin/mfa/trust", {
+        headers: { accept: "application/json", authorization: "Bearer " + session.access_token },
+        cache: "no-store"
+      });
+      if (trustResponse.ok) {
+        const trustData = await trustResponse.json().catch(() => ({}));
+        if (trustData.trusted === true && trustData.expires_at) trustedDevice = trustData;
+      }
+    } catch {
+      // Without a confirmed server-side trust record, normal MFA remains required.
+    }
+  }
+  if (trustedDevice) {
+    const expiry = new Date(trustedDevice.expires_at).toLocaleDateString("fr-HT", {
+      year: "numeric", month: "long", day: "numeric"
+    });
+    $("#adminMfaBadge").textContent = "MFA konfime · Aparèy rekonèt";
+    $("#adminMfaBadge").className = "read-only-tag mfa-active";
+    $("#adminMfaStatus").textContent = "MFA te verifye sou aparèy sa a. Ou pap bezwen antre yon lòt kòd anvan " + expiry + ". Aksyon ki pi sansib yo ka toujou mande yon verifikasyon fre.";
+    const enroll = $("#adminMfaEnrollButton");
+    if (enroll) { enroll.disabled = true; enroll.textContent = "Authenticator prensipal verifye"; }
+    const backup = $("#adminMfaBackupEnrollButton");
+    if (backup) backup.disabled = true;
+    $("#adminMfaVerifyButton").textContent = "Verifye MFA kounye a (opsyonèl)";
+    mfaCanVerify = true;
+    syncMfaVerifyButton();
+    $("#adminLedgerAuditButton").disabled = false;
+    return true;
+  }
   const primaryVerified = verifiedFactors.length > 0 || primaryBinding?.status === "verified";
   const primaryPending = primaryBinding?.status === "unverified";
   const backupVerified = backupBinding?.status === "verified" ||
@@ -856,11 +926,7 @@ async function updateMfaStatus() {
     selector.replaceChildren();
     const optionsById = new Map();
     totpFactors.forEach((factor) => optionsById.set(factor.id, factor));
-    [primaryBinding, backupBinding].filter(Boolean).forEach((binding) => {
-      if (!optionsById.has(binding.factorId)) optionsById.set(binding.factorId, {
-        id: binding.factorId, status: binding.status, friendly_name: binding.friendlyName
-      });
-    });
+    // Only offer IDs that Supabase currently returns; never challenge a stale browser binding.
     const options = [...optionsById.values()];
     options.forEach((factor, index) => {
       const option = document.createElement("option");
@@ -1063,6 +1129,25 @@ async function completeTotpVerification(factorId, code) {
     }
     return data;
   });
+  await runMfaStep("TRUSTED_DEVICE_REGISTER", async () => {
+    const response = await fetch("/api/admin/mfa/trust", {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        authorization: "Bearer " + session.access_token
+      },
+      credentials: "same-origin",
+      cache: "no-store"
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.ok !== true || data.trusted !== true) {
+      const failure = new Error(data.error || "ADMIN_TRUST_UNAVAILABLE");
+      failure.status = response.status;
+      throw failure;
+    }
+    return data;
+  });
+
   const userId = session.user?.id || decodeJwtPayload(session.access_token)?.sub;
   if (userId) {
     const primary = readAdminMfaFactorBinding(userId, "primary");
@@ -1078,32 +1163,52 @@ async function completeTotpVerification(factorId, code) {
 async function verifyAdminMfa() {
   const code = $("#adminMfaCode").value.trim();
   if (!/^\d{6}$/.test(code)) throw new Error("MFA_CODE_MUST_BE_6_DIGITS");
-  setNotice("#adminMfaStatus", "Ap idantifye authenticator pou sesyon sa a…", "");
+  setNotice("#adminMfaStatus", "Ap idantifye yon authenticator aktif nan Supabase…", "");
   const session = await currentSession();
   if (!session?.user?.id) throw new Error("AUTH_REQUIRED");
-  const selectedId = $("#adminMfaFactorSelect")?.value;
+
+  // Supabase's live factor list is authoritative. localStorage only remembers
+  // the user's preferred factor; it must never supply an ID on its own.
+  const factorResult = await runMfaStep("FACTOR_DISCOVERY", () => supabase.auth.mfa.listFactors());
+  const factors = Array.isArray(factorResult.data?.totp) ? factorResult.data.totp : [];
+  const usableFactors = factors.filter((factor) =>
+    factor && typeof factor.id === "string" &&
+    (factor.status === "verified" || factor.status === "unverified")
+  );
+  const factorIds = new Set(usableFactors.map((factor) => factor.id));
   const primaryBinding = readAdminMfaFactorBinding(session.user.id, "primary");
   const backupBinding = readAdminMfaFactorBinding(session.user.id, "backup");
-  let factorId = selectedId || primaryBinding?.factorId || backupBinding?.factorId || adminMfaActiveFactorId;
-  if (!factorId) {
-    const result = await runMfaStep("FACTOR_DISCOVERY", () => supabase.auth.mfa.listFactors());
-    const factors = Array.isArray(result.data?.totp) ? result.data.totp : [];
-    const factor = factors.find((f) => f.status === "verified") || factors.find((f) => f.status === "unverified");
-    factorId = factor?.id || null;
-    if (factorId) saveAdminMfaFactorBinding(session.user.id, factorId, factor.status, factor.friendly_name, "primary");
-  }
-  if (!factorId) throw withMfaStage(new Error("MFA_FACTOR_ID_UNAVAILABLE"), "FACTOR_RESOLUTION");
-  await completeTotpVerification(factorId, code);
+  if (primaryBinding && !factorIds.has(primaryBinding.factorId)) clearAdminMfaFactorBinding("primary");
+  if (backupBinding && !factorIds.has(backupBinding.factorId)) clearAdminMfaFactorBinding("backup");
+
+  const selectedId = $("#adminMfaFactorSelect")?.value;
+  let factor = usableFactors.find((item) => item.id === selectedId) ||
+    usableFactors.find((item) => item.id === primaryBinding?.factorId) ||
+    usableFactors.find((item) => item.id === backupBinding?.factorId) ||
+    usableFactors.find((item) => item.status === "verified") ||
+    usableFactors.find((item) => item.status === "unverified");
+  if (!factor) throw withMfaStage(new Error("MFA_FACTOR_NOT_ENROLLED"), "FACTOR_RESOLUTION");
+
+  const purpose = backupBinding?.factorId === factor.id ? "backup" : "primary";
+  saveAdminMfaFactorBinding(
+    session.user.id,
+    factor.id,
+    factor.status,
+    factor.friendly_name,
+    purpose
+  );
+  await completeTotpVerification(factor.id, code);
   $("#adminMfaCode").value = "";
   clearAdminMfaSetupMaterial();
   let ready = false;
   try { ready = await updateMfaStatus(); }
   catch (error) { throw withMfaStage(error, "ASSURANCE_REFRESH"); }
   if (!ready) throw withMfaStage(new Error("AAL2_NOT_CONFIRMED"), "ASSURANCE_REFRESH");
-  setNotice("#adminMfaStatus", "MFA verifye sou sèvè a. Sesyon Admin lan kounye a nan nivo AAL2.", "success");
-  setNotice("#adminActionNotice", "MFA verifye. Aksyon admin yo toujou pase verifikasyon sou sèvè a.", "success");
+  setNotice("#adminMfaStatus", "MFA verifye. Aparèy sa a rete rekonèt pandan 30 jou.", "success");
+  setNotice("#adminActionNotice", "MFA verifye. Aksyon admin ki pi sansib yo toujou mande verifikasyon fre.", "success");
   await refreshCurrent();
 }
+
 function renderAnalyticsBreakdown(selector, rows, emptyLabel) {
   const container = $(selector);
   if (!container) return;

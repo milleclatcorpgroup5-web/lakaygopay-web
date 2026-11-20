@@ -16,7 +16,7 @@ test("initial MFA state errors are visible to the Admin user", () => {
 });
 
 test("Admin page loads the new MFA control logic without stale cache", () => {
-  assert.ok(adminHtml.includes("admin/admin.js?v=20261120-mfa-flow-v2-07"));
+  assert.ok(adminHtml.includes("admin/admin.js?v=20261120-admin-mfa-monthly-01"));
 });
 
 test("the MFA verify control remains usable when factor discovery temporarily fails", () => {
@@ -114,4 +114,77 @@ test("backup enrollment does not overwrite the primary factor binding", () => {
   assert.ok(block.includes('readAdminMfaFactorBinding(session.user.id, "primary")'));
   assert.ok(block.includes('readAdminMfaFactorBinding(session.user.id, "backup")'));
   assert.ok(block.includes('renderAdminMfaSetup(data, session.user.id, "backup")'));
+});
+
+
+test("a successfully verified browser is remembered for 30 days by the server", () => {
+  assert.ok(adminJs.includes('fetch("/api/admin/mfa/trust"'));
+  assert.ok(adminJs.includes('method: "POST"'));
+  assert.ok(adminJs.includes('MFA verifye. Aparèy sa a rete rekonèt pandan 30 jou.'));
+  assert.ok(adminJs.includes('MFA konfime · Aparèy rekonèt'));
+});
+
+test("monthly device trust is honored only while Supabase still reports a verified TOTP factor", () => {
+  const start = adminJs.indexOf("async function updateMfaStatus()");
+  const end = adminJs.indexOf("\nasync function runAdminMfaDiagnostics()", start);
+  const block = adminJs.slice(start, end);
+  assert.ok(block.indexOf('const verifiedFactors = totpFactors.filter') < block.indexOf('fetch("/api/admin/mfa/trust"'));
+  assert.ok(block.includes('!factorLookupError && verifiedFactors.length > 0'));
+});
+
+test("stale local authenticator IDs are never submitted as a TOTP factor", () => {
+  const start = adminJs.indexOf("async function verifyAdminMfa()");
+  const end = adminJs.indexOf("\nfunction renderAnalyticsBreakdown", start);
+  const block = adminJs.slice(start, end);
+  assert.ok(block.includes('supabase.auth.mfa.listFactors()'));
+  assert.ok(block.includes('usableFactors.find((item) => item.id === selectedId)'));
+  assert.ok(block.includes('if (primaryBinding && !factorIds.has(primaryBinding.factorId)) clearAdminMfaFactorBinding("primary")'));
+  assert.ok(!block.includes('selectedId || primaryBinding?.factorId'));
+});
+
+test("ordinary Admin reads accept a trusted device while high-impact changes demand fresh AAL2", async () => {
+  const security = await readFile(new URL("../functions/_shared/security.js", import.meta.url), "utf8");
+  assert.ok(security.includes('await requireAdminTrustedAal2(request, env)'));
+  assert.ok(security.includes('options?.requireFreshMfa === true'));
+  const writeFiles = [
+    "../functions/api/admin/agents/review.js",
+    "../functions/api/admin/cards/limits.js",
+    "../functions/api/admin/connect/apps.js",
+    "../functions/api/admin/finance/fees.js",
+    "../functions/api/admin/merchants/review.js",
+    "../functions/api/admin/secretariat.js",
+    "../functions/api/admin/secretariat-access.js",
+    "../functions/api/admin/team/roles.js",
+    "../functions/api/admin/users/status.js",
+    "../functions/api/admin/withdrawals/decision.js"
+  ];
+  for (const file of writeFiles) {
+    const source = await readFile(new URL(file, import.meta.url), "utf8");
+    const writeBlocks = source.split("export async function ").slice(1);
+    for (const block of writeBlocks) {
+      const method = block.slice(0, block.indexOf("("));
+      if (method === "onRequestPost" || method === "onRequestPatch") {
+        assert.ok(block.includes("{ requireFreshMfa: true }"), file + " " + method);
+      }
+    }
+  }
+});
+
+test("Admin TOTP assurance expires after 30 days even when the same session remains open", async () => {
+  const security = await readFile(new URL("../functions/_shared/security.js", import.meta.url), "utf8");
+  assert.ok(security.includes("const ADMIN_TOTP_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000"));
+  assert.ok(security.includes("hasRecentAdminTotp(auth.claims)"));
+  assert.ok(security.includes('claims.aal === "aal2" && hasRecentAdminTotp(claims)'));
+  assert.ok(adminJs.includes("hasRecentAdminTotpSession(session)"));
+  assert.ok(adminJs.includes('currentLevel === "aal2" && hasRecentAdminTotpSession(session)'));
+});
+
+test("trusted-device records are server-hashed, HttpOnly, Secure, and expire after 30 days", async () => {
+  const helper = await readFile(new URL("../functions/_shared/admin-trusted-device.js", import.meta.url), "utf8");
+  const migration = await readFile(new URL("../superbase/migrations/202611200001_admin_trusted_devices.sql", import.meta.url), "utf8");
+  assert.ok(helper.includes("30 * 24 * 60 * 60 * 1000"));
+  assert.ok(helper.includes("HttpOnly; Secure; SameSite=Strict"));
+  assert.ok(helper.includes('crypto.subtle.digest("SHA-256"'));
+  assert.ok(migration.includes("ENABLE ROW LEVEL SECURITY"));
+  assert.ok(migration.includes("REVOKE ALL ON TABLE public.admin_trusted_devices FROM anon, authenticated"));
 });

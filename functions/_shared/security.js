@@ -1,5 +1,6 @@
 import { json, requireUser } from "./superbase.js";
 import { requireAdminPinSession } from "./admin-pin.js";
+import { findTrustedAdminDevice } from "./admin-trusted-device.js";
 
 function decodeJwtPayload(token) {
   try {
@@ -12,6 +13,19 @@ function decodeJwtPayload(token) {
   } catch {
     return null;
   }
+}
+
+const ADMIN_TOTP_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+function hasRecentAdminTotp(claims, now = Date.now()) {
+  if (!Array.isArray(claims?.amr)) return false;
+  return claims.amr.some((entry) => {
+    if (!entry || !["totp", "mfa/totp"].includes(entry.method)) return false;
+    const timestamp = Number(entry.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return false;
+    const verifiedAt = timestamp * 1000;
+    return verifiedAt <= now + 60_000 && now - verifiedAt <= ADMIN_TOTP_MAX_AGE_MS;
+  });
 }
 
 // requireUser validates the bearer token against Supabase Auth before we inspect
@@ -29,6 +43,9 @@ export async function requireAal2(request, env) {
 export async function requireAdminAal2(request, env) {
   const auth = await requireAal2(request, env);
   if (auth.error) return auth;
+  if (!hasRecentAdminTotp(auth.claims)) {
+    return { error: json({ error: "MFA_REQUIRED", required_level: "aal2", reauthentication_required: true }, 403) };
+  }
   const pinned = await requireAdminPinSession(request, env);
   if (pinned.error) return pinned;
   if (pinned.user?.id !== auth.user.id) {
@@ -37,10 +54,44 @@ export async function requireAdminAal2(request, env) {
   return { ...pinned, claims: auth.claims };
 }
 
+// Normal Admin browsing may use a device trust token issued only after a real
+// AAL2 challenge. High-impact mutations continue to call requireAdminAal2().
+export async function requireAdminTrustedAal2(request, env) {
+  const pinned = await requireAdminPinSession(request, env);
+  if (pinned.error) return pinned;
+  const claims = decodeJwtPayload(pinned.accessToken);
+  if (!claims || claims.sub !== pinned.user?.id) {
+    return { error: json({ error: "MFA_REQUIRED", required_level: "aal2" }, 403) };
+  }
+  if (claims.aal === "aal2" && hasRecentAdminTotp(claims)) {
+    return { ...pinned, claims, mfaMethod: "aal2" };
+  }
+
+  try {
+    const trusted = await findTrustedAdminDevice(request, env, pinned.user.id);
+    if (!trusted.trusted) {
+      return { error: json({ error: "MFA_REQUIRED", required_level: "aal2" }, 403) };
+    }
+    return {
+      ...pinned,
+      claims,
+      mfaMethod: "trusted_device",
+      trustedUntil: trusted.expiresAt
+    };
+  } catch (error) {
+    const code = error?.message === "ADMIN_TRUST_SCHEMA_NOT_READY"
+      ? "ADMIN_TRUST_SCHEMA_NOT_READY"
+      : "ADMIN_TRUST_UNAVAILABLE";
+    return { error: json({ error: code }, 503) };
+  }
+}
+
 // Role checks belong on the server for every data/API module. Super Admin is
 // the only role that bypasses module scopes.
-export async function requireAdminRoles(request, env, allowedRoles = []) {
-  const auth = await requireAdminAal2(request, env);
+export async function requireAdminRoles(request, env, allowedRoles = [], options = {}) {
+  const auth = options?.requireFreshMfa === true
+    ? await requireAdminAal2(request, env)
+    : await requireAdminTrustedAal2(request, env);
   if (auth.error) return auth;
   const roles = Array.isArray(auth.roles) ? auth.roles : [];
   if (!roles.includes("super_admin") && !roles.some((role) => allowedRoles.includes(role))) {

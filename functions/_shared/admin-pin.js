@@ -322,7 +322,10 @@ export async function requireAdminPinSession(request, env) {
     const record = await readAdminPin(env, access.user.id);
     const verifiedAt = Date.parse(record?.last_verified_at || "");
     const sameSession = record?.last_verified_session_id === sessionId;
-    const fresh = Number.isFinite(verifiedAt) && Date.now() - verifiedAt <= 10 * 60 * 1000;
+    // The PIN is confirmed for this authenticated Admin session, not every few minutes.
+    // A 12-hour ceiling keeps the dashboard usable while still forcing a new PIN
+    // after a new sign-in or a long-lived session.
+    const fresh = Number.isFinite(verifiedAt) && Date.now() - verifiedAt <= 12 * 60 * 60 * 1000;
     const currentlyLocked = record?.locked_until && Date.parse(record.locked_until) > Date.now();
     if (!record?.pin_hash || !sameSession || !fresh || currentlyLocked) {
       return { error: error("ADMIN_PIN_REQUIRED", 403) };

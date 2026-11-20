@@ -4,7 +4,7 @@ import { financialFail } from "../../../_shared/financial-errors.js";
 
 export async function onRequestPost({ request, env }) {
   try {
-    const auth = await requireAdminRoles(request, env, ["admin","risk_admin"]);
+    const auth = await requireAdminRoles(request, env, ["admin","risk_admin"], { requireFreshMfa: true });
     if (auth.error) return auth.error;
     const body = await readJson(request, 5000);
     if (!validUuid(body?.application_id)) return json({ error: "INVALID_APPLICATION_ID" }, 400);

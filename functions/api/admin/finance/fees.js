@@ -46,7 +46,7 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequestPost({ request, env }) {
-  const access = await requireAdminRoles(request, env, ["finance_admin"]);
+  const access = await requireAdminRoles(request, env, ["finance_admin"], { requireFreshMfa: true });
   if (access.error) return access.error;
   if (!access.roles.includes("finance_admin") || access.roles.includes("super_admin")) return json({ error: "FINANCE_ROLE_REQUIRED" }, 403);
   try {
@@ -89,7 +89,7 @@ export async function onRequestPost({ request, env }) {
 }
 
 export async function onRequestPatch({ request, env }) {
-  const access = await requireAdminRoles(request, env, []);
+  const access = await requireAdminRoles(request, env, [], { requireFreshMfa: true });
   if (access.error) return access.error;
   try {
     const body = await readJson(request, 3000);

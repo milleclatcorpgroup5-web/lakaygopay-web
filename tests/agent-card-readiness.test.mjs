@@ -39,7 +39,7 @@ test("admin can review agent applications only through the protected review rout
   assert.match(adminPage, /data-record-type="agents"/);
   assert.match(adminPage, /id="adminAgentReviewForm"/);
   assert.match(adminApp, /\/api\/admin\/agents\/review/);
-  assert.match(adminAgentReview, /requireAdminRoles\(request, env, \["admin","risk_admin"\]\)/);
+  assert.match(adminAgentReview, /requireAdminRoles\(request, env, \["admin","risk_admin"\], \{ requireFreshMfa: true \}\)/);
   assert.match(adminAgentReview, /review_agent_application/);
 });
 

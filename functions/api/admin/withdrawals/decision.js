@@ -4,7 +4,7 @@ import { requireAdminRoles } from "../../../_shared/security.js";
 
 export async function onRequestPost({ request, env }) {
   try {
-    const auth = await requireAdminRoles(request, env, ["admin","finance_admin","risk_admin"]);
+    const auth = await requireAdminRoles(request, env, ["admin","finance_admin","risk_admin"], { requireFreshMfa: true });
     if (auth.error) return auth.error;
     const body = await readJson(request);
     if (!validUuid(body?.withdrawal_id)) return json({ error: "INVALID_WITHDRAWAL_ID" }, 400);
