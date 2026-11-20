@@ -1,9 +1,9 @@
 import { json, config } from "../../../_shared/superbase.js";
-import { requireAdminAal2 } from "../../../_shared/security.js";
+import { requireAdminTrustedAal2 } from "../../../_shared/security.js";
 
 export async function onRequestGet({ request, env }) {
   try {
-    const auth = await requireAdminAal2(request, env);
+    const auth = await requireAdminTrustedAal2(request, env);
     if (auth.error) return auth.error;
     const { url, secretKey } = config(env);
     const response = await fetch(
