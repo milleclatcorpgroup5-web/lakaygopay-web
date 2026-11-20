@@ -16,5 +16,21 @@ test("initial MFA state errors are visible to the Admin user", () => {
 });
 
 test("Admin page loads the new MFA control logic without stale cache", () => {
-  assert.match(adminHtml, /admin\/admin\.js\?v=20261120-mfa-enabled-03/);
+  assert.match(adminHtml, /admin\/admin\.js\?v=20261120-mfa-form-fallback-04/);
+});
+
+
+test("the MFA verify control remains usable when factor discovery temporarily fails", () => {
+  const syncStart = adminJs.indexOf("function syncMfaVerifyButton()");
+  const syncEnd = adminJs.indexOf("\\nasync function updateMfaStatus()", syncStart);
+  const syncBlock = adminJs.slice(syncStart, syncEnd);
+  assert.match(syncBlock, /button\\.disabled = !\\/\\^\\\\d\\{6\\}\\$\\/\\.test\\(code\\)/);
+  assert.doesNotMatch(syncBlock, /!mfaCanVerify/);
+});
+
+test("MFA verification uses a submit form and strips non-numeric input", () => {
+  assert.match(adminHtml, /<form id="adminMfaVerifyForm"/);
+  assert.match(adminHtml, /id="adminMfaVerifyButton"[^>]*type="submit"/);
+  assert.match(adminJs, /adminMfaVerifyForm.*?addEventListener\\("submit"/s);
+  assert.match(adminJs, /replace\\(\\/\\\\D\\/g, ""\\)\\.slice\\(0, 6\\)/);
 });
