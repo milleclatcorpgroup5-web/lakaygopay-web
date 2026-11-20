@@ -491,10 +491,12 @@
           <label id="adminMfaFactorLabel" for="adminMfaFactorSelect" hidden>Chwazi aparèy authenticator
             <select id="adminMfaFactorSelect"></select>
           </label>
-          <label for="adminMfaCode">Kòd authenticator 6 chif
-            <input id="adminMfaCode" type="password" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000">
-          </label>
-          <button id="adminMfaVerifyButton" class="button button-primary" type="button" disabled>Verifye MFA</button>
+          <form id="adminMfaVerifyForm" class="admin-mfa-verify-form">
+            <label for="adminMfaCode">Kòd authenticator 6 chif
+              <input id="adminMfaCode" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="000000">
+            </label>
+            <button id="adminMfaVerifyButton" class="button button-primary" type="submit" disabled>Verifye MFA</button>
+          </form>
         </div>
       </section>
 
@@ -818,6 +820,6 @@
   </main>
 
   <script src="/observability.js?v=20261119-logs-01"></script>
-  <script type="module" src="/admin/admin.js?v=20261120-mfa-enabled-03"></script>
+  <script type="module" src="/admin/admin.js?v=20261120-mfa-form-fallback-04"></script>
 </body>
 </html>
