@@ -190,7 +190,7 @@ async function requestAdminActionMfaGrant(session, actionKey) {
     throw cancelled;
   }
   code = String(code).trim();
-  if (!/^\\d{6}$/.test(code)) {
+  if (!/^\d{6}$/.test(code)) {
     const invalid = new Error("MFA_CODE_MUST_BE_6_DIGITS");
     invalid.code = "MFA_CODE_MUST_BE_6_DIGITS";
     throw invalid;
