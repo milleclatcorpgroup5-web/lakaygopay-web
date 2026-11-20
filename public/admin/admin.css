@@ -858,3 +858,23 @@ body:before{
 #adminCardProgramPanel[hidden]{display:none!important}
 @media(max-width:900px){.card-band-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.card-limit-form{grid-template-columns:1fr}.card-limit-form .card-limit-reason{grid-column:auto}.card-limit-form .button{width:100%}}
+
+
+/* Restricted operational log viewer. */
+.live-logs-panel{margin:22px 0}
+.live-logs-panel .section-head{align-items:flex-start}
+.live-logs-panel .section-head>div{max-width:760px}
+.live-logs-panel .section-head p.muted{font-size:11px;line-height:1.65;margin:8px 0 0}
+.live-log-summary{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}
+.live-log-summary span{padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:rgba(4,21,33,.34);font-size:10px;color:var(--muted)}
+.live-log-summary b{color:var(--text);margin-right:4px}
+.live-logs-table-wrap{max-height:520px;overflow:auto}
+.live-logs-table{min-width:980px}
+.live-logs-table td{font-size:10px;vertical-align:top}
+.live-logs-table .log-level{font-weight:900;letter-spacing:.4px}
+.live-logs-table .log-error{color:#ff9999}
+.live-logs-table .log-warning{color:var(--amber)}
+.live-logs-table .log-info{color:var(--teal)}
+.live-logs-table .log-event{font-weight:800;color:#dcecf3}
+.live-logs-table .log-route{max-width:250px;overflow-wrap:anywhere;color:#9bb7c7}
+@media(max-width:600px){.live-logs-panel{padding:14px}.live-logs-panel .section-head{gap:10px}.live-logs-panel #liveLogsRefresh{width:100%}}
