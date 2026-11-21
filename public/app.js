@@ -1509,12 +1509,16 @@ function wireForms() {
     button.disabled = true;
     receiveLookupMessage("Ap verifye PIN epi anrejistre transfè a…", "");
     try {
+      const receiveToken = receiveTokenFromInput($("#personalReceiveToken").value);
+      const receivePayKeyName = "lgp-receive-pay:" + receiveToken;
+      const receivePayKey = sessionStorage.getItem(receivePayKeyName) || crypto.randomUUID();
+      sessionStorage.setItem(receivePayKeyName, receivePayKey);
       const result = await api("/api/receive-requests/pay", {
         method: "POST",
-        body: { qr_token: receiveTokenFromInput($("#personalReceiveToken").value),
-          sender_wallet_id: walletId, amount, pin },
-        idempotencyKey: crypto.randomUUID()
+        body: { qr_token: receiveToken, sender_wallet_id: walletId, amount, pin },
+        idempotencyKey: receivePayKey
       });
+      sessionStorage.removeItem(receivePayKeyName);
       $("#personalReceivePayPin").value = "";
       currentReceiveRequest.status = "paid";
       $("#personalReceivePayForm").hidden = true;
