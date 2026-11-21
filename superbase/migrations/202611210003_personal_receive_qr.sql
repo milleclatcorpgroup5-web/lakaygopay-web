@@ -148,7 +148,7 @@ begin
     'request_id',v_request.id,
     'recipient_name',coalesce(nullif(trim(v_profile.full_name),''),'Itilizatè LakayGoPay'),
     'recipient_phone_masked',case
-      when length(regexp_replace(v_phone,'\\D','','g')) >= 4
+      when length(regexp_replace(v_phone,'\D','','g')) >= 4
       then '••••' || right(regexp_replace(v_phone,'\\D','','g'),4)
       else 'Nimewo pa disponib'
     end,
