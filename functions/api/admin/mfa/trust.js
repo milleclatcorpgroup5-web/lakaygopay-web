@@ -1,7 +1,9 @@
-import { json } from "../../../../_shared/superbase.js";
-import { requireAdminPinSession } from "../../../../_shared/admin-pin.js";
-import { requireAdminAal2 } from "../../../../_shared/security.js";
-import { findTrustedAdminDevice, issueTrustedAdminDevice } from "../../../../_shared/admin-trusted-device.js";
+import { json } from "../../../_shared/superbase.js";
+import { requireAdminPinSession } from "../../../_shared/admin-pin.js";
+import { requireAdminAal2 } from "../../../_shared/security.js";
+import { findTrustedAdminDevice, issueTrustedAdminDevice } from "../../../_shared/admin-trusted-device.js";
+
+// Shared helpers live under functions/_shared; this path is relative to functions/api/admin/mfa/.
 
 export async function onRequestGet({ request, env }) {
   const access = await requireAdminPinSession(request, env);
