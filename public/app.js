@@ -92,7 +92,8 @@ function translateError(code) {
     EMAIL_ALREADY_REGISTERED: "Imèl sa a deja gen yon kont oswa yon enskripsyon an kou. Verifye bwat imèl ou; si ou deja konfime kont lan, konekte pito.",
     EMAIL_DELIVERY_NOT_CONFIGURED: "Supabase pa otorize voye imèl nan adrès sa a. Pou ouvri tès piblik yo, fòk nou konfigire yon sèvis SMTP pèsonalize nan Supabase.",
     EMAIL_RATE_LIMITED: "Limit voye imèl la rive. Tann yon ti tan anvan ou mande yon lòt mesaj konfimasyon.",
-    SIGNUP_RESPONSE_INCOMPLETE: "Supabase pa retounen konfimasyon ki nesesè pou fini enskripsyon an. Pa eseye kreye menm kont lan plizyè fwa; kontakte ekip LakayGoPay.",
+    SIGNUP_RESPONSE_INCOMPLETE: "Supabase pa retounen sesyon koneksyon an. Eseye ankò pita.",
+    SIGNUP_CONFIRMATION_REQUIRED: "Konfimasyon imèl la toujou aktive nan Supabase. Administrasyon an dwe dezaktive Confirm email pou moun ka antre san kòd.",
 
     ACCOUNT_SUSPENDED: "Aksè kont sa a sispann. Kontakte sipò LakayGoPay.",
     ACCOUNT_NOT_ACTIVE: "Kont sa a pa aktif. Kontakte sipò LakayGoPay.",
@@ -931,14 +932,17 @@ async function registerAccount(payload, emailField) {
   });
   const data = await response.json().catch(function () { return {}; });
   if (!response.ok) throw new Error(data.error || "SIGNUP_FAILED");
+  if (!data.session || !data.session.access_token || !data.session.refresh_token) {
+    throw new Error("SIGNUP_CONFIRMATION_REQUIRED");
+  }
+  const sessionResult = await supabase.auth.setSession({
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token
+  });
+  if (sessionResult.error) throw sessionResult.error;
 
-  // The server creates the account as email-confirmed. Sign in immediately,
-  // then store the transaction PIN before loading the user's dashboard.
-  const login = await supabase.auth.signInWithPassword({ email, password: registration.password });
-  if (login.error) throw login.error;
-  const session = login.data && login.data.session;
-  if (!session) throw new Error("SIGNUP_SESSION_NOT_CREATED");
-
+  // Supabase Auto Confirm gives the new account an immediate session.
+  // Save the four-digit transaction PIN before opening the dashboard.
   let pinReady = false;
   try {
     await api("/api/pin/setup", { method: "POST", body: { pin: registrationPin } });
@@ -949,7 +953,7 @@ async function registerAccount(payload, emailField) {
   pinSetupPendingAfterSignup = !pinReady;
   activeUserId = null;
   dashboardPromise = null;
-  await syncSession(session);
+  await syncSession(sessionResult.data.session);
 }
 function wireForms() {
   $$("[data-auth-mode]").forEach(function (button) {
