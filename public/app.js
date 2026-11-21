@@ -682,7 +682,7 @@ function populatePersonalWalletSelect(selector, currency) {
   if (!node) return;
   node.replaceChildren();
   const wallets = currentWallets.filter((wallet) =>
-    !wallet.merchant_id && wallet.owner_user_id !== null && (!currency || wallet.currency === currency)
+    !wallet.merchant_id && wallet.owner_user_id && (!currency || wallet.currency === currency)
   );
   wallets.forEach((wallet) => {
     const option = document.createElement("option");
@@ -822,7 +822,15 @@ async function lookupPaymentRequest(rawToken) {
   }
 }
 async function maybeLookupIncomingQr(session) {
-  if (!incomingQrToken || !session || !session.user || incomingQrLoadedForUser === session.user.id) return;
+  if (!session || !session.user) return;
+  if (incomingReceiveToken && incomingReceiveLoadedForUser !== session.user.id) {
+    incomingReceiveLoadedForUser = session.user.id;
+    $("#personalReceiveToken").value = incomingReceiveToken;
+    $("#personalReceiveLookupSection").scrollIntoView({ behavior: "smooth", block: "start" });
+    await lookupPersonalReceiveRequest(incomingReceiveToken);
+    return;
+  }
+  if (!incomingQrToken || incomingQrLoadedForUser === session.user.id) return;
   incomingQrLoadedForUser = session.user.id;
   $("#qrPaymentSection").scrollIntoView({ behavior: "smooth", block: "start" });
   await lookupPaymentRequest(incomingQrToken);
