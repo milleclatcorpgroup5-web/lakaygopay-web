@@ -21,6 +21,9 @@ const FALLBACK_CARD_TIERS = [
   {tier_code:"ELITE_GOLD",display_name:"LakayGo Elite Gold",sort_order:4,min_limit_htg:100000000.01,max_limit_htg:null,description:"Plafon HTG ki depase 100,000,000.",benefits:["Tout avantaj Gold","Avantaj patnè Elite","Relasyon kliyan priyoritè"],star_levels:[{star_level:1,star_label:"Elite Gold 1 etwal",min_limit_htg:100000000.01,max_limit_htg:250000000},{star_level:2,star_label:"Elite Gold 2 etwal",min_limit_htg:250000000.01,max_limit_htg:500000000},{star_level:3,star_label:"Elite Gold 3 etwal",min_limit_htg:500000000.01,max_limit_htg:null}],application_open:true,issuance_enabled:false,virtual_supported:true,physical_supported:true}
 ];
 let currentQrRequest = null;
+let currentReceiveRequest = null;
+let incomingReceiveToken = new URLSearchParams(window.location.search).get("lgp_receive") || "";
+let incomingReceiveLoadedForUser = null;
 let incomingQrToken = new URLSearchParams(window.location.search).get("lgp_qr") || "";
 let incomingQrLoadedForUser = null;
 let qrScannerStream = null;
@@ -494,6 +497,7 @@ function renderWallets() {
     select.append(option);
   }
   populateWalletSelect("#qrPayerWallet", "HTG");
+  populatePersonalWalletSelect("#personalReceiveWallet");
   populateWalletSelect("#withdrawWallet");
 }
 function populateWalletSelect(selector, currency) {
@@ -651,6 +655,101 @@ function renderMerchantPayments(rows) {
     list.append(row);
   });
 }
+
+function receiveTokenFromInput(raw) {
+  const value = String(raw || "").trim();
+  if (!value) return "";
+  try {
+    const parsed = new URL(value, window.location.origin);
+    const token = parsed.searchParams.get("lgp_receive") || parsed.searchParams.get("receive_token");
+    if (token) return token.trim();
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    if (parts.length && parts[parts.length - 2] === "receive") return parts[parts.length - 1];
+    if (parsed.protocol === "lakaygopay:" && parsed.hostname === "receive") return parts[parts.length - 1] || "";
+  } catch {}
+  return value;
+}
+function receiveMessage(text, kind) {
+  const node = $("#personalReceiveNotice");
+  if (!node) return;
+  node.textContent = text || "";
+  node.className = "notice" + (kind ? " " + kind : "");
+}
+function receiveLookupMessage(text, kind) {
+  const node = $("#personalReceiveLookupNotice");
+  if (!node) return;
+  node.textContent = text || "";
+  node.className = "notice" + (kind ? " " + kind : "");
+}
+function populatePersonalWalletSelect(selector, currency) {
+  const node = $(selector);
+  if (!node) return;
+  node.replaceChildren();
+  const wallets = currentWallets.filter((wallet) =>
+    !wallet.merchant_id && wallet.owner_user_id && (!currency || wallet.currency === currency)
+  );
+  wallets.forEach((wallet) => {
+    const option = document.createElement("option");
+    option.value = wallet.wallet_id;
+    option.textContent = wallet.currency + " · " + formatMoney(wallet.balance, wallet.currency);
+    node.append(option);
+  });
+  if (!wallets.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = currency ? "Pa gen bous pèsonèl " + currency : "Pa gen bous pèsonèl";
+    node.append(option);
+  }
+}
+async function lookupPersonalReceiveRequest(raw) {
+  const token = receiveTokenFromInput(raw);
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  $("#personalReceivePayForm").hidden = true;
+  $("#personalReceiveDetails").hidden = true;
+  currentReceiveRequest = null;
+  if (!uuid.test(token)) {
+    receiveLookupMessage("ID resepsyon an pa valab. Verifye kòd la epi eseye ankò.", "error");
+    return;
+  }
+  $("#personalReceiveToken").value = token;
+  receiveLookupMessage("Ap verifye ID resepsyon an…", "");
+  try {
+    const data = await api("/api/receive-requests/lookup?token=" + encodeURIComponent(token));
+    const request = data.receive_request || {};
+    currentReceiveRequest = request;
+    const details = $("#personalReceiveDetails");
+    details.replaceChildren();
+    const title = document.createElement("strong");
+    title.textContent = request.recipient_name || "Itilizatè LakayGoPay";
+    const phone = document.createElement("p");
+    phone.textContent = "Telefòn: " + (request.recipient_phone_masked || "Pa disponib");
+    const amount = document.createElement("div");
+    amount.className = "qr-detail-amount";
+    amount.textContent = request.amount == null
+      ? "Montan ouvè · " + request.currency
+      : formatMoney(request.amount, request.currency) + " " + request.currency;
+    const state = document.createElement("p");
+    state.textContent = "Estati: " + statusText(request.status) +
+      (request.expires_at ? " · Ekspire: " + new Date(request.expires_at).toLocaleString("fr-HT") : "");
+    details.append(title, phone, amount, state);
+    details.hidden = false;
+    if (request.status !== "pending" || (request.expires_at && Date.parse(request.expires_at) <= Date.now())) {
+      receiveLookupMessage(request.status === "expired" ? "ID resepsyon sa a ekspire." : "ID resepsyon sa a deja itilize oswa pa disponib.", "error");
+      return;
+    }
+    populatePersonalWalletSelect("#personalReceiveSenderWallet", request.currency);
+    const amountInput = $("#personalReceivePayAmount");
+    amountInput.value = request.amount == null ? "" : String(request.amount);
+    amountInput.readOnly = request.amount != null;
+    amountInput.required = request.amount == null;
+    $("#personalReceivePayForm").hidden = false;
+    $("#personalReceivePayForm button[type='submit']").disabled = !pinConfigured;
+    receiveLookupMessage("Verifye non ak telefòn lan. Transfè a ap fèt sèlman apre ou antre PIN ou.", "success");
+  } catch (error) {
+    receiveLookupMessage(translateError(error.code || error.message), "error");
+  }
+}
+
 function normalizeQrToken(raw) {
   const value = String(raw || "").trim();
   if (!value) return "";
@@ -695,12 +794,15 @@ async function lookupPaymentRequest(rawToken) {
     amount.textContent = request.amount == null
       ? "Montan ouvè · " + (request.currency || "HTG")
       : formatMoney(request.amount, request.currency || "HTG") + " " + (request.currency || "HTG");
+    const businessMeta = document.createElement("p");
+    businessMeta.textContent = "Telefòn: " + (request.merchant_phone || "Pa disponib") +
+      " · Kategori: " + (request.merchant_category || "Pa presize");
     const description = document.createElement("p");
     description.textContent = request.description || "Demann peman LakayGoPay";
     const state = document.createElement("p");
     state.textContent = "Estati: " + statusText(request.status) +
       (request.expires_at ? " · Ekspire: " + new Date(request.expires_at).toLocaleString("fr-HT") : "");
-    details.append(title, amount, description, state);
+    details.append(title, businessMeta, amount, description, state);
     details.hidden = false;
     const expired = request.status !== "pending" ||
       (request.expires_at && Date.parse(request.expires_at) <= Date.now());
@@ -727,7 +829,15 @@ async function lookupPaymentRequest(rawToken) {
   }
 }
 async function maybeLookupIncomingQr(session) {
-  if (!incomingQrToken || !session || !session.user || incomingQrLoadedForUser === session.user.id) return;
+  if (!session || !session.user) return;
+  if (incomingReceiveToken && incomingReceiveLoadedForUser !== session.user.id) {
+    incomingReceiveLoadedForUser = session.user.id;
+    $("#personalReceiveToken").value = incomingReceiveToken;
+    $("#personalReceiveLookupSection").scrollIntoView({ behavior: "smooth", block: "start" });
+    await lookupPersonalReceiveRequest(incomingReceiveToken);
+    return;
+  }
+  if (!incomingQrToken || incomingQrLoadedForUser === session.user.id) return;
   incomingQrLoadedForUser = session.user.id;
   $("#qrPaymentSection").scrollIntoView({ behavior: "smooth", block: "start" });
   await lookupPaymentRequest(incomingQrToken);
@@ -778,8 +888,14 @@ async function startQrScanner() {
           if (codes.length && codes[0].rawValue) {
             const raw = codes[0].rawValue;
             await stopQrScanner();
-            $("#qrTokenInput").value = raw;
-            await lookupPaymentRequest(raw);
+            if (String(raw).includes("lgp_receive") || String(raw).includes("lakaygopay://receive/") || String(raw).includes("/receive/")) {
+              $("#personalReceiveToken").value = receiveTokenFromInput(raw);
+              $("#personalReceiveLookupSection").scrollIntoView({ behavior: "smooth", block: "start" });
+              await lookupPersonalReceiveRequest(raw);
+            } else {
+              $("#qrTokenInput").value = raw;
+              await lookupPaymentRequest(raw);
+            }
             return;
           }
         }
@@ -1310,6 +1426,108 @@ function wireForms() {
     }
   });
 
+
+  $("#personalReceiveCreateForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const walletId = $("#personalReceiveWallet").value;
+    const wallet = currentWallets.find((item) => item.wallet_id === walletId && !item.merchant_id);
+    if (!wallet) { receiveMessage("Chwazi yon bous pèsonèl aktif.", "error"); return; }
+    const rawAmount = $("#personalReceiveAmount").value.trim();
+    const body = { wallet_id: walletId, expires_in_minutes: Number($("#personalReceiveExpiry").value) };
+    if (rawAmount) body.amount = rawAmount;
+    const button = event.submitter;
+    button.disabled = true;
+    receiveMessage("Ap kreye ID resepsyon an…", "");
+    try {
+      const data = await api("/api/receive-requests", {
+        method: "POST", body, idempotencyKey: crypto.randomUUID()
+      });
+      const request = data.receive_request || {};
+      if (!request.qr_token) throw new Error("RECEIVE_TOKEN_MISSING");
+      const link = new URL("/", window.location.origin);
+      link.searchParams.set("lgp_receive", request.qr_token);
+      $("#personalReceiveResult").hidden = false;
+      await renderQrImage($("#personalReceiveImage"), link.toString());
+      $("#personalReceiveId").textContent = request.qr_token;
+      $("#personalReceiveSummary").textContent =
+        (request.amount == null ? "Montan ouvè" : formatMoney(request.amount, request.currency) + " " + request.currency) +
+        " · Valab jiska " + new Date(request.expires_at).toLocaleString("fr-HT") +
+        ". Moun k ap voye a dwe verifye epi konfime ak PIN.";
+      $("#personalReceiveLink").href = link.toString();
+      $("#personalReceiveCopyButton").dataset.receiveId = request.qr_token;
+      receiveMessage("QR ak ID resepsyon kreye. Pataje yo ak moun k ap voye lajan an.", "success");
+    } catch (error) {
+      receiveMessage(translateError(error.code || error.message), "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  $("#personalReceiveCopyButton").addEventListener("click", async function () {
+    const token = this.dataset.receiveId || "";
+    if (!token) return;
+    try {
+      await navigator.clipboard.writeText(token);
+      receiveMessage("ID resepsyon an kopye.", "success");
+    } catch {
+      receiveMessage("Navigatè a pa pèmèt kopye. Seleksyone ID a epi kopye li manyèlman.", "error");
+    }
+  });
+
+  $("#personalReceiveLookupForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    await lookupPersonalReceiveRequest($("#personalReceiveToken").value);
+  });
+
+  $("#personalReceivePayForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    if (!currentReceiveRequest || currentReceiveRequest.status !== "pending") {
+      receiveLookupMessage("Verifye yon ID resepsyon ki toujou aktif anvan ou voye.", "error");
+      return;
+    }
+    const pin = $("#personalReceivePayPin").value;
+    const walletId = $("#personalReceiveSenderWallet").value;
+    const wallet = currentWallets.find((item) => item.wallet_id === walletId && !item.merchant_id);
+    if (!wallet || wallet.currency !== currentReceiveRequest.currency) {
+      receiveLookupMessage("Chwazi yon bous pèsonèl ki nan menm lajan ak moun k ap resevwa a.", "error");
+      return;
+    }
+    if (!/^[0-9]{4}$/.test(pin)) {
+      receiveLookupMessage("Antre PIN tranzaksyon 4 chif ou a.", "error");
+      return;
+    }
+    const amount = $("#personalReceivePayAmount").value;
+    if (!amount || Number(amount) <= 0) {
+      receiveLookupMessage("Antre yon montan valab.", "error");
+      return;
+    }
+    const confirmText = "Ou pral voye " + formatMoney(amount, wallet.currency) + " " +
+      wallet.currency + " bay " + (currentReceiveRequest.recipient_name || "moun k ap resevwa a") +
+      " (" + (currentReceiveRequest.recipient_phone_masked || "telefòn pa disponib") + ").";
+    if (!window.confirm(confirmText + " Kontinye?")) return;
+    const button = event.submitter;
+    button.disabled = true;
+    receiveLookupMessage("Ap verifye PIN epi anrejistre transfè a…", "");
+    try {
+      const result = await api("/api/receive-requests/pay", {
+        method: "POST",
+        body: { qr_token: receiveTokenFromInput($("#personalReceiveToken").value),
+          sender_wallet_id: walletId, amount, pin },
+        idempotencyKey: crypto.randomUUID()
+      });
+      $("#personalReceivePayPin").value = "";
+      currentReceiveRequest.status = "paid";
+      $("#personalReceivePayForm").hidden = true;
+      receiveLookupMessage("Transfè a reyisi. Referans: " + (result.transfer?.reference || "OK"), "success");
+      await loadDashboard(await sessionNow());
+    } catch (error) {
+      receiveLookupMessage(translateError(error.code || error.message), "error");
+    } finally {
+      $("#personalReceivePayPin").value = "";
+      button.disabled = !pinConfigured;
+    }
+  });
+
   $("#merchantQrForm").addEventListener("submit", async function (event) {
     event.preventDefault();
     const merchant = currentMerchants.find((item) => item.status === "active");
@@ -1327,7 +1545,7 @@ function wireForms() {
           merchant_id: merchant.id,
           amount,
           description: $("#merchantQrDescription").value.trim(),
-          expires_in_minutes: 30
+          expires_in_minutes: 1440
         },
         idempotency: true
       });
@@ -1338,7 +1556,7 @@ function wireForms() {
       $("#merchantQrResult").hidden = false;
       await renderQrImage($("#merchantQrImage"), link.toString());
       $("#merchantQrSummary").textContent = "Demann pou " + formatMoney(amount, "HTG") +
-        " HTG · ekspire nan 30 minit. Li pa peye jiskaske kliyan konfime.";
+        " HTG · valab 24 èdtan. Li pa peye jiskaske kliyan konfime.";
       $("#merchantQrLink").href = link.toString();
       $("#merchantQrLink").textContent = link.toString();
       $("#merchantQrCopyButton").dataset.copyLink = link.toString();
