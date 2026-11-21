@@ -1592,7 +1592,7 @@ function renderDailySummary(rows) {
   if (!rows.length) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
-    td.colSpan = 6;
+    td.colSpan = 8;
     td.className = "muted";
     td.textContent = "Pa gen mouvman nan peryòd sa a.";
     tr.append(td);
@@ -1609,6 +1609,8 @@ function renderDailySummary(rows) {
       item.ledger_date ? new Date(item.ledger_date + "T00:00:00").toLocaleDateString("fr-HT") : "—",
       item.currency || "—",
       Number(item.transaction_count || 0).toLocaleString("fr-HT"),
+      Number(item.test_transaction_count || 0).toLocaleString("fr-HT"),
+      Number(item.real_transaction_count || 0).toLocaleString("fr-HT"),
       money(item.total_debits,item.currency),
       money(item.total_credits,item.currency),
       money(item.platform_revenue_credits,item.currency)
@@ -1630,7 +1632,7 @@ async function loadDailyFinancialSummary(session) {
     const rows = Array.isArray(data.report?.rows) ? data.report.rows : [];
     renderDailySummary(rows);
     setNotice("#dailySummaryNotice",
-      "Rapò " + days + " jou chaje. Sous: ledger immutable. Revni kredit montre sèlman antre ki deja poste nan bous revni a.",
+      "Rapò " + days + " jou chaje. Sous: ledger immutable. Tranzaksyon tès ak tranzaksyon nòmal separe; revni konte sèlman kredi sou kont ledger tip revenue.",
       "success");
   } catch (error) {
     renderDailySummary([]);
