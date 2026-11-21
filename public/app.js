@@ -89,7 +89,7 @@ function translateError(code) {
     AUTH_REQUIRED: "Konekte pou kontinye.",
     INVALID_OR_EXPIRED_SESSION: "Sesyon an ekspire. Konekte ankò.",
     MINIMUM_AGE_18: "Ou dwe gen omwen 18 an pou ouvri kont pèsonèl.",
-    EMAIL_ALREADY_REGISTERED: "Imèl sa a deja gen yon kont oswa yon enskripsyon an kou. Verifye bwat imèl ou; si ou deja konfime kont lan, konekte pito.",
+    EMAIL_ALREADY_REGISTERED: "Imèl sa a deja gen yon kont. Konekte pito oswa itilize yon lòt imèl.",
     EMAIL_DELIVERY_NOT_CONFIGURED: "Supabase pa otorize voye imèl nan adrès sa a. Pou ouvri tès piblik yo, fòk nou konfigire yon sèvis SMTP pèsonalize nan Supabase.",
     EMAIL_RATE_LIMITED: "Limit voye imèl la rive. Tann yon ti tan anvan ou mande yon lòt mesaj konfimasyon.",
     SIGNUP_RESPONSE_INCOMPLETE: "Supabase pa retounen sesyon koneksyon an. Eseye ankò pita.",
@@ -918,8 +918,6 @@ async function registerAccount(payload, emailField) {
   const registration = Object.assign({}, payload);
   const registrationPin = String(registration.pin || "");
   const pinConfirmation = String(registration.pin_confirmation || "");
-  const accountType = registration.account_type;
-  const email = String(registration.email || emailField || "").trim().toLowerCase();
   delete registration.pin;
   delete registration.pin_confirmation;
   if (!/^[0-9]{4}$/.test(registrationPin) || registrationPin !== pinConfirmation) {
