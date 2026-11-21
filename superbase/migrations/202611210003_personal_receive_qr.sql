@@ -32,6 +32,45 @@ create index if not exists personal_receive_requests_pending_expiry_idx
 alter table public.personal_receive_requests enable row level security;
 revoke all on table public.personal_receive_requests from public, anon, authenticated;
 
+
+-- Extend merchant payment lookup with the business verification details shown to the payer.
+create or replace function public.get_payment_request_details(p_public_token uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_request public.payment_requests%rowtype;
+  v_merchant public.merchants%rowtype;
+begin
+  if p_public_token is null then raise exception 'INVALID_QR_TOKEN'; end if;
+  select * into v_request from public.payment_requests
+   where public_token::text=p_public_token::text;
+  if v_request.id is null then raise exception 'PAYMENT_REQUEST_NOT_FOUND'; end if;
+  select * into v_merchant from public.merchants where id=v_request.merchant_id;
+
+  if v_request.status='pending' and v_request.expires_at<=now() then
+    update public.payment_requests set status='expired' where id=v_request.id;
+    v_request.status:='expired';
+  end if;
+
+  return jsonb_build_object(
+    'payment_request_id',v_request.id,
+    'merchant_id',v_request.merchant_id,
+    'merchant_name',v_merchant.business_name,
+    'merchant_phone',v_merchant.contact_phone,
+    'merchant_category',v_merchant.category,
+    'merchant_status',v_merchant.status,
+    'amount',v_request.amount,
+    'currency',v_request.currency,
+    'description',v_request.description,
+    'status',v_request.status,
+    'expires_at',v_request.expires_at
+  );
+end;
+$function$;
+
 create or replace function public.create_personal_receive_request(
   p_actor_user_id uuid,
   p_recipient_wallet_id uuid,
