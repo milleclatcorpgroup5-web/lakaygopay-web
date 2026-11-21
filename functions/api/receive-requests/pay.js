@@ -1,4 +1,4 @@
-import { json, requireUser, callRpc, readJson, validUuid, validAmount, idempotencyKey } from "../../_shared/supabase.js";
+import { json, requireUser, callUserRpc, readJson, validUuid, validAmount, idempotencyKey } from "../../_shared/supabase.js";
 import { financialFail } from "../../_shared/financial-errors.js";
 import { assertTransactionPin } from "../../_shared/pin.js";
 
@@ -15,8 +15,7 @@ export async function onRequestPost({ request, env }) {
     const amount = validAmount(body?.amount, { optional: true });
     if (body?.amount != null && body.amount !== "" && !amount) return json({ error: "INVALID_AMOUNT" }, 400);
     await assertTransactionPin(env, auth.user.id, body?.pin);
-    const result = await callRpc(env, "pay_personal_receive_request", {
-      p_actor_user_id: auth.user.id,
+    const result = await callUserRpc(env, auth.accessToken, "pay_personal_receive_request", {
       p_public_token: body.qr_token,
       p_sender_wallet_id: body.sender_wallet_id,
       p_amount: amount,
