@@ -236,6 +236,67 @@
     </div>
 
 
+
+    <section id="personalReceiveSection" class="surface-card action-card">
+      <div class="section-heading">
+        <div><p class="eyebrow">RESEPSYON PÈSONÈL</p><h2>Resevwa lajan</h2></div>
+        <span class="icon-badge">↓</span>
+      </div>
+      <p class="field-hint">Kreye yon QR ak yon ID inik pou resevwa transfè P2P. Kòd la valab 15–30 minit. Pa gen lajan k ap deplase lè ou kreye l.</p>
+      <form id="personalReceiveCreateForm" class="form-stack">
+        <label>Bous pèsonèl pou resevwa
+          <select id="personalReceiveWallet" required></select>
+        </label>
+        <label>Montan (kite vid si moun k ap voye a chwazi montan an)
+          <input id="personalReceiveAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="Montan ouvè">
+        </label>
+        <label>Dire validite
+          <select id="personalReceiveExpiry">
+            <option value="20">20 minit</option>
+            <option value="15">15 minit</option>
+            <option value="30">30 minit</option>
+          </select>
+        </label>
+        <button class="button button-primary full" type="submit">Kreye QR pou resevwa</button>
+      </form>
+      <div id="personalReceiveResult" class="merchant-qr-result" hidden>
+        <img id="personalReceiveImage" alt="QR resepsyon pèsonèl LakayGoPay">
+        <p id="personalReceiveSummary" class="field-hint"></p>
+        <p><strong>ID resepsyon:</strong> <code id="personalReceiveId"></code></p>
+        <a id="personalReceiveLink" href="#" target="_blank" rel="noopener noreferrer">Louvri lyen resepsyon</a>
+        <button id="personalReceiveCopyButton" class="button button-quiet" type="button">Kopye ID resepsyon</button>
+      </div>
+      <div id="personalReceiveNotice" class="notice" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="personalReceiveLookupSection" class="surface-card action-card">
+      <div class="section-heading">
+        <div><p class="eyebrow">TRANSFÈ P2P</p><h2>Voye lajan ak ID resepsyon</h2></div>
+        <span class="icon-badge">↗</span>
+      </div>
+      <p class="field-hint">Eskane QR resepsyon an oswa antre ID moun k ap resevwa a. Verifye non li ak telefòn maske a anvan ou konfime.</p>
+      <form id="personalReceiveLookupForm" class="form-stack">
+        <label>ID oswa lyen resepsyon
+          <input id="personalReceiveToken" type="text" autocomplete="off" placeholder="Kole ID resepsyon an" required>
+        </label>
+        <button class="button button-secondary full" type="submit">Verifye moun k ap resevwa a</button>
+      </form>
+      <div id="personalReceiveDetails" class="qr-details" hidden></div>
+      <form id="personalReceivePayForm" class="form-stack" hidden>
+        <label>Bous pèsonèl ou pou voye
+          <select id="personalReceiveSenderWallet" required></select>
+        </label>
+        <label>Montan pou voye
+          <input id="personalReceivePayAmount" type="number" inputmode="decimal" min="0.01" step="0.01" required>
+        </label>
+        <label>PIN tranzaksyon 4 chif
+          <input id="personalReceivePayPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required>
+        </label>
+        <button class="button button-primary full" type="submit">Konfime transfè a</button>
+      </form>
+      <div id="personalReceiveLookupNotice" class="notice" role="status" aria-live="polite"></div>
+    </section>
+
     <section id="qrPaymentSection" class="surface-card action-card">
       <div class="section-heading">
         <div><p class="eyebrow">PEMAN ANNDAN LAKAYGOPAY</p><h2>Peye ak QR</h2></div>
