@@ -1,5 +1,5 @@
 import {
-  json, requireUser, callUserRpc, readJson, validUuid, validAmount, idempotencyKey
+  json, requireUser, callRpc, readJson, validUuid, validAmount, idempotencyKey
 } from "../_shared/superbase.js";
 import { financialFail } from "../_shared/financial-errors.js";
 import { assertTransactionPin } from "../_shared/pin.js";
@@ -29,15 +29,12 @@ export async function onRequestPost({ request, env }) {
       return json({ error: "NOTE_TOO_LONG" }, 400);
     }
 
-    // The PIN is checked server-side on every attempt. The browser cannot reuse
-    // a previous PIN check or bypass this route through /api/transfets.
+    // PIN verification remains server-side. Only after it succeeds do we use
+    // the service-role wrapper; the browser never receives the service key.
     await assertTransactionPin(env, userId, body?.pin);
 
-    // transfer_funds uses auth.uid() and performs the complete atomic
-    // transaction (idempotency lock, wallet checks, balanced ledger entries,
-    // wallet balance update, ledger posting and transfer status update).
-    // Pass the validated customer's JWT, not the service-role credential.
-    const rpcResult = await callUserRpc(env, auth.accessToken, "transfer_funds", {
+    const rpcResult = await callRpc(env, "transfer_funds_server_authorized", {
+      p_actor_user_id: userId,
       p_sender_wallet_id: body.sender_wallet_id,
       p_recipient_wallet_id: body.recipient_wallet_id,
       p_amount: amount,
@@ -45,7 +42,6 @@ export async function onRequestPost({ request, env }) {
       p_idempotency_key: key,
     });
 
-    // PostgREST returns RETURNS TABLE results as an array.
     const transfer = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
     if (
       !transfer ||
