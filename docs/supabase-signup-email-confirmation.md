@@ -6,7 +6,7 @@ The current beta signup flow expects a customer or merchant to enter an email, p
 
 In Supabase Dashboard, open **Authentication → Sign In / Providers → Email** (the exact menu label may vary) and turn **Confirm email** OFF. Save the setting.
 
-The app still uses the standard Supabase Auth signup endpoint. It does not use the service-role key to create customer accounts or silently confirm existing accounts. If email confirmation remains enabled, signup will not return a session and the app will show a configuration message rather than asking the user for a six-digit code.
+The app still uses the standard Supabase Auth signup endpoint. It does not use the service-role key to create customer accounts or silently confirm existing accounts. If email confirmation remains enabled, Supabase may create an unconfirmed pending account but will not return a session; the app will stop with a configuration message rather than asking for a six-digit code. Turn Confirm email OFF before inviting people to register. Do not repeatedly submit the same email while the setting is still enabled.
 
 ## Expected signup behavior
 
