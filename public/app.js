@@ -27,8 +27,6 @@ let qrScannerStream = null;
 let qrScannerFrame = null;
 let pinConfigured = false;
 let pinSetupPendingAfterSignup = false;
-let pendingPersonalEmail = "";
-let pendingMerchantEmail = "";
 let recoveryMode = false;
 let deferredInstallPrompt = null;
 
@@ -903,16 +901,13 @@ function setAuthMode(mode) {
     personal: "#personalForm",
     merchant: "#merchantForm",
     recover: "#recoverForm",
-    personalPending: "#personalEmailPending",
-    merchantOtp: "#merchantOtpForm"
   };
   Object.keys(forms).forEach(function (key) {
     const node = $(forms[key]);
     if (node) node.hidden = key !== mode;
   });
   $("#newPasswordForm").hidden = mode !== "newpassword";
-  const verificationPending = mode === "personalPending" || mode === "merchantOtp";
-  $("#authTabs").hidden = verificationPending;
+  $("#authTabs").hidden = false;
   $$("[data-auth-mode]").forEach(function (button) {
     button.classList.toggle("active", button.dataset.authMode === mode);
   });
@@ -936,162 +931,29 @@ async function registerAccount(payload, emailField) {
   });
   const data = await response.json().catch(function () { return {}; });
   if (!response.ok) throw new Error(data.error || "SIGNUP_FAILED");
-  if (data.session && data.session.access_token && data.session.refresh_token) {
-    const result = await supabase.auth.setSession({
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token
-    });
-    if (result.error) throw result.error;
 
-    let pinReady = false;
-    try {
-      await api("/api/pin/setup", { method: "POST", body: { pin: registrationPin } });
-      pinReady = true;
-    } catch {
-      pinReady = false;
-    }
-    pinSetupPendingAfterSignup = !pinReady;
-    activeUserId = null;
-    dashboardPromise = null;
-    await syncSession(await sessionNow());
-    return;
-  }
+  // The server creates the account as email-confirmed. Sign in immediately,
+  // then store the transaction PIN before loading the user's dashboard.
+  const login = await supabase.auth.signInWithPassword({ email, password: registration.password });
+  if (login.error) throw login.error;
+  const session = login.data && login.data.session;
+  if (!session) throw new Error("SIGNUP_SESSION_NOT_CREATED");
 
-  if (data.needs_email_confirmation !== true || !email) {
-    throw new Error("SIGNUP_RESPONSE_INCOMPLETE");
+  let pinReady = false;
+  try {
+    await api("/api/pin/setup", { method: "POST", body: { pin: registrationPin } });
+    pinReady = true;
+  } catch {
+    pinReady = false;
   }
-  if (accountType === "merchant") {
-    pendingMerchantEmail = email;
-    $("#merchantOtpEmail").textContent = email;
-    setAuthMode("merchantOtp");
-    message("#authNotice", "Kont machann lan kreye. Nou voye yon kòd 6 chif nan imèl biznis ou. Antre kòd la anba a; ou pa bezwen retounen antre modpas ou.",
-      "success");
-    $("#merchantOtpCode").focus();
-    return;
-  }
-
-  pendingPersonalEmail = email;
-  $("#personalPendingEmail").textContent = email;
-  setAuthMode("personalPending");
-  message("#authNotice", "Kont kliyan an kreye. Nou voye yon kòd konfimasyon 6 chif nan imèl ou. Antre kòd la anba a; ou pa bezwen retounen antre modpas ou.",
-    "success");
-  $("#personalOtpCode").focus();
+  pinSetupPendingAfterSignup = !pinReady;
+  activeUserId = null;
+  dashboardPromise = null;
+  await syncSession(session);
 }
 function wireForms() {
   $$("[data-auth-mode]").forEach(function (button) {
     button.addEventListener("click", function () { setAuthMode(button.dataset.authMode); });
-  });
-
-  $("#personalEmailPending").addEventListener("submit", async function (event) {
-    event.preventDefault();
-    const button = $("#personalOtpVerifyButton");
-    const token = $("#personalOtpCode").value.trim();
-    if (!pendingPersonalEmail) {
-      message("#authNotice", "Sesyon verifikasyon an fini. Rekòmanse enskripsyon an.", "error");
-      return;
-    }
-    if (!/^\d{6}$/.test(token)) {
-      message("#authNotice", "Kòd konfimasyon an dwe gen 6 chif.", "error");
-      return;
-    }
-    button.disabled = true;
-    message("#authNotice", "Ap verifye kòd konfimasyon kliyan an…", "");
-    try {
-      const result = await supabase.auth.verifyOtp({
-        email: pendingPersonalEmail,
-        token,
-        type: "email"
-      });
-      if (result.error) throw result.error;
-      const session = result.data && result.data.session;
-      if (!session) throw new Error("EMAIL_VERIFICATION_SESSION_MISSING");
-      pendingPersonalEmail = "";
-      $("#personalOtpCode").value = "";
-      pinSetupPendingAfterSignup = true;
-      activeUserId = null;
-      dashboardPromise = null;
-      await syncSession(session);
-    } catch (error) {
-      message("#authNotice", translateError(error.message || "EMAIL_OTP_INVALID"), "error");
-      $("#personalOtpCode").value = "";
-      $("#personalOtpCode").focus();
-    } finally {
-      button.disabled = false;
-    }
-  });
-
-  $("#merchantOtpForm").addEventListener("submit", async function (event) {
-    event.preventDefault();
-    const button = $("#merchantOtpVerifyButton");
-    const token = $("#merchantOtpCode").value.trim();
-    if (!pendingMerchantEmail) {
-      message("#authNotice", "Sesyon verifikasyon an fini. Rekòmanse enskripsyon an.", "error");
-      return;
-    }
-    if (!/^\d{6}$/.test(token)) {
-      message("#authNotice", "Kòd konfimasyon an dwe gen 6 chif.", "error");
-      return;
-    }
-    button.disabled = true;
-    message("#authNotice", "Ap verifye kòd konfimasyon biznis la…", "");
-    try {
-      const result = await supabase.auth.verifyOtp({
-        email: pendingMerchantEmail,
-        token,
-        type: "email"
-      });
-      if (result.error) throw result.error;
-      const session = result.data && result.data.session;
-      if (!session) throw new Error("EMAIL_VERIFICATION_SESSION_MISSING");
-      pendingMerchantEmail = "";
-      $("#merchantOtpCode").value = "";
-      pinSetupPendingAfterSignup = true;
-      activeUserId = null;
-      dashboardPromise = null;
-      await syncSession(session);
-    } catch (error) {
-      message("#authNotice", translateError(error.message || "EMAIL_OTP_INVALID"), "error");
-      $("#merchantOtpCode").value = "";
-      $("#merchantOtpCode").focus();
-    } finally {
-      button.disabled = false;
-    }
-  });
-
-  $("#merchantOtpResendButton").addEventListener("click", async function () {
-    if (!pendingMerchantEmail) {
-      message("#authNotice", "Sesyon verifikasyon an fini. Rekòmanse enskripsyon an.", "error");
-      return;
-    }
-    const button = $("#merchantOtpResendButton");
-    button.disabled = true;
-    try {
-      const result = await supabase.auth.resend({ type: "signup", email: pendingMerchantEmail });
-      if (result.error) throw result.error;
-      message("#authNotice", "Nou voye yon lòt kòd konfimasyon. Verifye bwat resepsyon ak spam ou.", "success");
-    } catch (error) {
-      message("#authNotice", "Nou pa kapab voye yon lòt kòd kounye a: " + translateError(error.message), "error");
-    } finally {
-      button.disabled = false;
-    }
-  });
-
-  $("#personalResendButton").addEventListener("click", async function () {
-    if (!pendingPersonalEmail) {
-      message("#authNotice", "Sesyon verifikasyon an fini. Rekòmanse enskripsyon an.", "error");
-      return;
-    }
-    const button = $("#personalResendButton");
-    button.disabled = true;
-    try {
-      const result = await supabase.auth.resend({ type: "signup", email: pendingPersonalEmail });
-      if (result.error) throw result.error;
-      message("#authNotice", "Nou voye yon lòt kòd konfimasyon. Verifye bwat resepsyon ak spam ou.", "success");
-    } catch (error) {
-      message("#authNotice", "Nou pa kapab voye yon lòt kòd kounye a: " + translateError(error.message), "error");
-    } finally {
-      button.disabled = false;
-    }
   });
 
   const dob = $("#personalDob");
