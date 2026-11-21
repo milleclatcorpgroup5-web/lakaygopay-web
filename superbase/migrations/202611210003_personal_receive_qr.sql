@@ -183,10 +183,10 @@ begin
   end if;
 
   select * into v_profile from public.profiles where id = v_request.recipient_user_id;
-  v_phone := pg_catalog.coalesce(v_profile.phone, '');
+  v_phone := coalesce(v_profile.phone, '');
   return pg_catalog.jsonb_build_object(
     'request_id', v_request.id,
-    'recipient_name', pg_catalog.coalesce(nullif(pg_catalog.btrim(v_profile.full_name), ''),
+    'recipient_name', coalesce(nullif(pg_catalog.btrim(v_profile.full_name), ''),
       'Itilizatè LakayGoPay'),
     'recipient_phone_masked', case
       when pg_catalog.char_length(pg_catalog.regexp_replace(v_phone, '\D', '', 'g')) >= 4
@@ -228,7 +228,7 @@ begin
   where public_token = p_public_token for update;
   if not found then raise exception 'RECEIVE_REQUEST_NOT_FOUND'; end if;
 
-  v_amount := pg_catalog.coalesce(v_request.amount, p_amount);
+  v_amount := coalesce(v_request.amount, p_amount);
   if v_amount is null or v_amount <= 0 then raise exception 'INVALID_AMOUNT'; end if;
   if v_request.amount is not null and p_amount is not null
     and p_amount is distinct from v_request.amount then
