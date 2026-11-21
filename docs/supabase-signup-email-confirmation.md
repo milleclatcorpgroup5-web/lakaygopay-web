@@ -1,40 +1,29 @@
-# LakayGoPay — Supabase signup confirmation setup
+# LakayGoPay — PIN-first signup without email OTP
 
-## Confirmation email template
+## Production Supabase setting required
 
-In Supabase Dashboard, open **Authentication → Email Templates → Confirm signup**. Keep the subject simple, for example:
+The current beta signup flow expects a customer or merchant to enter an email, password, and four-digit transaction PIN in one form. Supabase must return an authenticated session immediately so the app can save the PIN and open the dashboard without an email confirmation code.
 
-`Konfime imèl ou — LakayGoPay`
+In Supabase Dashboard, open **Authentication → Sign In / Providers → Email** (the exact menu label may vary) and turn **Confirm email** OFF. Save the setting.
 
-Replace the template body with the Go template in `supabase/confirm-signup-template.html`.
+The app still uses the standard Supabase Auth signup endpoint. It does not use the service-role key to create customer accounts or silently confirm existing accounts. If email confirmation remains enabled, signup will not return a session and the app will show a configuration message rather than asking the user for a six-digit code.
 
-The template branches on the existing `user_metadata.account_type` field to personalize the message, but **both personal/client and merchant accounts receive a six-digit OTP** via `{{ .Token }}`. Neither role receives a confirmation link. The frontend presents the matching code-entry screen and verifies the code using:
+## Expected signup behavior
 
-```js
-supabase.auth.verifyOtp({ email, token, type: "email" })
-```
+1. Customer or merchant fills in profile details, email, password, and matching four-digit PIN.
+2. Supabase creates the account with email auto-confirmation and returns a session immediately.
+3. The browser establishes that session and calls the authenticated PIN setup endpoint.
+4. The PIN is stored using the existing server-side PBKDF2 process.
+5. The user enters the dashboard without a six-digit email confirmation code.
 
-The frontend resends signup confirmation with:
+## Important security trade-off
 
-```js
-supabase.auth.resend({ type: "signup", email })
-```
+Disabling email confirmation means the app no longer proves that a new user controls the email address they typed. The password and transaction PIN protect account access and transaction authorization, but neither verifies ownership of that email inbox. Keep account recovery and any future payout/real-money capabilities subject to additional identity and security controls. Re-enable email confirmation when the beta is stable and the product is ready for it.
 
-Supabase's hosted email OTP uses a project-level length setting with a supported range of 6–10 digits; the standard template token is six digits. A four-digit client code and six-digit merchant code cannot be configured separately using the built-in Supabase signup OTP. A four-digit variant would require a separate custom OTP implementation and additional storage, expiry, rate-limit, replay-protection, and delivery logic. This project intentionally uses six digits for both roles to keep the verification flow within Supabase Auth.
+## Legacy pending accounts
 
-## Email delivery requirement
+Accounts created before this change may still be waiting for email confirmation. This change does not silently confirm or delete existing accounts. Review pending accounts separately; do not delete customer records as part of this deployment.
 
-Changing a confirmation link to a code changes the verification experience; it does **not** repair SMTP delivery. Enabling email signups does **not** prove that Supabase can deliver mail to every tester. Supabase's default SMTP is restricted to pre-authorized team email addresses and is not intended for public production delivery. Public testing requires a working custom SMTP provider in **Authentication → SMTP Settings**. Confirm the Production Site URL and redirect allow-list are configured for LakayGoPay. Do not disable email confirmations to work around delivery failures.
+## Email template
 
-The Supabase Dashboard template must also be updated manually: copy the content of `supabase/confirm-signup-template.html` into **Authentication → Email Templates → Confirm signup**, then save it. Updating the file in GitHub does not automatically update the template stored in Supabase.
-
-## What the current System Health result proves
-
-The public Auth settings endpoint can confirm that email signups are enabled and whether email confirmation is required. It cannot verify SMTP delivery. A successful `AUTH_REACHABLE` check is therefore not proof that a confirmation email can reach an arbitrary tester.
-
-## Expected test
-
-1. Register a new personal/client email. The signup screen should show the six-digit code form. Entering the correct code should verify the email and establish the session without entering the email or password again.
-2. Register a new merchant email. The signup screen should show the six-digit OTP form. Entering the correct code should verify the email and establish the session without entering the email or password again.
-3. For each role, test a wrong code, expired code, and resend. A wrong or expired code must not create a session.
-4. Reusing an already registered email should show an existing-account message rather than pretending a new account was created.
+A six-digit OTP template is not used by the new signup path. The file \`supabase/confirm-signup-template.html\` may remain in the repository for a future reactivation, but it is not part of the current signup experience.
