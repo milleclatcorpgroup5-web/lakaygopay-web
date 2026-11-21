@@ -1,4 +1,4 @@
-import { json, requireUser, callRpc, readJson, validUuid, validAmount, idempotencyKey } from "../_shared/supabase.js";
+import { json, requireUser, callUserRpc, readJson, validUuid, validAmount, idempotencyKey } from "../_shared/supabase.js";
 import { financialFail } from "../_shared/financial-errors.js";
 
 export async function onRequestPost({ request, env }) {
@@ -13,8 +13,7 @@ export async function onRequestPost({ request, env }) {
     if (body?.amount != null && body.amount !== "" && !amount) return json({ error: "INVALID_AMOUNT" }, 400);
     const expires = Number(body?.expires_in_minutes ?? 20);
     if (!Number.isInteger(expires) || expires < 15 || expires > 30) return json({ error: "INVALID_EXPIRY" }, 400);
-    const result = await callRpc(env, "create_personal_receive_request", {
-      p_actor_user_id: auth.user.id,
+    const result = await callUserRpc(env, auth.accessToken, "create_personal_receive_request", {
       p_recipient_wallet_id: body.wallet_id,
       p_amount: amount,
       p_expires_in_minutes: expires,
