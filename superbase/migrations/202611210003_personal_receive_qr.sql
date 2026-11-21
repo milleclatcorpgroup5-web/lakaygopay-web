@@ -2,6 +2,9 @@
 -- This adds a request layer only; no funds move until the payer confirms with PIN.
 begin;
 
+-- Some Production snapshots predate this idempotency metadata column.
+alter table public.idempotency_keys add column if not exists request_fingerprint text;
+
 create table if not exists public.personal_receive_requests (
   id uuid primary key default gen_random_uuid(),
   public_token uuid not null unique default gen_random_uuid(),
