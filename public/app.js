@@ -790,12 +790,15 @@ async function lookupPaymentRequest(rawToken) {
     amount.textContent = request.amount == null
       ? "Montan ouvè · " + (request.currency || "HTG")
       : formatMoney(request.amount, request.currency || "HTG") + " " + (request.currency || "HTG");
+    const businessMeta = document.createElement("p");
+    businessMeta.textContent = "Telefòn: " + (request.merchant_phone || "Pa disponib") +
+      " · Kategori: " + (request.merchant_category || "Pa presize");
     const description = document.createElement("p");
     description.textContent = request.description || "Demann peman LakayGoPay";
     const state = document.createElement("p");
     state.textContent = "Estati: " + statusText(request.status) +
       (request.expires_at ? " · Ekspire: " + new Date(request.expires_at).toLocaleString("fr-HT") : "");
-    details.append(title, amount, description, state);
+    details.append(title, businessMeta, amount, description, state);
     details.hidden = false;
     const expired = request.status !== "pending" ||
       (request.expires_at && Date.parse(request.expires_at) <= Date.now());
@@ -1531,7 +1534,7 @@ function wireForms() {
           merchant_id: merchant.id,
           amount,
           description: $("#merchantQrDescription").value.trim(),
-          expires_in_minutes: 30
+          expires_in_minutes: 1440
         },
         idempotency: true
       });
@@ -1542,7 +1545,7 @@ function wireForms() {
       $("#merchantQrResult").hidden = false;
       await renderQrImage($("#merchantQrImage"), link.toString());
       $("#merchantQrSummary").textContent = "Demann pou " + formatMoney(amount, "HTG") +
-        " HTG · ekspire nan 30 minit. Li pa peye jiskaske kliyan konfime.";
+        " HTG · valab 24 èdtan. Li pa peye jiskaske kliyan konfime.";
       $("#merchantQrLink").href = link.toString();
       $("#merchantQrLink").textContent = link.toString();
       $("#merchantQrCopyButton").dataset.copyLink = link.toString();
