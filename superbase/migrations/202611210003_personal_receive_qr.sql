@@ -244,6 +244,9 @@ begin
     raise exception 'RECIPIENT_WALLET_INVALID';
   end if;
   if v_sender.owner_user_id=v_recipient.owner_user_id then raise exception 'SELF_TRANSFER_NOT_ALLOWED'; end if;
+  if not exists(select 1 from public.profiles where id=v_request.recipient_user_id and account_status='active') then
+    raise exception 'RECIPIENT_ACCOUNT_NOT_ACTIVE';
+  end if;
   if v_sender.currency<>v_recipient.currency or v_sender.currency<>v_request.currency then
     raise exception 'CURRENCY_MISMATCH';
   end if;
