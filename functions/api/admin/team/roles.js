@@ -24,7 +24,7 @@ export async function onRequestGet({ request, env }) {
     const { url, secretKey } = config(env);
     const [profiles, assigned] = await Promise.all([
       readRows(url, secretKey, "profiles?select=id,full_name,account_status,created_at&order=created_at.desc&limit=500"),
-      readRows(url, secretKey, "user_roles?select=user_id,role,assigned_at&order=assigned_at.desc&limit=500")
+      readRows(url, secretKey, "user_roles?select=user_id,role,created_at&order=created_at.desc&limit=500")
     ]);
     const roleMap = new Map();
     for (const row of assigned) {
