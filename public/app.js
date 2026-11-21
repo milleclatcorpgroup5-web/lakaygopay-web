@@ -20,7 +20,10 @@ const FALLBACK_CARD_TIERS = [
   {tier_code:"GOLD",display_name:"LakayGo Gold",sort_order:3,min_limit_htg:30000000,max_limit_htg:100000000,description:"Plafon HTG: 30,000,000 rive 100,000,000.",benefits:["Tout avantaj Mwayèn","Avantaj sèvis Gold","Sipò priyoritè selon sèvis"],star_levels:[{star_level:1,star_label:"Gold 1 etwal",min_limit_htg:30000000,max_limit_htg:53333333.33},{star_level:2,star_label:"Gold 2 etwal",min_limit_htg:53333333.34,max_limit_htg:76666666.66},{star_level:3,star_label:"Gold 3 etwal",min_limit_htg:76666666.67,max_limit_htg:100000000}],application_open:true,issuance_enabled:false,virtual_supported:true,physical_supported:true},
   {tier_code:"ELITE_GOLD",display_name:"LakayGo Elite Gold",sort_order:4,min_limit_htg:100000000.01,max_limit_htg:null,description:"Plafon HTG ki depase 100,000,000.",benefits:["Tout avantaj Gold","Avantaj patnè Elite","Relasyon kliyan priyoritè"],star_levels:[{star_level:1,star_label:"Elite Gold 1 etwal",min_limit_htg:100000000.01,max_limit_htg:250000000},{star_level:2,star_label:"Elite Gold 2 etwal",min_limit_htg:250000000.01,max_limit_htg:500000000},{star_level:3,star_label:"Elite Gold 3 etwal",min_limit_htg:500000000.01,max_limit_htg:null}],application_open:true,issuance_enabled:false,virtual_supported:true,physical_supported:true}
 ];
-let currentQrRequest = null;\nlet currentReceiveRequest = null;\nlet incomingReceiveToken = new URLSearchParams(window.location.search).get("lgp_receive") || "";\nlet incomingReceiveLoadedForUser = null;
+let currentQrRequest = null;
+let currentReceiveRequest = null;
+let incomingReceiveToken = new URLSearchParams(window.location.search).get("lgp_receive") || "";
+let incomingReceiveLoadedForUser = null;
 let incomingQrToken = new URLSearchParams(window.location.search).get("lgp_qr") || "";
 let incomingQrLoadedForUser = null;
 let qrScannerStream = null;
@@ -493,7 +496,8 @@ function renderWallets() {
     option.textContent = "Pa gen bous disponib";
     select.append(option);
   }
-  populateWalletSelect("#qrPayerWallet", "HTG");\n  populatePersonalWalletSelect("#personalReceiveWallet");
+  populateWalletSelect("#qrPayerWallet", "HTG");
+  populatePersonalWalletSelect("#personalReceiveWallet");
   populateWalletSelect("#withdrawWallet");
 }
 function populateWalletSelect(selector, currency) {
@@ -884,7 +888,14 @@ async function startQrScanner() {
           if (codes.length && codes[0].rawValue) {
             const raw = codes[0].rawValue;
             await stopQrScanner();
-            if (String(raw).includes("lgp_receive") || String(raw).includes("lakaygopay://receive/") || /\\/receive\\//i.test(String(raw))) {\n              $("#personalReceiveToken").value = receiveTokenFromInput(raw);\n              $("#personalReceiveLookupSection").scrollIntoView({ behavior: "smooth", block: "start" });\n              await lookupPersonalReceiveRequest(raw);\n            } else {\n              $("#qrTokenInput").value = raw;\n              await lookupPaymentRequest(raw);\n            }
+            if (String(raw).includes("lgp_receive") || String(raw).includes("lakaygopay://receive/") || String(raw).includes("/receive/")) {
+              $("#personalReceiveToken").value = receiveTokenFromInput(raw);
+              $("#personalReceiveLookupSection").scrollIntoView({ behavior: "smooth", block: "start" });
+              await lookupPersonalReceiveRequest(raw);
+            } else {
+              $("#qrTokenInput").value = raw;
+              await lookupPaymentRequest(raw);
+            }
             return;
           }
         }
