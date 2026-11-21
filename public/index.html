@@ -102,31 +102,6 @@
         <button class="button button-primary full" type="submit">Sove nouvo modpas</button>
       </form>
 
-      <form id="personalEmailPending" class="form-stack verification-pending" hidden>
-        <div class="verification-icon">✉</div>
-        <h3>Konfime imèl kont kliyan ou</h3>
-        <p>Nou voye yon kòd konfimasyon 6 chif bay:</p>
-        <strong id="personalPendingEmail" class="verification-email"></strong>
-        <label>Kòd konfimasyon 6 chif
-          <input id="personalOtpCode" type="text" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required>
-        </label>
-        <p class="field-hint">Antre kòd ki nan imèl la. Ou pa bezwen antre modpas ou ankò.</p>
-        <button id="personalOtpVerifyButton" class="button button-primary full" type="submit">Verifye kòd la</button>
-        <button id="personalResendButton" class="button button-secondary full" type="button">Voye yon lòt kòd</button>
-      </form>
-
-      <form id="merchantOtpForm" class="form-stack verification-pending" hidden>
-        <div class="verification-icon">✉</div>
-        <h3>Konfime imèl biznis ou</h3>
-        <p>Nou voye yon kòd 6 chif bay:</p>
-        <strong id="merchantOtpEmail" class="verification-email"></strong>
-        <label>Kòd konfimasyon 6 chif
-          <input id="merchantOtpCode" type="text" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required>
-        </label>
-        <p class="field-hint">Antre kòd ki nan imèl la. Ou pa bezwen antre modpas ou ankò.</p>
-        <button id="merchantOtpVerifyButton" class="button button-primary full" type="submit">Verifye kòd la</button>
-        <button id="merchantOtpResendButton" class="button button-secondary full" type="button">Voye yon lòt kòd</button>
-      </form>
       <div id="authNotice" class="notice" role="status" aria-live="polite"></div>
     </section>
   </main>
@@ -442,6 +417,6 @@
   </main>
 
   <script src="/observability.js?v=20261119-logs-01"></script>
-  <script type="module" src="/app.js?v=20261120-read-recovery-03"></script>
+  <script type="module" src="/app.js?v=20261121-no-signup-otp-01"></script>
 </body>
 </html>
