@@ -272,6 +272,10 @@ begin
     where id = v_request.recipient_user_id and account_status = 'active') then
     raise exception 'RECIPIENT_ACCOUNT_NOT_ACTIVE';
   end if;
+  if exists (select 1 from public.ledger_accounts
+    where wallet_id = p_sender_wallet_id and is_system = true) then
+    raise exception 'SYSTEM_WALLET_NOT_ALLOWED';
+  end if;
 
   -- Reuse the production transfer engine: auth.uid(), wallet ownership,
   -- row locks, wallet_balances, ledger_accounts, balanced entries, posting and idempotency.
