@@ -1438,9 +1438,12 @@ function wireForms() {
     const button = event.submitter;
     button.disabled = true;
     receiveMessage("Ap kreye ID resepsyon an…", "");
+    const createKeyName = "lgp-receive-create:" + [walletId, rawAmount, body.expires_in_minutes].join(":");
+    const createKey = sessionStorage.getItem(createKeyName) || crypto.randomUUID();
+    sessionStorage.setItem(createKeyName, createKey);
     try {
       const data = await api("/api/receive-requests", {
-        method: "POST", body, idempotencyKey: crypto.randomUUID()
+        method: "POST", body, idempotencyKey: createKey
       });
       const request = data.receive_request || {};
       if (!request.qr_token) throw new Error("RECEIVE_TOKEN_MISSING");
@@ -1456,6 +1459,7 @@ function wireForms() {
       $("#personalReceiveLink").href = link.toString();
       $("#personalReceiveCopyButton").dataset.receiveId = request.qr_token;
       receiveMessage("QR ak ID resepsyon kreye. Pataje yo ak moun k ap voye lajan an.", "success");
+      sessionStorage.removeItem(createKeyName);
     } catch (error) {
       receiveMessage(translateError(error.code || error.message), "error");
     } finally {
