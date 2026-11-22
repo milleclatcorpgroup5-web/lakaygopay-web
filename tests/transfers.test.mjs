@@ -109,11 +109,11 @@ function installFetch({ validPinHash = pinHash } = {}) {
       calls.at(-1).payload = payload;
       return response([{ is_locked: false, locked_until: null, failed_attempts: payload.p_success ? 0 : 1 }]);
     }
-    if (target.endsWith("/rest/v1/rpc/transfer_funds")) {
-      // Critical regression check: money movement is invoked as the verified
-      // authenticated user, with the publishable key, never the service key.
-      assert.equal(headers.get("authorization"), "Bearer " + USER_JWT);
-      assert.equal(headers.get("apikey"), ENV.SUPABASE_PUBLISHABLE_KEY);
+    if (target.endsWith("/rest/v1/rpc/transfer_funds_server_authorized")) {
+      // Critical regression check: money movement is invoked only through the
+      // server-authorized wrapper after JWT, active-account and PIN validation.
+      assert.equal(headers.get("authorization"), "Bearer " + ENV.SUPABASE_SECRET_KEY);
+      assert.equal(headers.get("apikey"), ENV.SUPABASE_SECRET_KEY);
       const payload = JSON.parse(init.body);
       calls.at(-1).payload = payload;
       return response([TRANSFER_ROW]);
@@ -126,7 +126,7 @@ function installFetch({ validPinHash = pinHash } = {}) {
   return calls;
 }
 
-test("POST /api/transfers uses transfer_funds with the user's JWT after PIN validation", async () => {
+test("POST /api/transfers uses the server-authorized transfer RPC after PIN validation", async () => {
   pinHash = pinHash || await hashPin(PIN);
   const calls = installFetch();
   const result = await postTransfer({ request: request("/api/transfers"), env: ENV });
@@ -137,9 +137,10 @@ test("POST /api/transfers uses transfer_funds with the user's JWT after PIN vali
 
   const attempt = calls.find((item) => item.url.endsWith("/record_customer_pin_attempt"));
   assert.equal(attempt.payload.p_success, true);
-  const transfer = calls.find((item) => item.url.endsWith("/transfer_funds"));
+  const transfer = calls.find((item) => item.url.endsWith("/transfer_funds_server_authorized"));
   assert.ok(transfer);
   assert.deepEqual(transfer.payload, {
+    p_actor_user_id: USER_ID,
     p_sender_wallet_id: SENDER_WALLET,
     p_recipient_wallet_id: RECIPIENT_WALLET,
     p_amount: "12.50",
@@ -157,7 +158,7 @@ test("missing 4-digit PIN is rejected before any transfer RPC", async () => {
   });
   assert.equal(result.status, 400);
   assert.deepEqual(await result.json(), { error: "PIN_MUST_BE_4_DIGITS" });
-  assert.equal(calls.some((item) => item.url.endsWith("/transfer_funds")), false);
+  assert.equal(calls.some((item) => item.url.endsWith("/transfer_funds_server_authorized")), false);
 });
 
 test("incorrect PIN is recorded and cannot initiate a transfer", async () => {
@@ -171,7 +172,7 @@ test("incorrect PIN is recorded and cannot initiate a transfer", async () => {
   assert.deepEqual(await result.json(), { error: "PIN_INVALID" });
   const attempt = calls.find((item) => item.url.endsWith("/record_customer_pin_attempt"));
   assert.equal(attempt.payload.p_success, false);
-  assert.equal(calls.some((item) => item.url.endsWith("/transfer_funds")), false);
+  assert.equal(calls.some((item) => item.url.endsWith("/transfer_funds_server_authorized")), false);
 });
 
 test("legacy /api/transfets path cannot bypass the mandatory PIN", async () => {
@@ -183,5 +184,5 @@ test("legacy /api/transfets path cannot bypass the mandatory PIN", async () => {
   });
   assert.equal(result.status, 400);
   assert.deepEqual(await result.json(), { error: "PIN_MUST_BE_4_DIGITS" });
-  assert.equal(calls.some((item) => item.url.endsWith("/transfer_funds")), false);
+  assert.equal(calls.some((item) => item.url.endsWith("/transfer_funds_server_authorized")), false);
 });
