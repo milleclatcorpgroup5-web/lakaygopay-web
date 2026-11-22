@@ -41,33 +41,6 @@ create unique index if not exists personal_receive_requests_paid_idempotency_uid
 alter table public.personal_receive_requests enable row level security;
 revoke all on table public.personal_receive_requests from public, anon, authenticated;
 
-create or replace function public.get_payment_request_details(p_public_token uuid)
-returns jsonb language plpgsql security definer set search_path = ''
-as $function$
-declare
-  v_request public.payment_requests%rowtype;
-  v_merchant public.merchants%rowtype;
-begin
-  if p_public_token is null then raise exception 'INVALID_QR_TOKEN'; end if;
-  select * into v_request from public.payment_requests
-   where public_token::text = p_public_token::text;
-  if v_request.id is null then raise exception 'PAYMENT_REQUEST_NOT_FOUND'; end if;
-  select * into v_merchant from public.merchants where id = v_request.merchant_id;
-  if v_request.status = 'pending' and v_request.expires_at <= pg_catalog.now() then
-    update public.payment_requests set status = 'expired' where id = v_request.id;
-    v_request.status := 'expired';
-  end if;
-  return pg_catalog.jsonb_build_object(
-    'payment_request_id', v_request.id, 'merchant_id', v_request.merchant_id,
-    'merchant_name', v_merchant.business_name, 'merchant_phone', v_merchant.contact_phone,
-    'merchant_category', v_merchant.category, 'merchant_status', v_merchant.status,
-    'amount', v_request.amount, 'currency', v_request.currency,
-    'description', v_request.description, 'status', v_request.status,
-    'expires_at', v_request.expires_at
-  );
-end;
-$function$;
-
 create or replace function public.create_personal_receive_request(
   p_recipient_wallet_id uuid, p_amount numeric, p_expires_in_minutes integer, p_idempotency_key text
 )
@@ -314,11 +287,124 @@ begin
 end;
 $function$;
 
-revoke all on function public.create_personal_receive_request(uuid,numeric,integer,text) from public, anon;
-revoke all on function public.get_personal_receive_request_details(uuid) from public, anon;
-revoke all on function public.pay_personal_receive_request(uuid,uuid,numeric,text) from public, anon;
-grant execute on function public.create_personal_receive_request(uuid,numeric,integer,text) to authenticated;
-grant execute on function public.get_personal_receive_request_details(uuid) to authenticated;
-grant execute on function public.pay_personal_receive_request(uuid,uuid,numeric,text) to authenticated;
+
+-- User-facing request creation and lookup use the caller's JWT.
+revoke all on function public.create_personal_receive_request(uuid,numeric,integer,text)
+  from public, anon, service_role;
+revoke all on function public.get_personal_receive_request_details(uuid)
+  from public, anon, service_role;
+grant execute on function public.create_personal_receive_request(uuid,numeric,integer,text)
+  to authenticated;
+grant execute on function public.get_personal_receive_request_details(uuid)
+  to authenticated;
+
+-- The payment function is callable only from the trusted server wrapper.
+revoke all on function public.pay_personal_receive_request(uuid,uuid,numeric,text)
+  from public, anon, authenticated, service_role;
+
+-- Remove the direct authenticated RPC path that bypasses the API PIN check.
+revoke all on function public.transfer_funds(uuid,uuid,numeric,text,text)
+  from public, anon, authenticated, service_role;
+
+create or replace function public.transfer_funds_server_authorized(
+  p_actor_user_id uuid,
+  p_sender_wallet_id uuid,
+  p_recipient_wallet_id uuid,
+  p_amount numeric,
+  p_note text,
+  p_idempotency_key text
+)
+returns table (
+  transfer_id uuid,
+  ledger_transaction_id uuid,
+  transfer_status text,
+  transfer_amount numeric,
+  transfer_currency text,
+  created_at timestamptz,
+  idempotent_replay boolean
+)
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+begin
+  if auth.role() is distinct from 'service_role' then
+    raise exception 'SERVER_AUTHORIZATION_REQUIRED';
+  end if;
+  if p_actor_user_id is null then raise exception 'AUTH_REQUIRED'; end if;
+  if not exists (
+    select 1 from public.profiles
+    where id = p_actor_user_id and account_status = 'active'
+  ) then raise exception 'ACCOUNT_NOT_ACTIVE'; end if;
+
+  perform pg_catalog.set_config('request.jwt.claim.sub', p_actor_user_id::text, true);
+
+  return query
+    select * from public.transfer_funds(
+      p_sender_wallet_id, p_recipient_wallet_id, p_amount, p_note, p_idempotency_key
+    );
+end;
+$function$;
+
+create or replace function public.pay_personal_receive_request_server_authorized(
+  p_actor_user_id uuid,
+  p_public_token uuid,
+  p_sender_wallet_id uuid,
+  p_amount numeric,
+  p_idempotency_key text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+begin
+  if auth.role() is distinct from 'service_role' then
+    raise exception 'SERVER_AUTHORIZATION_REQUIRED';
+  end if;
+  if p_actor_user_id is null then raise exception 'AUTH_REQUIRED'; end if;
+  if not exists (
+    select 1 from public.profiles
+    where id = p_actor_user_id and account_status = 'active'
+  ) then raise exception 'ACCOUNT_NOT_ACTIVE'; end if;
+
+  perform pg_catalog.set_config('request.jwt.claim.sub', p_actor_user_id::text, true);
+
+  return public.pay_personal_receive_request(
+    p_public_token, p_sender_wallet_id, p_amount, p_idempotency_key
+  );
+end;
+$function$;
+
+revoke all on function public.transfer_funds_server_authorized(uuid,uuid,uuid,numeric,text,text)
+  from public, anon, authenticated;
+grant execute on function public.transfer_funds_server_authorized(uuid,uuid,uuid,numeric,text,text)
+  to service_role;
+
+revoke all on function public.pay_personal_receive_request_server_authorized(uuid,uuid,uuid,numeric,text)
+  from public, anon, authenticated;
+grant execute on function public.pay_personal_receive_request_server_authorized(uuid,uuid,uuid,numeric,text)
+  to service_role;
+
+do $verify$
+begin
+  if has_function_privilege('authenticated',
+    'public.transfer_funds(uuid,uuid,numeric,text,text)', 'EXECUTE') then
+    raise exception 'TRANSFER_FUNDS_MUST_NOT_BE_DIRECTLY_EXECUTABLE';
+  end if;
+  if has_function_privilege('authenticated',
+    'public.pay_personal_receive_request(uuid,uuid,numeric,text)', 'EXECUTE') then
+    raise exception 'PERSONAL_RECEIVE_PAYMENT_MUST_NOT_BE_DIRECTLY_EXECUTABLE';
+  end if;
+  if not has_function_privilege('service_role',
+    'public.transfer_funds_server_authorized(uuid,uuid,uuid,numeric,text,text)', 'EXECUTE') then
+    raise exception 'TRANSFER_SERVER_WRAPPER_GRANT_MISSING';
+  end if;
+  if not has_function_privilege('service_role',
+    'public.pay_personal_receive_request_server_authorized(uuid,uuid,uuid,numeric,text)', 'EXECUTE') then
+    raise exception 'PERSONAL_RECEIVE_SERVER_WRAPPER_GRANT_MISSING';
+  end if;
+end;
+$verify$;
 
 commit;
