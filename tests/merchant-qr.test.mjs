@@ -5,6 +5,7 @@ import { webcrypto } from "node:crypto";
 import { onRequestPost as createMerchantQr } from "../functions/api/payment-requests.js";
 import { onRequestGet as lookupMerchantQr } from "../functions/api/payment-requests/lookup.js";
 import { onRequestPost as payMerchantQr } from "../functions/api/payment-requests/pay.js";
+import { onRequestGet as getPaymentHistory } from "../functions/api/payments.js";
 
 if (!globalThis.crypto) globalThis.crypto = webcrypto;
 
@@ -239,4 +240,70 @@ test("merchant QR SQL migration uses Production ledger columns and protected RPC
   assert.match(sql, /pay_merchant_qr_request_server_authorized/);
   assert.match(sql, /interval '24 hours'/);
   assert.doesNotMatch(sql, /public\.idempotency_keys|ledger_entries\s*\(\s*ledger_transaction_id\s*,\s*wallet_id/s);
+});
+
+
+test("payment history includes payer and merchant-side QR receipts from the new table", async () => {
+  const ownedMerchantId = "77777777-7777-4777-8777-777777777777";
+  const payerTransactionId = "88888888-8888-4888-8888-888888888888";
+  const receivedTransactionId = "99999999-9999-4999-8999-999999999999";
+  globalThis.fetch = async (url, init = {}) => {
+    const target = new URL(String(url));
+    const headers = new Headers(init.headers || {});
+    if (target.pathname.endsWith("/auth/v1/user")) {
+      assert.equal(headers.get("authorization"), "Bearer " + USER_JWT);
+      return response({ id: USER_ID });
+    }
+    if (target.pathname.endsWith("/rest/v1/profiles")) {
+      return response([{ account_status: "active" }]);
+    }
+    if (target.pathname.endsWith("/rest/v1/merchants")) {
+      return response([{ id: ownedMerchantId }]);
+    }
+    if (target.pathname.endsWith("/rest/v1/merchant_payment_records")) {
+      return response({ code: "PGRST205", message: "table not found" }, 404);
+    }
+    if (target.pathname.endsWith("/rest/v1/merchant_qr_requests")) {
+      if (target.searchParams.get("paid_by_user_id") === USER_ID) {
+        return response([{
+          id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          merchant_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          paid_by_user_id: USER_ID,
+          paid_payer_wallet_id: WALLET_ID,
+          paid_amount: "12.00",
+          currency: "HTG",
+          paid_ledger_transaction_id: payerTransactionId,
+          paid_at: "2026-11-22T12:00:00Z",
+        }]);
+      }
+      if (target.searchParams.get("merchant_id") === ownedMerchantId) {
+        return response([{
+          id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+          merchant_id: ownedMerchantId,
+          paid_by_user_id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+          paid_payer_wallet_id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+          paid_amount: "35.50",
+          currency: "USD",
+          paid_ledger_transaction_id: receivedTransactionId,
+          paid_at: "2026-11-22T12:05:00Z",
+        }]);
+      }
+      return response([]);
+    }
+    throw new Error("Unexpected payment-history fetch: " + target);
+  };
+
+  const req = new Request("https://lakaygopay.test/api/payments", {
+    headers: { authorization: "Bearer " + USER_JWT },
+  });
+  const result = await getPaymentHistory({ request: req, env: ENV });
+  assert.equal(result.status, 200);
+  const body = await result.json();
+  assert.equal(body.payments.length, 2);
+  const payerReceipt = body.payments.find((item) => item.id === payerTransactionId);
+  assert.equal(payerReceipt.amount, "12.00");
+  assert.equal(payerReceipt.payer_wallet_id, WALLET_ID);
+  const merchantReceipt = body.payments.find((item) => item.id === receivedTransactionId);
+  assert.equal(merchantReceipt.amount, "35.50");
+  assert.equal(merchantReceipt.merchant_id, ownedMerchantId);
 });
