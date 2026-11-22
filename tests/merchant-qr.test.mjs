@@ -264,7 +264,7 @@ test("payment history includes payer and merchant-side QR receipts from the new 
       return response({ code: "PGRST205", message: "table not found" }, 404);
     }
     if (target.pathname.endsWith("/rest/v1/merchant_qr_requests")) {
-      if (target.searchParams.get("paid_by_user_id") === USER_ID) {
+      if (target.searchParams.get("paid_by_user_id") === "eq." + USER_ID) {
         return response([{
           id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
           merchant_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -276,7 +276,7 @@ test("payment history includes payer and merchant-side QR receipts from the new 
           paid_at: "2026-11-22T12:00:00Z",
         }]);
       }
-      if (target.searchParams.get("merchant_id") === ownedMerchantId) {
+      if (target.searchParams.get("merchant_id") === "eq." + ownedMerchantId) {
         return response([{
           id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
           merchant_id: ownedMerchantId,
