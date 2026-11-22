@@ -26,6 +26,7 @@ jobs:
         run: >-
           node --check functions/api/auth/register.js &&
           node --check functions/api/payment-requests.js &&
+          node --check functions/api/payments.js &&
           node --check functions/api/payment-requests/lookup.js &&
           node --check functions/api/payment-requests/pay.js &&
           node --check functions/api/payments.requests/lookup.js &&
