@@ -816,8 +816,13 @@ async function lookupPaymentRequest(rawToken) {
       qrMessage(request.status === "expired" ? "Demann QR sa a ekspire." : "Demann QR sa a pa disponib pou peman.", "error");
       return;
     }
-    populatePersonalWalletSelect("#qrPayerWallet", request.currency || "HTG");
+    const qrCurrency = request.currency || "HTG";
+    populatePersonalWalletSelect("#qrPayerWallet", qrCurrency);
+    const payerWalletLabel = $("#qrPayerWallet").closest("label");
+    if (payerWalletLabel?.firstChild) payerWalletLabel.firstChild.textContent = "Bous " + qrCurrency + " pou peye a";
     const amountInput = $("#qrPayAmount");
+    const amountLabel = amountInput.closest("label");
+    if (amountLabel?.firstChild) amountLabel.firstChild.textContent = "Montan pou peye (" + qrCurrency + ")";
     amountInput.value = request.amount == null ? "" : String(request.amount);
     amountInput.readOnly = request.amount != null;
     amountInput.required = request.amount == null;
@@ -1543,7 +1548,8 @@ function wireForms() {
       message("#appNotice", "Se sèlman machann ki aktive kapab kreye demann QR.", "error");
       return;
     }
-    const amount = $("#merchantQrAmount").value;
+    const amount = $("#merchantQrAmount").value.trim();
+    const currency = $("#merchantQrCurrency").value || "HTG";
     const button = $("#merchantQrCreateButton");
     button.disabled = true;
     try {
@@ -1551,8 +1557,8 @@ function wireForms() {
         method: "POST",
         body: {
           merchant_id: merchant.id,
-          amount,
-          currency: "HTG",
+          amount: amount || null,
+          currency,
           description: $("#merchantQrDescription").value.trim(),
           expires_in_minutes: 1440
         },
@@ -1565,8 +1571,8 @@ function wireForms() {
       $("#merchantQrResult").hidden = false;
       await renderQrImage($("#merchantQrImage"), link.toString());
       const amountLabel = amount
-        ? formatMoney(amount, "HTG") + " HTG"
-        : "Montan ouvè · HTG";
+        ? formatMoney(amount, currency) + " " + currency
+        : "Montan ouvè · " + currency;
       $("#merchantQrSummary").textContent = "Demann pou " + amountLabel +
         " · valab 24 èdtan. Li pa peye jiskaske kliyan konfime.";
       $("#merchantQrLink").href = link.toString();
