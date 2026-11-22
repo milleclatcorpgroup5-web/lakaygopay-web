@@ -241,7 +241,7 @@ test("merchant QR SQL migration uses Production ledger columns and protected RPC
   assert.match(sql, /interval '24 hours'/);
   assert.match(sql, /paid_payer_wallet_id uuid/);
   assert.match(sql, /paid_at timestamptz/);
-  assert.match(sql, /grant select on table public\\.merchant_qr_requests to service_role/i);
+  assert.match(sql, /grant select on table public\.merchant_qr_requests to service_role/i);
   assert.doesNotMatch(sql, /public\.idempotency_keys|ledger_entries\s*\(\s*ledger_transaction_id\s*,\s*wallet_id/s);
 });
 
