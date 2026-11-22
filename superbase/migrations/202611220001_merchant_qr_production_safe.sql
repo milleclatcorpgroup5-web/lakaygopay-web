@@ -102,7 +102,9 @@ create table if not exists public.merchant_qr_requests (
   paid_amount numeric(20,2),
   paid_ledger_transaction_id uuid unique references public.ledger_transactions(id),
   paid_by_user_id uuid references auth.users(id),
+  paid_payer_wallet_id uuid references public.wallets(id),
   paid_idempotency_key text,
+  paid_at timestamptz,
   request_idempotency_key text not null,
   request_fingerprint text not null,
   created_at timestamptz not null default pg_catalog.now(),
@@ -111,11 +113,13 @@ create table if not exists public.merchant_qr_requests (
   check (
     (status = 'paid' and paid_amount is not null and paid_amount > 0
       and paid_ledger_transaction_id is not null
-      and paid_by_user_id is not null and paid_idempotency_key is not null)
+      and paid_by_user_id is not null and paid_payer_wallet_id is not null
+      and paid_idempotency_key is not null and paid_at is not null)
     or
     (status <> 'paid' and paid_amount is null
       and paid_ledger_transaction_id is null
-      and paid_by_user_id is null and paid_idempotency_key is null)
+      and paid_by_user_id is null and paid_payer_wallet_id is null
+      and paid_idempotency_key is null and paid_at is null)
   ),
   unique (created_by_user_id, request_idempotency_key)
 );
@@ -141,6 +145,7 @@ alter table public.merchant_qr_requests enable row level security;
 alter table public.merchant_qr_payment_idempotency enable row level security;
 revoke all on table public.merchant_qr_requests from public, anon, authenticated;
 revoke all on table public.merchant_qr_payment_idempotency from public, anon, authenticated;
+grant select on table public.merchant_qr_requests to service_role;
 
 create or replace function public.create_merchant_qr_request(
   p_actor_user_id uuid,
@@ -606,7 +611,9 @@ begin
          paid_amount = v_amount,
          paid_ledger_transaction_id = v_transaction_id,
          paid_by_user_id = v_actor,
+         paid_payer_wallet_id = v_payer_wallet.id,
          paid_idempotency_key = pg_catalog.btrim(p_idempotency_key),
+         paid_at = pg_catalog.now(),
          updated_at = pg_catalog.now()
    where id = v_request.id and status = 'pending'
      and expires_at > pg_catalog.now();
