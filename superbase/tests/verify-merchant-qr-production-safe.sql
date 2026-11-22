@@ -43,7 +43,14 @@ left join pg_catalog.pg_proc p
   on p.oid = pg_catalog.to_regprocedure(e.function_signature)
 order by e.function_name;
 
--- D) Confirm posting engine is present and owned by postgres as SECURITY DEFINER.
+-- D) Service-role SELECT is required by the authenticated payment-history API;
+-- browser roles must remain unable to read QR request or idempotency rows directly.
+select
+  has_table_privilege('service_role', 'public.merchant_qr_requests', 'SELECT') as service_role_can_read_qr_receipts,
+  has_table_privilege('authenticated', 'public.merchant_qr_requests', 'SELECT') as authenticated_can_read_qr_requests,
+  has_table_privilege('anon', 'public.merchant_qr_requests', 'SELECT') as anon_can_read_qr_requests;
+
+-- E) Confirm posting engine is present and owned by postgres as SECURITY DEFINER.
 select
   p.oid::regprocedure as function_signature,
   pg_catalog.pg_get_userbyid(p.proowner) as owner_name,
