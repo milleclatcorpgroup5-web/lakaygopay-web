@@ -816,7 +816,7 @@ async function lookupPaymentRequest(rawToken) {
       qrMessage(request.status === "expired" ? "Demann QR sa a ekspire." : "Demann QR sa a pa disponib pou peman.", "error");
       return;
     }
-    populateWalletSelect("#qrPayerWallet", request.currency || "HTG");
+    populatePersonalWalletSelect("#qrPayerWallet", request.currency || "HTG");
     const amountInput = $("#qrPayAmount");
     amountInput.value = request.amount == null ? "" : String(request.amount);
     amountInput.readOnly = request.amount != null;
@@ -1552,6 +1552,7 @@ function wireForms() {
         body: {
           merchant_id: merchant.id,
           amount,
+          currency: "HTG",
           description: $("#merchantQrDescription").value.trim(),
           expires_in_minutes: 1440
         },
@@ -1563,8 +1564,11 @@ function wireForms() {
       link.searchParams.set("lgp_qr", token);
       $("#merchantQrResult").hidden = false;
       await renderQrImage($("#merchantQrImage"), link.toString());
-      $("#merchantQrSummary").textContent = "Demann pou " + formatMoney(amount, "HTG") +
-        " HTG · valab 24 èdtan. Li pa peye jiskaske kliyan konfime.";
+      const amountLabel = amount
+        ? formatMoney(amount, "HTG") + " HTG"
+        : "Montan ouvè · HTG";
+      $("#merchantQrSummary").textContent = "Demann pou " + amountLabel +
+        " · valab 24 èdtan. Li pa peye jiskaske kliyan konfime.";
       $("#merchantQrLink").href = link.toString();
       $("#merchantQrLink").textContent = link.toString();
       $("#merchantQrCopyButton").dataset.copyLink = link.toString();
