@@ -536,7 +536,7 @@ function renderMerchants(session) {
   const canReceive = Boolean(merchant && merchant.status === "active");
   $("#merchantQrCreateButton").disabled = !canReceive;
   $("#merchantQrStatus").textContent = canReceive
-    ? "Machann ou aktive. Ou kapab kreye yon demann QR HTG pou peman entèn."
+    ? "Machann ou aktive. Ou kapab kreye QR pou resevwa HTG, USD oswa EUR anndan LakayGoPay."
     : "Pwofil machann lan dwe aktive pa administratè anvan li kapab resevwa peman QR.";
 }
 function renderAgentStatus(data) {
