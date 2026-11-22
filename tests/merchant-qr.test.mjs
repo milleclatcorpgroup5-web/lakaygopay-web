@@ -163,6 +163,29 @@ test("merchant QR creation calls only the new 24-hour server RPC", async () => {
   assert.equal(rpc.payload.p_expires_in_minutes, 1440);
 });
 
+test("merchant QR supports USD and an open amount", async () => {
+  const calls = installFetch();
+  const result = await createMerchantQr({
+    request: request("/api/payment-requests", {
+      body: {
+        merchant_id: MERCHANT_ID,
+        amount: "",
+        currency: "USD",
+        description: "Achat san montan fiks",
+        expires_in_minutes: 1440,
+      },
+      key: "merchant-qr-usd-open",
+    }),
+    env: ENV,
+  });
+  assert.equal(result.status, 201);
+  const rpc = calls.find((item) => item.url.endsWith("/create_merchant_qr_request"));
+  assert.ok(rpc);
+  assert.equal(rpc.payload.p_amount, null);
+  assert.equal(rpc.payload.p_currency, "USD");
+  assert.equal(rpc.payload.p_idempotency_key, "merchant-qr-usd-open");
+});
+
 test("merchant QR creation rejects non-24-hour expiry before calling financial RPC", async () => {
   const calls = installFetch();
   const result = await createMerchantQr({
