@@ -10,7 +10,7 @@
   <title>LakayGoPay — Peman senp, lavi senp</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="stylesheet" href="/styles.css?v=20261119-card-02">
+  <link rel="stylesheet" href="/styles.css?v=20261122-merchant-qr-ui-01">
 </head>
 <body>
   <header class="topbar">
@@ -113,7 +113,10 @@
         <h1>Bonjou, <span id="welcomeName">Itilizatè</span></h1>
         <p id="accountSummary" class="muted">Kont ou konekte.</p>
       </div>
-      <span id="accountTypeBadge" class="status-pill">Kont verifye</span>
+      <div class="welcome-actions">
+        <button id="merchantQuickLink" class="button button-secondary" type="button" hidden>Espas machann · QR</button>
+        <span id="accountTypeBadge" class="status-pill">Kont verifye</span>
+      </div>
     </section>
     <div id="appNotice" class="notice" role="status" aria-live="polite"></div>
 
@@ -484,7 +487,7 @@
     </footer>
   </main>
 
-  <script src="/observability.js?v=20261119-logs-01"></script>
-  <script type="module" src="/app.js?v=20261121-no-signup-otp-01"></script>
+  <script src="/observability.js?v=20261122-logs-02"></script>
+  <script type="module" src="/app.js?v=20261122-merchant-qr-ui-01"></script>
 </body>
 </html>

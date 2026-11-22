@@ -524,19 +524,28 @@ function populateWalletSelect(selector, currency) {
 }
 function renderMerchants(session) {
   const isMerchant = session.user.user_metadata?.account_type === "merchant" || currentMerchants.length > 0;
-  $("#merchantSection").hidden = !isMerchant;
+  const section = $("#merchantSection");
+  const quickLink = $("#merchantQuickLink");
+  if (section) section.hidden = !isMerchant;
+  if (quickLink) quickLink.hidden = !isMerchant;
   if (!isMerchant) return;
-  const merchant = currentMerchants[0];
-  const status = merchant ? merchant.status : "pending";
-  $("#merchantStatus").textContent = statusText(status);
+
+  // Do not let an older pending/suspended profile hide a different active
+  // merchant profile owned by the same account.
+  const merchant = currentMerchants.find((item) => item.status === "active") || currentMerchants[0] || null;
+  const activeMerchants = currentMerchants.filter((item) => item.status === "active");
+  const status = activeMerchants.length ? "active" : (merchant ? merchant.status : "pending");
+  $("#merchantStatus").textContent = activeMerchants.length > 1
+    ? activeMerchants.length + " pwofil aktif"
+    : statusText(status);
   $("#merchantStatus").className = "status-pill " + (status === "active" ? "" : "pending");
   $("#merchantDetails").textContent = merchant
     ? "Biznis: " + merchant.business_name + ". ID machann: " + merchant.id + ". Kont komèsyal la " + statusText(merchant.status).toLowerCase() + "."
     : "Kont machann lan poko parèt nan baz done a. Verifye koneksyon an epi eseye rafrechi.";
-  const canReceive = Boolean(merchant && merchant.status === "active");
+  const canReceive = activeMerchants.length > 0;
   $("#merchantQrCreateButton").disabled = !canReceive;
   $("#merchantQrStatus").textContent = canReceive
-    ? "Machann ou aktive. Ou kapab kreye QR pou resevwa HTG, USD oswa EUR anndan LakayGoPay."
+    ? "Ou gen " + activeMerchants.length + " pwofil machann aktif. QR yo valab 24 èdtan; kliyan an dwe verifye detay yo epi konfime ak PIN."
     : "Pwofil machann lan dwe aktive pa administratè anvan li kapab resevwa peman QR.";
 }
 function renderAgentStatus(data) {
@@ -1669,6 +1678,13 @@ function wireForms() {
 
 }
 function wireActions() {
+  $("#merchantQuickLink").addEventListener("click", function () {
+    const section = $("#merchantSection");
+    if (!section || section.hidden) return;
+    section.scrollIntoView({ behavior: "smooth", block: "start" });
+    $("#merchantQrForm").querySelector("select")?.focus({ preventScroll: true });
+  });
+
   $("#walletGrid").addEventListener("click", async function (event) {
     const button = event.target.closest("[data-copy-wallet]");
     if (!button) return;
@@ -1845,7 +1861,7 @@ async function init() {
   const session = await sessionNow();
   await syncSession(session);
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js?v=20261119-connect-02").catch(function () {});
+    navigator.serviceWorker.register("/service-worker.js?v=20261122-merchant-qr-ui-01").catch(function () {});
   }
 }
 init().catch(function (error) {
