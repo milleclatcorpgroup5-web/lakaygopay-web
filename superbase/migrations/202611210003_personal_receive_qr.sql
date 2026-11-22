@@ -2,6 +2,47 @@
 -- All funds movement is delegated to the existing public.transfer_funds() RPC.
 begin;
 
+-- Require the same owner as the existing production financial engine.
+do $preflight$
+declare
+  v_owner text;
+  v_security_definer boolean;
+  v_table text;
+begin
+  if current_user <> 'postgres' then
+    raise exception 'MIGRATION_MUST_RUN_AS_POSTGRES';
+  end if;
+
+  if to_regprocedure('public.transfer_funds(uuid,uuid,numeric,text,text)') is null then
+    raise exception 'TRANSFER_FUNDS_FUNCTION_MISSING';
+  end if;
+
+  select pg_catalog.pg_get_userbyid(p.proowner), p.prosecdef
+    into v_owner, v_security_definer
+  from pg_catalog.pg_proc p
+  where p.oid = to_regprocedure('public.transfer_funds(uuid,uuid,numeric,text,text)');
+
+  if v_owner <> 'postgres' or v_security_definer is distinct from true then
+    raise exception 'TRANSFER_FUNDS_OWNER_OR_SECURITY_MISMATCH';
+  end if;
+
+  foreach v_table in array array[
+    'public.profiles',
+    'public.wallets',
+    'public.wallet_balances',
+    'public.ledger_accounts',
+    'public.transfers',
+    'public.ledger_transactions',
+    'public.ledger_entries',
+    'public.audit_logs'
+  ] loop
+    if pg_catalog.to_regclass(v_table) is null then
+      raise exception 'REQUIRED_PRODUCTION_TABLE_MISSING: %', v_table;
+    end if;
+  end loop;
+end;
+$preflight$;
+
 create table if not exists public.personal_receive_requests (
   id uuid primary key default gen_random_uuid(),
   public_token uuid not null unique default gen_random_uuid(),
