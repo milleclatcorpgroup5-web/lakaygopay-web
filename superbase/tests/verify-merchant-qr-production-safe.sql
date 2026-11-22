@@ -2,6 +2,54 @@
 -- Metadata and effective privileges only: no balances, ledger rows, tokens, or personal records.
 begin read only;
 
+-- A0) Required Production columns for QR settlement.
+-- Each required column is reported independently; missing items do not stop this diagnostic.
+with required_columns(table_name, column_name) as (
+  values
+    ('profiles','id'), ('profiles','account_status'),
+    ('merchants','id'), ('merchants','owner_user_id'), ('merchants','business_name'),
+    ('merchants','business_type'), ('merchants','category'), ('merchants','contact_phone'),
+    ('merchants','status'),
+    ('wallets','id'), ('wallets','owner_user_id'), ('wallets','merchant_id'),
+    ('wallets','currency'), ('wallets','status'),
+    ('wallet_balances','wallet_id'), ('wallet_balances','owner_user_id'),
+    ('wallet_balances','merchant_id'), ('wallet_balances','currency'), ('wallet_balances','balance'),
+    ('ledger_accounts','id'), ('ledger_accounts','wallet_id'), ('ledger_accounts','currency'),
+    ('ledger_accounts','account_type'), ('ledger_accounts','is_system'),
+    ('ledger_transactions','id'), ('ledger_transactions','transaction_type'),
+    ('ledger_transactions','status'), ('ledger_transactions','currency'),
+    ('ledger_transactions','idempotency_key'), ('ledger_transactions','actor_user_id'),
+    ('ledger_transactions','description'), ('ledger_transactions','metadata'),
+    ('ledger_entries','id'), ('ledger_entries','transaction_id'), ('ledger_entries','account_id'),
+    ('ledger_entries','direction'), ('ledger_entries','amount'), ('ledger_entries','currency'),
+    ('audit_logs','actor_user_id'), ('audit_logs','action'), ('audit_logs','resource_type'),
+    ('audit_logs','resource_id'), ('audit_logs','outcome'), ('audit_logs','metadata')
+)
+select
+  r.table_name,
+  r.column_name,
+  (c.column_name is not null) as column_exists
+from required_columns r
+left join information_schema.columns c
+  on c.table_schema = 'public'
+ and c.table_name = r.table_name
+ and c.column_name = r.column_name
+order by r.table_name, r.column_name;
+
+-- A1) Check constraints on the actual Production ledger tables.
+-- This is metadata only and helps confirm accepted transaction types/statuses.
+select
+  t.relname as table_name,
+  c.conname as constraint_name,
+  pg_catalog.pg_get_constraintdef(c.oid) as definition
+from pg_catalog.pg_constraint c
+join pg_catalog.pg_class t on t.oid = c.conrelid
+join pg_catalog.pg_namespace n on n.oid = t.relnamespace
+where n.nspname = 'public'
+  and t.relname in ('ledger_transactions','ledger_entries','wallet_balances','wallets','ledger_accounts')
+  and c.contype in ('c','f','u','p')
+order by t.relname, c.conname;
+
 -- A) New table presence and RLS.
 select
   c.relname as table_name,
@@ -61,7 +109,10 @@ select
   p.oid::regprocedure as function_signature,
   pg_catalog.pg_get_userbyid(p.proowner) as owner_name,
   p.prosecdef as security_definer,
-  p.proconfig::text as function_settings
+  p.proconfig::text as function_settings,
+  has_function_privilege('anon', p.oid, 'EXECUTE') as anon_can_execute,
+  has_function_privilege('authenticated', p.oid, 'EXECUTE') as authenticated_can_execute,
+  has_function_privilege('service_role', p.oid, 'EXECUTE') as service_role_can_execute
 from pg_catalog.pg_proc p
 where p.oid = pg_catalog.to_regprocedure('public.post_ledger_transaction(uuid)');
 
