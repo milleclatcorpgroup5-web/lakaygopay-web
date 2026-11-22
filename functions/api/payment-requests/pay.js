@@ -7,25 +7,29 @@ export async function onRequestPost({ request, env }) {
     const auth = await requireUser(request, env);
     if (auth.error) return auth.error;
     const body = await readJson(request);
-    const key = idempotencyKey(request);
+    const key = idempotencyKey(request)?.trim() || null;
     if (!key) return json({ error: "IDEMPOTENCY_KEY_REQUIRED" }, 400);
     if (!validUuid(body?.qr_token) || !validUuid(body?.payer_wallet_id)) {
       return json({ error: "INVALID_QR_OR_WALLET" }, 400);
     }
     const amount = validAmount(body?.amount, { optional: true });
-    if (body?.amount != null && body.amount !== "" && !amount) return json({ error: "INVALID_AMOUNT" }, 400);
+    if (body?.amount != null && body.amount !== "" && !amount) {
+      return json({ error: "INVALID_AMOUNT" }, 400);
+    }
 
-    // The payer's transaction PIN is verified server-side for each QR settlement.
+    // PIN is checked by the trusted Worker before the service-only RPC is called.
     await assertTransactionPin(env, auth.user.id, body?.pin);
 
-    const result = await callRpc(env, "pay_merchant_payment_request", {
+    const result = await callRpc(env, "pay_merchant_qr_request_server_authorized", {
       p_actor_user_id: auth.user.id,
       p_public_token: body.qr_token,
       p_payer_wallet_id: body.payer_wallet_id,
       p_amount: amount,
       p_idempotency_key: key,
     });
-    if (result?.status === "paid") return json({ ok: true, payment: result });
+    if (result?.status === "paid" && result?.ledger_transaction_id) {
+      return json({ ok: true, payment: result });
+    }
     return json({ ok: false, payment: result }, 409);
   } catch (error) {
     return financialFail(error);

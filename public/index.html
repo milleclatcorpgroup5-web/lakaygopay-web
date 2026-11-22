@@ -316,17 +316,17 @@
       </form>
       <div id="qrDetails" class="qr-details" hidden></div>
       <form id="qrPayForm" class="form-stack" hidden>
-        <label>Bous HTG pou peye a
+        <label>Bous pou peye a
           <select id="qrPayerWallet" required></select>
         </label>
-        <label>Montan pou peye (HTG)
+        <label>Montan pou peye
           <input id="qrPayAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="Montan demann lan" required>
         </label>
         <label>PIN tranzaksyon 4 chif
           <input id="qrPayPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required>
         </label>
         <button class="button button-primary full" type="submit">Konfime peman QR</button>
-        <p class="field-hint">Peman sa a se yon transfè HTG entèn. Li pa voye lajan sou MonCash oswa NatCash.</p>
+        <p class="field-hint">Peman sa a se yon transfè entèn nan menm lajan demann lan. Li pa voye lajan sou MonCash oswa NatCash.</p>
       </form>
       <div id="qrNotice" class="notice" role="status" aria-live="polite"></div>
     </section>
@@ -407,13 +407,20 @@
       <div id="merchantDetails" class="field-hint">Verifikasyon enfòmasyon biznis la anvan peman komèsyal yo aktive.</div>
       <div id="merchantQrPanel" class="merchant-qr-panel">
         <div class="section-heading compact-heading">
-          <div><p class="eyebrow">KOLEKSYON KOMÈSYAL</p><h3>QR pou resevwa peman HTG</h3></div>
+          <div><p class="eyebrow">KOLEKSYON KOMÈSYAL</p><h3>QR pou resevwa peman</h3></div>
           <span class="subtle-tag">LEDGER ENTÈN</span>
         </div>
         <p id="merchantQrStatus" class="field-hint">Sèl machann ki aktive kapab kreye demann peman QR.</p>
         <form id="merchantQrForm" class="form-stack">
-          <label>Montan (HTG)
-            <input id="merchantQrAmount" type="number" inputmode="decimal" min="0.01" step="0.01" required>
+          <label>Lajan pou resevwa
+            <select id="merchantQrCurrency" required>
+              <option value="HTG">HTG · Goud</option>
+              <option value="USD">USD · Dola ameriken</option>
+              <option value="EUR">EUR · Ewo</option>
+            </select>
+          </label>
+          <label>Montan (kite vid pou kliyan antre montan an)
+            <input id="merchantQrAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="Montan si li fikse">
           </label>
           <label>Deskripsyon
             <input id="merchantQrDescription" type="text" maxlength="140" placeholder="Egzanp: Acha pwodwi">

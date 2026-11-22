@@ -25,6 +25,12 @@ jobs:
       - name: Run backend and frontend contract tests
         run: >-
           node --check functions/api/auth/register.js &&
+          node --check functions/api/payment-requests.js &&
+          node --check functions/api/payments.js &&
+          node --check functions/api/payment-requests/lookup.js &&
+          node --check functions/api/payment-requests/pay.js &&
+          node --check functions/api/payments.requests/lookup.js &&
+          node --check functions/api/payments.requests/pay.js &&
           node --check functions/_shared/admin-trusted-device.js &&
           node --check functions/_shared/security.js &&
           node --check functions/_shared/admin-pin.js &&
@@ -36,4 +42,4 @@ jobs:
           node --check public/observability.js &&
           node --check public/app.js &&
           node --check public/admin/admin.js &&
-          node --test tests/transfers.test.mjs tests/agent-card-readiness.test.mjs tests/observability.test.mjs tests/admin-mfa-button.test.mjs tests/signup-pin-first.test.mjs
+          node --test tests/transfers.test.mjs tests/merchant-qr.test.mjs tests/agent-card-readiness.test.mjs tests/observability.test.mjs tests/admin-mfa-button.test.mjs tests/signup-pin-first.test.mjs
