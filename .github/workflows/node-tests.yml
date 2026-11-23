@@ -24,7 +24,7 @@ jobs:
         run: printf '%s' '{"private":true,"type":"module"}' > package.json
       - name: Run backend and frontend contract tests
         run: >-
-          node --check functions/api/auth/register.js &&
+          node scripts/verify-imports.mjs &&\n          find functions public tests scripts -type f \\( -name '*.js' -o -name '*.mjs' \\) -print0 | xargs -0 -n1 node --check &&\n          node --check functions/api/auth/register.js &&
           node --check functions/api/payment-requests.js &&
           node --check functions/api/payments.js &&
           node --check functions/api/payment-requests/lookup.js &&
@@ -42,4 +42,4 @@ jobs:
           node --check public/observability.js &&
           node --check public/app.js &&
           node --check public/admin/admin.js &&
-          node --test tests/transfers.test.mjs tests/wallets.test.mjs tests/merchant-qr.test.mjs tests/agent-card-readiness.test.mjs tests/observability.test.mjs tests/admin-mfa-button.test.mjs tests/signup-pin-first.test.mjs
+          node --test tests/transfers.test.mjs tests/wallets.test.mjs tests/frontend-contracts.test.mjs tests/merchant-qr.test.mjs tests/agent-card-readiness.test.mjs tests/observability.test.mjs tests/admin-mfa-button.test.mjs tests/signup-pin-first.test.mjs
