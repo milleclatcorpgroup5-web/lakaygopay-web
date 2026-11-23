@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, extname, resolve } from "node:path";
 
 const roots = ["functions", "public", "tests", "scripts"];
@@ -22,9 +22,7 @@ const importPattern = /(?:\bfrom\s*|\bimport\s*\()\s*["'](\.{1,2}\/[^"']+)["']/g
 const missing = [];
 
 for (const file of files) {
-  const source = (await import("node:fs/promises")).readFile
-    ? await (await import("node:fs/promises")).readFile(file, "utf8")
-    : "";
+  const source = readFileSync(file, "utf8");
   for (const match of source.matchAll(importPattern)) {
     const specifier = match[1];
     const target = resolve(dirname(file), specifier);

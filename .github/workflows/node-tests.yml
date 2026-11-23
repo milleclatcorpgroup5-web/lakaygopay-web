@@ -22,24 +22,9 @@ jobs:
           node-version: 24
       - name: Enable Node ESM for Cloudflare Pages Functions
         run: printf '%s' '{"private":true,"type":"module"}' > package.json
-      - name: Run backend and frontend contract tests
-        run: >-
-          node scripts/verify-imports.mjs &&\n          find functions public tests scripts -type f \\( -name '*.js' -o -name '*.mjs' \\) -print0 | xargs -0 -n1 node --check &&\n          node --check functions/api/auth/register.js &&
-          node --check functions/api/payment-requests.js &&
-          node --check functions/api/payments.js &&
-          node --check functions/api/payment-requests/lookup.js &&
-          node --check functions/api/payment-requests/pay.js &&
-          node --check functions/api/payments.requests/lookup.js &&
-          node --check functions/api/payments.requests/pay.js &&
-          node --check functions/_shared/admin-trusted-device.js &&
-          node --check functions/_shared/security.js &&
-          node --check functions/_shared/admin-pin.js &&
-          node --check functions/api/admin/mfa/trust.js &&
-          node --check functions/_middleware.js &&
-          node --check functions/_shared/system-logs.js &&
-          node --check functions/api/admin/logs.js &&
-          node --check functions/api/logs/client.js &&
-          node --check public/observability.js &&
-          node --check public/app.js &&
-          node --check public/admin/admin.js &&
+      - name: Verify imports, JavaScript syntax, and regression contracts
+        run: |
+          set -e
+          node scripts/verify-imports.mjs
+          find functions public tests scripts -type f \( -name '*.js' -o -name '*.mjs' \) -print0 | xargs -0 -n1 node --check
           node --test tests/transfers.test.mjs tests/wallets.test.mjs tests/frontend-contracts.test.mjs tests/merchant-qr.test.mjs tests/agent-card-readiness.test.mjs tests/observability.test.mjs tests/admin-mfa-button.test.mjs tests/signup-pin-first.test.mjs
