@@ -1861,7 +1861,7 @@ async function init() {
   const session = await sessionNow();
   await syncSession(session);
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js?v=20261122-merchant-qr-ui-01").catch(function () {});
+    navigator.serviceWorker.register("/service-worker.js?v=20261123-wallet-status-01").catch(function () {});
   }
 }
 init().catch(function (error) {

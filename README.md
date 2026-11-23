@@ -89,7 +89,7 @@ Les migrations dans `superbase/migrations/` sont versionnées. Avant d'exécuter
 
 La migration `202611190003_production_transfer_rpc_audit.sql` est une migration de correction Production spécifique. Elle ne remplace pas la fonction existante `public.transfer_funds`.
 
-## Validation avant ouverture à plus grande échelle
+### Correction Production — transferts et QR personnel\n\nLa migration `superbase/migrations/202611210003_personal_receive_qr.sql` ajoute les demandes QR personnelles et installe les RPC serveur qui protègent les transferts par vérification PIN côté Cloudflare. Elle retire également l'exécution directe de `transfer_funds` et de `pay_personal_receive_request` aux rôles client. Vérifier d'abord son état dans Supabase, puis l'appliquer une seule fois si ses objets sont absents. Ne pas exécuter `202611210004_server_authorized_financial_rpcs.sql` après celle-ci : ses wrappers de sécurité sont déjà inclus dans `202611210003`. Consulter `docs/production-transfer-rollout.md` pour la séquence de vérification.\n\n## Validation avant ouverture à plus grande échelle
 
 - Vérifier `/api/health` et `/api/config`.
 - Depuis le Centre Admin, exécuter le contrôle de santé et examiner chaque avertissement/erreur.
