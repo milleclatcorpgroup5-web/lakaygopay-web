@@ -1,76 +1,97 @@
-# LakayGoPay — Production transfer correction
+# LakayGoPay — Production transfer and personal receive rollout
 
-## Scope
+## Current implementation
 
-This branch targets the existing Production Supabase project and the Cloudflare
-Pages backend. It does not reset wallets, alter historical balances, change
-existing ledger entries, or activate external payment rails.
+This document describes the current code in `main`, not the older direct-RPC design.
 
-The Production `public.transfer_funds(uuid, uuid, numeric, text, text)`
-function is retained. Its reviewed responsibilities include user ownership
-checks through `auth.uid()`, idempotency locking, deterministic wallet locks,
-balanced debit/credit entries, wallet balance updates, and final ledger posting.
+- `POST /api/transfers` validates the session and active account, checks the four-digit transaction PIN on the server, then calls `transfer_funds_server_authorized` with the server-only Supabase secret.
+- `POST /api/transfets` is a backwards-compatible alias to the same secured handler.
+- `transfer_funds_server_authorized` accepts calls only from `service_role`, checks the actor is active, sets the actor claim for the underlying `auth.uid()` check, and invokes the existing `transfer_funds` financial engine.
+- Direct execution of `transfer_funds` by `authenticated` is not permitted after the security migration. The browser never receives the service key.
+- Personal receive creation and lookup use the signed-in user's JWT. Personal receive payment checks the sender's PIN in Cloudflare before calling `pay_personal_receive_request_server_authorized`.
+- Personal receive QR requests expire after 15–30 minutes, are single-use, and do not move funds at creation time. Payment reuses the existing atomic transfer and double-entry ledger engine.
 
-## Code changes
+## Required Production migration
 
-- `/api/transfers` now calls `transfer_funds` with the access token that was
-  validated by `requireUser`.
-- The transfer RPC no longer receives the service-role credential and no longer
-  calls the incompatible legacy `post_wallet_transfer` function.
-- The server-side four-digit PIN check remains mandatory for every request.
-- `/api/transfets` delegates to the same secured handler; it cannot skip PIN
-  verification or use the obsolete helper.
-- The backend requires an idempotency key and validates the RPC result is
-  actually posted before returning success.
+The current Production database inspection found that `transfer_funds` exists as a SECURITY DEFINER function, but authenticated users can execute it directly, while the server-authorized wrappers and personal receive objects are absent.
 
-## Production database migration
+The repository migration that closes this gap and creates the personal receive system is:
 
-Review and apply
-`superbase/migrations/202611190003_production_transfer_rpc_audit.sql`
-in the Production Supabase SQL Editor.
+`superbase/migrations/202611210003_personal_receive_qr.sql`
 
-It grants `EXECUTE` on `transfer_funds` only to `authenticated`, removes it
-from `PUBLIC`, `anon`, and `service_role`, and adds a database trigger that
-writes `transfer.created` and `transfer.posted` events to `audit_logs`.
-The trigger gets the actor from the ledger transaction. If audit insertion
-fails, the money movement transaction fails too.
+It creates `personal_receive_requests`, the create/lookup/pay RPCs, the server-authorized transfer and receive-payment wrappers, and removes direct client execution from the underlying financial functions.
 
-This migration does not recreate or replace `transfer_funds`; it must not be
-replaced with the older repository migrations that define the incompatible
-`post_wallet_transfer` implementation.
+### Before execution
 
-## Validation sequence
+1. Confirm the Supabase project reference is the intended LakayGoPay Production project.
+2. Confirm `personal_receive_requests` and the four receive/wrapper functions are not already installed.
+3. Confirm `public.transfer_funds(uuid,uuid,numeric,text,text)` exists, is owned by `postgres`, and is SECURITY DEFINER. This is a precondition checked by the migration.
+4. Do not run an older foundation migration or reset/recreate wallets, ledger entries, or balances.
 
-1. Run the migration above in Production.
-2. Run the read-only checks in `docs/production-transfer-verification.sql`.
-   Expected: authenticated can execute=true; anon and service_role=false;
-   no unbalanced posted journals; no wallet/ledger balance drift.
-3. Run the application tests:
-   `node --experimental-default-type=module --test tests/transfers.test.mjs`.
-4. Deploy this branch to a Cloudflare Pages Preview environment configured with
-   the Production Supabase URL and the same required bindings. Keep the service
-   key in Cloudflare server-side environment variables only.
-5. Test with two controlled Production customer accounts and small amounts.
-   Confirm the sender debit, recipient credit, matching ledger entries,
-   `posted` status, and the two audit events.
-6. Retry the exact same idempotency key and identical transfer request. It must
-   return the existing transfer with `idempotent_replay=true`, with no second
-   debit or credit. Reusing the key with different parameters must fail.
-7. Confirm the duplicate `/api/transfets` route also requires the correct PIN.
-8. Only after all checks pass, merge/deploy the validated revision to the
-   Cloudflare Pages Production branch.
+### Execute
 
-Historical transfers created before the audit trigger are not automatically
-backfilled. The trigger guarantees audit records for new transfers and status
-changes from the time the migration is applied.
+Run the full contents of `superbase/migrations/202611210003_personal_receive_qr.sql` once in Supabase SQL Editor. It is transactional. If it reports any error, stop and inspect the exact error; do not continue with a partial or improvised SQL fragment.
 
-## Cloudflare bindings
+Do not separately run `202611210004_server_authorized_financial_rpcs.sql` after `202611210003`. The server-authorized wrappers and revokes from `210004` are already included in `210003`; the later file is overlapping, not an additional prerequisite.
 
-The Pages Functions require these server-side bindings:
+## Read-only verification after migration
 
-- `SUPABASE_URL`
-- `SUPABASE_PUBLISHABLE_KEY` (or the existing `SUPABASE_ANON_KEY`)
-- `SUPABASE_SECRET_KEY` (or the existing `SUPABASE_SERVICE_ROLE_KEY`)
+Run:
 
-Never place the secret/service-role key in browser code or public build output.
-External cash-in/cash-out integrations remain disabled.
+```sql
+select
+  to_regclass('public.personal_receive_requests') as receive_table,
+  has_function_privilege(
+    'authenticated',
+    'public.transfer_funds(uuid,uuid,numeric,text,text)',
+    'EXECUTE'
+  ) as authenticated_can_call_transfer_directly,
+  has_function_privilege(
+    'service_role',
+    'public.transfer_funds_server_authorized(uuid,uuid,uuid,numeric,text,text)',
+    'EXECUTE'
+  ) as service_role_can_call_transfer_wrapper,
+  has_function_privilege(
+    'authenticated',
+    'public.pay_personal_receive_request(uuid,uuid,numeric,text)',
+    'EXECUTE'
+  ) as authenticated_can_call_receive_payment_directly,
+  has_function_privilege(
+    'service_role',
+    'public.pay_personal_receive_request_server_authorized(uuid,uuid,uuid,numeric,text)',
+    'EXECUTE'
+  ) as service_role_can_call_receive_payment_wrapper;
+```
+
+Expected:
+- `receive_table` is `personal_receive_requests`.
+- `authenticated_can_call_transfer_directly = false`.
+- `service_role_can_call_transfer_wrapper = true`.
+- `authenticated_can_call_receive_payment_directly = false`.
+- `service_role_can_call_receive_payment_wrapper = true`.
+
+The direct financial functions remain internal implementation details. Do not grant their EXECUTE privilege back to `authenticated`, `anon`, or `PUBLIC`.
+
+## Application and QA sequence
+
+1. Deploy the reviewed Git branch to a Cloudflare Pages Preview environment, not Production.
+2. Confirm the Preview has `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SECRET_KEY` configured as server-side bindings. Never expose the secret in browser code.
+3. Create two controlled customer test accounts with transaction PINs.
+4. Confirm each has an active personal wallet in the same currency. Do not add test credits to a Production wallet.
+5. Create a personal receive QR with a fixed amount and with an open amount. Creating a QR must not change any balance or ledger entry.
+6. Look up the QR from the second account. Confirm the recipient name, masked phone, amount, currency, and expiry are correct.
+7. Attempt payment with a missing or incorrect PIN. No transfer or ledger entry may be created.
+8. In an isolated test environment with approved test balances, pay with the correct PIN. Verify one posted transfer, balanced debit/credit entries, one paid receive request, and matching receipts/history.
+9. Retry the same request with the same idempotency key and payload. It must not debit or credit a second time. A different payload with the same key must fail.
+10. Confirm expired and already-paid receive IDs cannot be reused.
+11. Test the regular `/api/transfers` and legacy `/api/transfets` paths with missing, incorrect, locked, and correct PINs.
+12. Only after Preview, SQL verification, and controlled QA pass should the change be approved for Production merge/deployment.
+
+## Existing safeguards that remain disabled
+
+- External deposits and withdrawals.
+- MonCash, NatCash, bank settlement, and agent cash-in/cash-out.
+- Card issuance and card payments.
+- Real FX settlement.
+
+This migration does not activate external rails, credit any wallet, reset balances, rewrite historical ledger entries, or move funds by creating a QR request.
