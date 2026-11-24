@@ -912,3 +912,14 @@ body:before{
  .mfa-qr-frame{width:100%;min-height:190px}
  .mfa-setup-copy{width:100%}
 }
+
+
+/* Simplified admin navigation and denser information hierarchy. */
+.admin-quick-nav{position:sticky;top:0;z-index:30;display:flex;gap:7px;align-items:center;overflow-x:auto;margin:0 0 18px;padding:10px 0;background:rgba(7,27,42,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);scrollbar-width:thin}
+.admin-quick-nav a{flex:0 0 auto;padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.035);color:#c9dce6;text-decoration:none;font-size:10px;font-weight:800;white-space:nowrap}
+.admin-quick-nav a:hover,.admin-quick-nav a:focus-visible{border-color:rgba(66,215,192,.55);background:rgba(66,215,192,.1);color:var(--teal);outline:none}
+.admin-layout{padding-top:24px}
+.admin-layout>.surface-card,.admin-layout>.business-plan-section,.admin-layout>.system-grid{scroll-margin-top:66px}
+.admin-layout .section-head{margin-top:19px}
+.admin-layout .surface-card{padding:19px}
+@media(max-width:520px){.admin-quick-nav{margin:0 0 14px;padding:8px 0}.admin-quick-nav a{padding:8px 10px}.admin-layout{padding-top:17px}.admin-layout .surface-card{padding:15px}}
