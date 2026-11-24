@@ -18,7 +18,7 @@ function response(data, status = 200) {
   });
 }
 
-test("wallet API returns the database status field using the user's JWT", async () => {
+test("wallet API reads Production balance columns and joins status from wallets", async () => {
   const originalFetch = globalThis.fetch;
   const calls = [];
   globalThis.fetch = async (url, init = {}) => {
@@ -38,16 +38,22 @@ test("wallet API returns the database status field using the user's JWT", async 
     if (target.includes("/rest/v1/wallet_balances?")) {
       assert.equal(headers.get("authorization"), "Bearer " + USER_JWT);
       assert.equal(headers.get("apikey"), ENV.SUPABASE_PUBLISHABLE_KEY);
-      assert.match(target, /select=[^&]*status/);
+      assert.match(decodeURIComponent(target), /wallet_balances\?select=wallet_id,owner_user_id,merchant_id,currency,balance,created_at/);
+      assert.doesNotMatch(decodeURIComponent(target), /wallet_balances\?select=[^&]*status/);
       return response([{
         wallet_id: WALLET_ID,
         owner_user_id: USER_ID,
         merchant_id: null,
         currency: "HTG",
-        status: "active",
         balance: "1000.00",
         created_at: "2026-11-23T00:00:00Z",
       }]);
+    }
+    if (target.includes("/rest/v1/wallets?")) {
+      assert.equal(headers.get("authorization"), "Bearer " + USER_JWT);
+      assert.equal(headers.get("apikey"), ENV.SUPABASE_PUBLISHABLE_KEY);
+      assert.match(decodeURIComponent(target), /wallets\?select=id,status/);
+      return response([{ id: WALLET_ID, status: "active" }]);
     }
     throw new Error("Unexpected request: " + target);
   };
@@ -63,7 +69,42 @@ test("wallet API returns the database status field using the user's JWT", async 
     assert.equal(body.wallets.length, 1);
     assert.equal(body.wallets[0].status, "active");
     assert.equal(body.wallets[0].balance, "1000.00");
+    assert.equal(body.wallets[0].wallet_id, WALLET_ID);
     assert.equal(calls.some((call) => call.target.includes("/rest/v1/wallet_balances?")), true);
+    assert.equal(calls.some((call) => call.target.includes("/rest/v1/wallets?")), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("wallet API does not invent an active state when a wallet status is missing", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const target = String(url);
+    if (target.endsWith("/auth/v1/user")) return response({ id: USER_ID });
+    if (target.includes("/rest/v1/profiles?")) return response([{ account_status: "active" }]);
+    if (target.includes("/rest/v1/wallet_balances?")) {
+      return response([{
+        wallet_id: WALLET_ID,
+        owner_user_id: USER_ID,
+        merchant_id: null,
+        currency: "HTG",
+        balance: "0.00",
+        created_at: "2026-11-23T00:00:00Z",
+      }]);
+    }
+    if (target.includes("/rest/v1/wallets?")) return response([]);
+    throw new Error("Unexpected request: " + target);
+  };
+
+  try {
+    const request = new Request("https://lakaygopay.test/api/wallets", {
+      headers: { authorization: "Bearer " + USER_JWT },
+    });
+    const result = await onRequestGet({ request, env: ENV });
+    assert.equal(result.status, 200);
+    const body = await result.json();
+    assert.equal(body.wallets[0].status, "unknown");
   } finally {
     globalThis.fetch = originalFetch;
   }
