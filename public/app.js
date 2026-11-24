@@ -1412,7 +1412,7 @@ function wireForms() {
         " HTG · " + direction;
       $("#exchangeRateDate").textContent = quote.as_of;
       $("#exchangeQuoteDisclaimer").textContent =
-        "Sous: " + quote.rate_source + ". Estimasyon sa a valab 60 segonn sèlman. Frè a se yon pwopozisyon 0.50%; li pa retire lajan ni poste antre nan ledger la. Pa gen konvèsyon reyèl ki aktive.";
+        "Sous: " + quote.rate_source + ". Estimasyon sa a valab 60 segonn sèlman. Frè a se yon pwopozisyon 1.50%; li pa retire lajan ni poste antre nan ledger la. Pa gen konvèsyon reyèl ki aktive.";
       $("#exchangeQuoteResult").hidden = false;
       notice.textContent = "Estimasyon pare. Li pa yon konfimasyon echanj ni yon tranzaksyon.";
       notice.className = "notice success";
