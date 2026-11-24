@@ -856,10 +856,50 @@ async function maybeLookupIncomingQr(session) {
   $("#qrPaymentSection").scrollIntoView({ behavior: "smooth", block: "start" });
   await lookupPaymentRequest(incomingQrToken);
 }
+let qrEncoderPromise = null;
+async function loadQrEncoder() {
+  if (!qrEncoderPromise) {
+    qrEncoderPromise = (async function () {
+      const sources = [
+        "https://esm.sh/qrcode@1.5.4",
+        "https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm"
+      ];
+      let lastError = null;
+      for (const source of sources) {
+        try {
+          const module = await import(source);
+          const encoder = module.toDataURL ? module : module.default;
+          if (encoder && typeof encoder.toDataURL === "function") return encoder;
+          throw new Error("QR_ENCODER_EXPORT_MISSING");
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw lastError || new Error("QR_ENCODER_UNAVAILABLE");
+    })().catch(function (error) {
+      qrEncoderPromise = null;
+      throw error;
+    });
+  }
+  return qrEncoderPromise;
+}
 async function renderQrImage(target, payload) {
-  const { toDataURL } = await import("https://esm.sh/qrcode@1.5.4");
+  if (!target || !payload) throw new Error("QR_RENDER_TARGET_INVALID");
   target.alt = "QR demann peman LakayGoPay";
-  target.src = await toDataURL(payload, { width: 240, margin: 1, errorCorrectionLevel: "M" });
+  target.removeAttribute("src");
+  target.hidden = false;
+  const encoder = await loadQrEncoder();
+  const dataUrl = await encoder.toDataURL(payload, {
+    width: 280,
+    margin: 2,
+    errorCorrectionLevel: "M"
+  });
+  if (typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/")) {
+    throw new Error("QR_IMAGE_DATA_INVALID");
+  }
+  target.src = dataUrl;
+  if (typeof target.decode === "function") await target.decode();
+  return true;
 }
 async function stopQrScanner() {
   if (qrScannerFrame) cancelAnimationFrame(qrScannerFrame);
