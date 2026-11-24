@@ -1,7 +1,7 @@
 import { json, requireUser, readJson, validAmount } from "../../_shared/superbase.js";
 
+const BRH_TODAY = "https://www.brh.ht/taux-du-jour/";
 const BRH_HOME = "https://www.brh.ht/";
-const BRH_BANK_RATES = "https://www.brh.ht/taux-affiches-par-les-banques-et-les-agents-de-change-2/";
 const COMMISSION_RATE = 0.005;
 const MONTHS = {
   janvier: "01", fevrier: "02", février: "02", mars: "03", avril: "04",
@@ -11,9 +11,12 @@ const MONTHS = {
 
 function cleanText(value) {
   return String(value || "")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
     .replace(/<[^>]*>/g, " ")
     .replace(/&nbsp;|&#160;/gi, " ")
     .replace(/&amp;/gi, "&")
+    .replace(/&#8217;|&rsquo;/gi, "'")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -43,81 +46,58 @@ function round2(value) {
 }
 async function fetchHtml(url) {
   const response = await fetch(url, {
-    headers: { accept: "text/html,application/xhtml+xml" },
+    headers: {
+      accept: "text/html,application/xhtml+xml",
+      "cache-control": "no-cache, no-store, max-age=0",
+      pragma: "no-cache"
+    },
+    cache: "no-store",
     redirect: "follow"
   });
   if (!response.ok) throw new Error("FX_RATE_SOURCE_UNAVAILABLE");
   return response.text();
 }
+function parseDailyUsd(html, today) {
+  const text = cleanText(html);
+  const dateMatch = text.match(/Taux du Jour\s*:\s*(\d{1,2}\s+[A-Za-zÀ-ÿ]+\s+\d{4})/i);
+  const asOf = parseFrenchDate(dateMatch?.[1]);
+  if (!asOf || asOf !== today) throw new Error("FX_RATES_NOT_CURRENT");
+
+  const bankRow = text.match(/MARCHE BANCAIRE\s+([0-9]+(?:\.[0-9]+)?)\s+([0-9]+(?:\.[0-9]+)?)/i);
+  const referenceRow = text.match(/TAUX DE REFERENCE\s+([0-9]+(?:\.[0-9]+)?)/i);
+  const buy = numeric(bankRow?.[1]);
+  const sell = numeric(bankRow?.[2]);
+  const reference = numeric(referenceRow?.[1]);
+  if (!buy || !sell || !reference) throw new Error("FX_RATE_PARSE_FAILED");
+  return { buy, sell, reference };
+}
+function parseCurrentEuro(html, today) {
+  if (!html) return null;
+  const text = cleanText(html);
+  const sectionStart = text.toLowerCase().indexOf("marché des changes");
+  const section = sectionStart >= 0 ? text.slice(sectionStart, sectionStart + 5000) : text;
+  const dateMatch = section.match(/(\d{1,2}\s+[A-Za-zÀ-ÿ]+\s+\d{4})/);
+  if (parseFrenchDate(dateMatch?.[1]) !== today) return null;
+  const match = section.match(/Euro\s+Achat\s*:?\s*([0-9.]+)\s+Vente\s*:?\s*([0-9.]+)/i);
+  const buy = numeric(match?.[1]);
+  const sell = numeric(match?.[2]);
+  return buy && sell ? { buy, sell } : null;
+}
 async function readBrhRates() {
-  const [homeHtml, bankHtml] = await Promise.all([
-    fetchHtml(BRH_HOME),
-    fetchHtml(BRH_BANK_RATES).catch(() => "")
-  ]);
-
-  const marketHeading = /march[ée] des changes\s*\(gourdes/i.exec(homeHtml);
-  const marketIndex = marketHeading?.index ?? homeHtml.toLowerCase().indexOf("marché des changes");
-  if (marketIndex < 0) throw new Error("FX_RATE_PARSE_FAILED");
-  const homeMarketSection = homeHtml.slice(marketIndex, marketIndex + 8000);
-  const homeText = cleanText(homeMarketSection);
   const today = localToday();
-  const homeDateMatch = homeText.match(/(\d{1,2}\s+[A-Za-zÀ-ÿ]+\s+\d{4})/);
-  const homeDate = parseFrenchDate(homeDateMatch?.[1]);
-  if (!homeDate || homeDate !== today) {
-    throw new Error("FX_RATES_NOT_CURRENT");
-  }
+  const [dailyHtml, homeHtml] = await Promise.all([
+    fetchHtml(BRH_TODAY),
+    fetchHtml(BRH_HOME).catch(() => "")
+  ]);
+  const usd = parseDailyUsd(dailyHtml, today);
+  const eur = parseCurrentEuro(homeHtml, today);
 
-  // Prefer the BUH row on the BRH bank-rate page only when that page carries
-  // today's date. The BRH homepage sometimes updates before the bank table.
-  const bankDateMatch = bankHtml.match(/Taux affich[eé]s par les banques\s*:\s*([^<\r\n]+)/i);
-  const bankDate = parseFrenchDate(cleanText(bankDateMatch?.[1]));
-  let usdBuy = null;
-  let usdSell = null;
-  let usdSource = "";
-
-  if (bankDate === today) {
-    const rows = [...bankHtml.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
-    for (const row of rows) {
-      const cells = [...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)]
-        .map((cell) => cleanText(cell[1]));
-      if (cells[0]?.toUpperCase() === "BUH") {
-        usdBuy = numeric(cells[2]);
-        usdSell = numeric(cells[3]);
-        break;
-      }
-    }
-    if (usdBuy && usdSell) usdSource = "BUH · tableau bancaire BRH";
-  }
-
-  // Current BRH homepage fallback: use the published maximum bank purchase
-  // and maximum bank sale rates for today's date, never yesterday's table.
-  if (!usdBuy || !usdSell) {
-    const buyRange = homeText.match(/([0-9.]+)\s*\/\s*([0-9.]+)\s+Maximum\s*\/\s*Minimum\s+Taux d'achat affiché/i);
-    const sellRange = homeText.match(/([0-9.]+)\s*\/\s*([0-9.]+)\s+Maximum\s*\/\s*Minimum\s+Taux de vente affiché/i);
-    usdBuy = numeric(buyRange?.[1]);
-    usdSell = numeric(sellRange?.[1]);
-    if (usdBuy && usdSell) usdSource = "BRH · maximum des taux bancaires affichés";
-  }
-
-  const euroMatch = homeText.match(/Euro\s+Achat\s*:\s*([0-9.]+)\s+Vente\s*:\s*([0-9.]+)/i);
-  const eurBuy = numeric(euroMatch?.[1]);
-  const eurSell = numeric(euroMatch?.[2]);
-  const usdRefMatch = homeText.match(/([0-9.]+)\s+Taux de Référence/i);
-  const usdReference = numeric(usdRefMatch?.[1]);
-
-  if (!usdBuy || !usdSell || !eurBuy || !eurSell || !usdReference) {
-    throw new Error("FX_RATE_PARSE_FAILED");
-  }
-
-  const usedBankPage = bankDate === today && usdSource.startsWith("BUH");
   return {
     as_of: today,
-    source: usdSource + " · BRH/DAI EUR et taux de référence",
-    source_urls: usedBankPage ? [BRH_BANK_RATES, BRH_HOME] : [BRH_HOME],
-    rates: {
-      USD: { buy: usdBuy, sell: usdSell, reference: usdReference },
-      EUR: { buy: eurBuy, sell: eurSell }
-    }
+    source: "BRH · Taux du Jour (marché bancaire et taux de référence)" +
+      (eur ? " · EUR confirmé sur la page BRH du jour" : ""),
+    source_urls: eur ? [BRH_TODAY, BRH_HOME] : [BRH_TODAY],
+    rates: { USD: usd, EUR: eur }
   };
 }
 function buildQuote(source, destination, amount, rates) {
@@ -129,10 +109,12 @@ function buildQuote(source, destination, amount, rates) {
     throw new Error("FX_PAIR_NOT_SUPPORTED");
   }
 
+  const foreign = destination === "HTG" ? source : destination;
+  const currencyRates = rates.rates[foreign];
+  if (!currencyRates) throw new Error("FX_CURRENCY_RATE_NOT_CURRENT");
   const fee = round2(amount * COMMISSION_RATE);
   const netSource = round2(amount - fee);
-  const foreign = destination === "HTG" ? source : destination;
-  const rate = destination === "HTG" ? rates.rates[foreign].buy : rates.rates[foreign].sell;
+  const rate = destination === "HTG" ? currencyRates.buy : currencyRates.sell;
   const rateDirection = destination === "HTG" ? "buy" : "sell";
   const received = destination === "HTG" ? round2(netSource * rate) : round2(netSource / rate);
 
@@ -181,6 +163,7 @@ export async function onRequestPost({ request, env }) {
       FX_RATES_NOT_CURRENT: 503,
       FX_RATE_SOURCE_UNAVAILABLE: 503,
       FX_RATE_PARSE_FAILED: 503,
+      FX_CURRENCY_RATE_NOT_CURRENT: 503,
       FX_CURRENCY_INVALID: 400,
       FX_SAME_CURRENCY: 400,
       FX_PAIR_NOT_SUPPORTED: 400,
