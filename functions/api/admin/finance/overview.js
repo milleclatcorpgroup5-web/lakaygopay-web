@@ -7,9 +7,11 @@ export async function onRequestGet({ request, env }) {
 
   try {
     const { url, secretKey } = config(env);
+
+    // Production currently exposes only the six-column wallet_balances view.
+    // Validate that known schema without querying fields that are not deployed.
     const response = await fetch(
-      url + "/rest/v1/wallet_balances?select=wallet_id,currency,balance,status,system_account_code,created_at" +
-      "&is_system=eq.true&system_account_code=eq.platform_revenue&order=currency.asc",
+      url + "/rest/v1/wallet_balances?select=wallet_id,currency,balance,created_at&limit=1",
       {
         headers: {
           apikey: secretKey,
@@ -18,29 +20,28 @@ export async function onRequestGet({ request, env }) {
         }
       }
     );
+
     const raw = await response.text();
-    let accounts = [];
-    try { accounts = raw ? JSON.parse(raw) : []; } catch { accounts = []; }
-    if (!response.ok || !Array.isArray(accounts)) {
-      return json({ error: "FINANCE_MODULE_SCHEMA_NOT_READY" }, 503);
+    let rows = [];
+    try { rows = raw ? JSON.parse(raw) : []; } catch {}
+    if (!response.ok || !Array.isArray(rows)) {
+      return json({ error: "FINANCE_OVERVIEW_UNAVAILABLE" }, 503);
     }
 
-    const currencies = ["HTG","USD","EUR"];
-    const byCurrency = Object.fromEntries(currencies.map((currency) => {
-      const account = accounts.find((item) => String(item.currency).trim() === currency);
-      return [currency, account ? {
-        wallet_id: account.wallet_id,
-        balance: Number(account.balance || 0),
-        status: account.status
-      } : null];
-    }));
+    // Do not infer treasury/revenue from customer wallet balances.
+    // Dedicated platform_revenue system wallets are not present in the
+    // confirmed Production schema, so the treasury must remain unconfigured.
+    const currencies = ["HTG", "USD", "EUR"];
+    const accounts = Object.fromEntries(currencies.map((currency) => [currency, null]));
 
     return json({
       ok: true,
       treasury: {
-        accounts: byCurrency,
-        ready: currencies.every((currency) => Boolean(byCurrency[currency])),
-        account_count: accounts.length,
+        accounts,
+        ready: false,
+        account_count: 0,
+        configuration_status: "revenue_accounts_not_configured",
+        note: "Kont revni platfòm yo poko konfigire nan Production. Balans bous kliyan yo pa trete kòm lajan Trezò ni kòm revni.",
         fee_engine_active: false,
         external_payments_enabled: false
       },
@@ -48,7 +49,7 @@ export async function onRequestGet({ request, env }) {
         source: "immutable_internal_ledger",
         read_only: true,
         automatic_fee_posting_active: false,
-        note: "Rapò yo baze sou ledger entèn. HTG, USD ak EUR se ledger separe; tout ekriti dwe matche ak deviz bous la epi transfè yo rete nan menm deviz la. Pa gen konvèsyon FX, transfè ant deviz oswa règleman ekstèn. Balans USD/EUR pa pwouve gen lajan ekstèn ki disponib. Motè frè a pa poste revni otomatik."
+        note: "HTG, USD ak EUR se ledger separe. Pa gen konvèsyon FX, transfè ant deviz oswa règleman ekstèn. Balans USD/EUR pa pwouve gen lajan ekstèn ki disponib. Motè frè a pa poste revni otomatik."
       },
       roles: access.roles,
       generated_at: new Date().toISOString()
