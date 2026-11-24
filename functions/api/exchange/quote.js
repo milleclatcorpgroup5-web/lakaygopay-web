@@ -2,7 +2,7 @@ import { json, requireUser, readJson, validAmount } from "../../_shared/superbas
 
 const BRH_TODAY = "https://www.brh.ht/taux-du-jour/";
 const BRH_HOME = "https://www.brh.ht/";
-const COMMISSION_RATE = 0.005;
+const COMMISSION_RATE = 0.015;
 const MONTHS = {
   janvier: "01", fevrier: "02", février: "02", mars: "03", avril: "04",
   mai: "05", juin: "06", juillet: "07", aout: "08", août: "08",
