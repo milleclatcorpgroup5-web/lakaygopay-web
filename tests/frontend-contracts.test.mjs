@@ -28,3 +28,14 @@ test("customer application selectors and forms match the HTML", () => {
 test("admin application selectors and forms match the HTML", () => {
   assertFrontendContracts("Admin app", "../public/admin/index.html", "../public/admin/admin.js");
 });
+
+
+test("QR rendering has primary and fallback encoders and validates the generated image", () => {
+  const script = read("../public/app.js");
+  assert.match(script, /https:\/\/esm\.sh\/qrcode@1\.5\.4/);
+  assert.match(script, /https:\/\/cdn\.jsdelivr\.net\/npm\/qrcode@1\.5\.4\/\+esm/);
+  assert.match(script, /errorCorrectionLevel:\s*"M"/);
+  assert.match(script, /target\.decode\(\)/);
+  assert.match(script, /link\.searchParams\.set\("lgp_qr",\s*token\)/);
+  assert.match(script, /link\.searchParams\.set\("lgp_receive",\s*request\.qr_token\)/);
+});
