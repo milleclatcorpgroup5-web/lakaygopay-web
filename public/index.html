@@ -120,7 +120,17 @@
     </section>
     <div id="appNotice" class="notice" role="status" aria-live="polite"></div>
 
-    <section class="section-block">
+    <nav class="app-quick-nav" aria-label="Raccourcis LakayGoPay">
+      <a href="#walletSection">Bous</a>
+      <a href="#transferSection">Transfè</a>
+      <a href="#personalReceiveSection">Resevwa</a>
+      <a href="#qrPaymentSection">Peye ak QR</a>
+      <a href="#exchangeQuoteSection">Echanj</a>
+      <a href="#activitySection">Istwa</a>
+      <a href="#merchantSection" id="merchantNavLink" hidden>Machann</a>
+    </nav>
+
+    <section id="walletSection" class="section-block">
       <div class="section-heading">
         <div><p class="eyebrow">BAGAY OU GENYEN</p><h2>Bous mwen yo</h2></div>
         <span class="subtle-tag">HTG · USD · EUR</span>
@@ -210,7 +220,7 @@
       <div id="exchangeQuoteNotice" class="notice" role="status" aria-live="polite"></div>
     </section>
 
-    <div class="main-grid transfer-layout">
+    <div id="transferSection" class="main-grid transfer-layout">
       <section class="surface-card">
         <div class="section-heading">
           <div><p class="eyebrow">Voye anndan LakayGoPay</p><h2>Fè yon transfè</h2></div>
@@ -389,7 +399,7 @@
       <p class="field-hint">Apre 3 move tantativ youn apre lòt, sistèm lan bloke PIN lan pandan 15 minit. Pa pataje PIN ou ak pèsonn.</p>
     </section>
 
-    <section class="surface-card profile-card">
+    <section id="profileSection" class="surface-card profile-card">
       <div class="section-heading">
         <div><p class="eyebrow">ENFÒMASYON PÈSONÈL</p><h2>Pwofil mwen</h2></div>
         <span id="profileStatus" class="subtle-tag">Chaje…</span>
@@ -441,7 +451,7 @@
       </div>
     </section>
 
-    <section class="surface-card">
+    <section id="activitySection" class="surface-card">
       <div class="section-heading">
         <div><p class="eyebrow">DÈNYE MOUVMAN</p><h2>Istwa tranzaksyon</h2></div>
         <button id="refreshButton" class="button button-quiet" type="button">Rafrechi</button>
