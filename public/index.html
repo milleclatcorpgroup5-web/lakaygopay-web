@@ -10,7 +10,7 @@
   <title>LakayGoPay — Peman senp, lavi senp</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="stylesheet" href="/styles.css?v=20261122-merchant-qr-ui-01">
+  <link rel="stylesheet" href="/styles.css?v=20261124-simple-nav-01">
 </head>
 <body>
   <header class="topbar">
@@ -127,7 +127,6 @@
       <a href="#qrPaymentSection">Peye ak QR</a>
       <a href="#exchangeQuoteSection">Echanj</a>
       <a href="#activitySection">Istwa</a>
-      <a href="#merchantSection" id="merchantNavLink" hidden>Machann</a>
     </nav>
 
     <section id="walletSection" class="section-block">
@@ -183,7 +182,7 @@
         <div><p class="eyebrow">HTG · USD · EUR</p><h2>Kalkilatè echanj lajan</h2></div>
         <span class="subtle-tag">ESTIMASYON · PA TRANSFÈ</span>
       </div>
-      <p class="field-hint">Gade konbyen ou ta resevwa selon dènye taux BRH/BUH ki disponib. LakayGoPay montre yon komisyon pwopoze 0.50%. Kalkil sa a pa retire lajan nan bous ou ni pa fè konvèsyon reyèl.</p>
+      <p class="field-hint">Gade konbyen ou ta resevwa selon dènye taux BRH/BUH ki disponib. LakayGoPay montre yon komisyon pwopoze 1.50%. Kalkil sa a pa retire lajan nan bous ou ni pa fè konvèsyon reyèl.</p>
       <form id="exchangeQuoteForm" class="exchange-quote-form">
         <label>Lajan ou voye
           <select id="exchangeSourceCurrency">
@@ -211,7 +210,7 @@
         </div>
         <div class="exchange-detail-grid">
           <div><span>Montan voye</span><strong id="exchangeSourceAmount">—</strong></div>
-          <div><span>Komisyon 0.50%</span><strong id="exchangeFeeAmount">—</strong></div>
+          <div><span>Komisyon 1.50%</span><strong id="exchangeFeeAmount">—</strong></div>
           <div><span>Taux itilize</span><strong id="exchangeRateUsed">—</strong></div>
           <div><span>Taux dat</span><strong id="exchangeRateDate">—</strong></div>
         </div>
@@ -498,6 +497,6 @@
   </main>
 
   <script src="/observability.js?v=20261122-logs-02"></script>
-  <script type="module" src="/app.js?v=20261124-qr-render-fallback-01"></script>
+  <script type="module" src="/app.js?v=20261124-simple-nav-01"></script>
 </body>
 </html>
