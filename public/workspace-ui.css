@@ -1,0 +1,108 @@
+/* LakayGoPay dashboard refresh — CSS only; data and API flows stay unchanged. */
+.lgp-language-control{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid rgba(255,255,255,.3);border-radius:10px;background:rgba(255,255,255,.13);color:#fff;font-size:11px;font-weight:800}
+.lgp-language-control span{white-space:nowrap}.lgp-language-control select{width:auto;min-width:88px;min-height:32px;padding:5px 22px 5px 8px;border:0;border-radius:7px;background:#fff;color:#102f69;font-size:12px;font-weight:750}
+.lgp-client-redesigned{background:#f3f6ff}
+.lgp-client-redesigned .topbar{position:sticky;top:0;z-index:40;height:70px;border:0;background:linear-gradient(110deg,#0a39ae,#1559df);box-shadow:0 5px 18px rgba(8,44,140,.17)}
+.lgp-client-redesigned .brand,.lgp-client-redesigned .brand-accent{color:#fff}.lgp-client-redesigned .brand-mark{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.22)}
+.lgp-client-redesigned .secure-pill{background:rgba(255,255,255,.13);color:#edf3ff}.lgp-client-redesigned .secure-pill i{background:#4be0a2}
+.lgp-client-redesigned .topbar .button-quiet{background:rgba(255,255,255,.14);color:#fff}
+.lgp-client-redesigned .app-layout{width:min(1240px,calc(100% - 28px));padding:22px 0 110px;gap:16px}
+.lgp-client-workspace{display:grid;gap:16px;min-width:0}
+.lgp-client-welcome{display:flex;align-items:center;gap:14px;min-height:92px;margin:0;padding:15px 19px;border:1px solid #e0e8fb;border-radius:19px;background:#fff;box-shadow:0 7px 24px rgba(24,63,140,.07)}
+.lgp-client-welcome:before{content:"";flex:0 0 50px;width:50px;height:50px;border-radius:50%;background:#e7efff;box-shadow:inset 0 0 0 12px #d5e3ff}
+.lgp-client-welcome h1{font-size:clamp(21px,3vw,30px);color:#102b66}.lgp-client-welcome .eyebrow{color:#2856bd;margin-bottom:5px}.lgp-client-welcome .muted{color:#61718e}
+.lgp-client-welcome .welcome-actions{margin-left:auto;display:flex;align-items:center;gap:8px}.lgp-client-welcome .status-pill{background:#e9f8ef;color:#137a4e}.lgp-client-welcome .button-secondary{background:#eaf1ff;color:#1748b0}
+.lgp-client-redesigned .notice:not(:empty){border:1px solid #dce7fa;background:#fff;color:#24416f}.lgp-client-redesigned .notice.error{background:#fff1f1;color:#a52634;border-color:#ffd7d9}.lgp-client-redesigned .notice.success{background:#eaf8f0;color:#166b43;border-color:#c9edd8}
+.lgp-screen-host{display:grid;gap:15px;min-width:0}.lgp-screen{display:grid;gap:15px;min-width:0;scroll-margin-top:88px}.lgp-screen[hidden],.lgp-merchant-screen[hidden]{display:none!important}
+.lgp-screen-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.lgp-screen-heading h2{margin:0;color:#102c68;font-size:clamp(19px,2.4vw,25px);letter-spacing:-.5px}
+.lgp-client-workspace .section-heading h2{color:#102d6d}
+.lgp-client-workspace .surface-card,.lgp-client-workspace .wallet-card,.lgp-client-workspace .loading-card{border-color:#dfe7fb;border-radius:18px;box-shadow:0 5px 20px rgba(17,52,130,.055)}
+.lgp-client-workspace .section-block{padding:18px;border:1px solid #dfe7fb;border-radius:20px;background:#fff;box-shadow:0 5px 20px rgba(17,52,130,.055)}
+.lgp-client-workspace .section-block .section-heading{margin-bottom:14px}.lgp-client-workspace .wallet-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.lgp-client-workspace .wallet-card{padding:17px;background:#f8faff}.lgp-client-workspace .wallet-card:first-child{background:linear-gradient(145deg,#103bb2,#145de6);border-color:#174fc5;color:#fff}
+.lgp-client-workspace .wallet-card:first-child .currency-name,.lgp-client-workspace .wallet-card:first-child .wallet-status,.lgp-client-workspace .wallet-card:first-child .wallet-id{color:#e2ecff}
+.lgp-client-workspace .wallet-card:first-child .wallet-currency,.lgp-client-workspace .wallet-card:first-child .wallet-balance{color:#fff}.lgp-client-workspace .wallet-card:first-child .wallet-id{border-color:rgba(255,255,255,.2)}
+.lgp-client-workspace .wallet-balance{font-size:clamp(22px,3vw,31px)}
+.lgp-home-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.lgp-action-tile{display:flex;align-items:center;justify-content:center;gap:9px;min-height:66px;padding:12px;border:1px solid #dce6fb;border-radius:16px;background:#fff;color:#133a96;font-weight:850;font-size:13px;box-shadow:0 4px 14px rgba(12,52,147,.06);cursor:pointer}
+.lgp-action-tile:hover,.lgp-action-tile:focus-visible{outline:2px solid #9ab8ff;outline-offset:2px;background:#f6f9ff}
+.lgp-action-icon{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#eaf1ff;color:#1558dd;font-size:21px;font-weight:900}
+.lgp-recent-link{justify-self:end;border:0;background:transparent;color:#1557d2;font-size:12px;font-weight:850;padding:7px 0;cursor:pointer}
+.lgp-workspace-nav{display:flex;align-items:center;gap:7px;padding:8px;border:1px solid #dfe7f8;border-radius:16px;background:#fff;box-shadow:0 4px 15px rgba(20,52,130,.05)}
+.lgp-nav-item{display:flex;align-items:center;justify-content:center;gap:7px;flex:1;min-width:0;min-height:46px;padding:8px 10px;border:0;border-radius:11px;background:transparent;color:#536484;font-size:12px;font-weight:800;cursor:pointer}
+.lgp-nav-item.active{background:#124bd0;color:#fff;box-shadow:0 4px 12px rgba(18,75,208,.22)}.lgp-nav-icon{font-size:17px;line-height:1}
+.lgp-client-workspace .activity-list{display:grid;gap:8px}.lgp-client-workspace .activity-list>*{border-radius:13px}
+.lgp-client-workspace .qr-details,.lgp-client-workspace .exchange-quote-result{border:1px solid #dbe6fb;border-radius:15px;background:#f7f9ff;padding:14px}
+.lgp-client-workspace .form-stack input,.lgp-client-workspace .form-stack select,.lgp-client-workspace .profile-form input,.lgp-client-workspace .profile-form select{min-height:46px;border-color:#d6e1f5;border-radius:11px}
+.lgp-client-workspace .button-primary{background:linear-gradient(115deg,#1246c5,#1764ef);color:#fff}.lgp-client-workspace .button-secondary{background:#eaf1ff;color:#164ab5}.lgp-client-workspace .button{min-height:44px}
+.lgp-merchant-workspace{display:grid;gap:15px;min-width:0;padding:17px;border:1px solid #dce6fa;border-radius:20px;background:#fff;box-shadow:0 7px 22px rgba(18,55,142,.06)}
+.lgp-merchant-workspace .merchant-workspace-heading{align-items:center;padding:17px 18px;border:0;border-radius:16px;background:linear-gradient(110deg,#0d3db6,#155ee9)}
+.lgp-merchant-workspace .merchant-workspace-heading .eyebrow,.lgp-merchant-workspace .merchant-workspace-heading h2,.lgp-merchant-workspace .merchant-workspace-heading .muted{color:#fff}
+.lgp-merchant-workspace .merchant-workspace-heading .muted{opacity:.82}.lgp-merchant-workspace .merchant-workspace-heading .button{min-height:42px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.13);color:#fff}
+.lgp-merchant-workspace .lgp-merchant-root{display:grid;gap:14px;padding:0;border:0;background:transparent;box-shadow:none}
+.lgp-merchant-screen{display:grid;gap:14px;min-width:0}.lgp-merchant-screen>.section-heading,.lgp-merchant-screen>.merchant-qr-panel{padding:18px;border:1px solid #dce6fa;border-radius:17px;background:#fbfcff}.lgp-merchant-screen>.section-heading{margin:0}
+.lgp-merchant-screen .merchant-qr-panel{box-shadow:none}.lgp-merchant-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.lgp-merchant-workspace .lgp-merchant-screen .compact-list{display:grid;gap:8px}.lgp-merchant-workspace .lgp-merchant-screen .compact-row{border:1px solid #e1e9f8;border-radius:12px;background:#fff;padding:12px}
+.lgp-admin-redesigned{background:#f3f6fc;color:#132d56}.lgp-admin-redesigned .topbar{height:70px;background:linear-gradient(110deg,#0b3cae,#165be4);border:0;box-shadow:0 5px 18px rgba(8,44,140,.17)}
+.lgp-admin-redesigned .topbar .brand,.lgp-admin-redesigned .topbar .brand strong,.lgp-admin-redesigned .topbar .brand small{color:#fff}.lgp-admin-redesigned .topbar .brand-mark{background:rgba(255,255,255,.16);color:#fff}
+.lgp-admin-redesigned .topbar .secure-label{color:#e3ebff}.lgp-admin-redesigned .topbar .button-quiet{background:rgba(255,255,255,.13);color:#fff}
+.lgp-admin-redesigned .admin-layout{display:block;max-width:none;margin:0;padding:0;background:#f3f6fc;color:#17325e}
+.lgp-admin-redesigned .lgp-admin-shell{display:grid;grid-template-columns:238px minmax(0,1fr);min-height:calc(100vh - 70px)}
+.lgp-admin-redesigned .lgp-admin-sidebar{position:sticky;top:70px;align-self:start;height:calc(100vh - 70px);overflow:auto;padding:23px 14px;background:linear-gradient(180deg,#082b78,#071f58);color:#fff}
+.lgp-admin-redesigned .lgp-admin-side-brand{display:flex;align-items:center;gap:10px;padding:0 9px 23px;color:#fff}
+.lgp-admin-redesigned .lgp-admin-shield{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:#fff;color:#1448be;font-size:21px;font-weight:900}
+.lgp-admin-redesigned .lgp-admin-side-brand strong,.lgp-admin-redesigned .lgp-admin-side-brand small{display:block;color:#fff}.lgp-admin-redesigned .lgp-admin-side-brand small{margin-top:3px;font-size:9px;opacity:.78}
+.lgp-admin-redesigned .lgp-admin-side-caption{margin:0 9px 12px;color:#a8c0f8;font-size:9px;font-weight:900;letter-spacing:1.1px}
+.lgp-admin-redesigned .admin-quick-nav.lgp-admin-nav{position:static;display:grid;gap:6px;overflow:visible;margin:0;padding:0;border:0;border-radius:0;background:transparent;backdrop-filter:none}
+.lgp-admin-redesigned .lgp-admin-nav a{display:flex;align-items:center;min-height:44px;padding:10px 12px;border:1px solid transparent;border-radius:10px;color:#d7e4ff;font-size:12px}
+.lgp-admin-redesigned .lgp-admin-nav a:hover,.lgp-admin-redesigned .lgp-admin-nav a:focus{border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.12);color:#fff}
+.lgp-admin-redesigned .lgp-admin-main{min-width:0;padding:22px clamp(15px,3vw,38px) 40px;background:#f3f6fc}
+.lgp-admin-redesigned .welcome-row{padding:19px 21px;margin:0 0 14px;border:1px solid #e0e8f6;border-radius:17px;background:#fff;box-shadow:0 4px 18px rgba(18,54,132,.045)}
+.lgp-admin-redesigned .welcome-row h1{color:#102d67;font-size:clamp(24px,3vw,34px)}.lgp-admin-redesigned .welcome-row h1 span{color:#1c5de1}
+.lgp-admin-redesigned .welcome-row .eyebrow{color:#1b55c7}.lgp-admin-redesigned .welcome-row .muted{color:#657590}
+.lgp-admin-redesigned .status-pill{background:#e9f8ef;color:#13754b;border-color:#ccebd8}
+.lgp-admin-redesigned .security-banner{margin:12px 0 17px;padding:14px 16px;border:1px solid #f2dfb4;background:#fff9ea;color:#76551b}
+.lgp-admin-redesigned .security-banner p{color:#7b6d53}.lgp-admin-redesigned .section-head h2,.lgp-admin-redesigned .admin-workspace-group>summary{color:#102d67}
+.lgp-admin-redesigned .admin-workspace-group{margin:0 0 14px;padding:0 15px 14px;border:1px solid #dfe7f4;border-radius:15px;background:#fff;box-shadow:0 4px 17px rgba(20,51,120,.04)}
+.lgp-admin-redesigned .admin-workspace-group>summary{font-size:14px}.lgp-admin-redesigned .admin-workspace-group>summary:after{color:#1457d4;border-color:#dce5f5}
+.lgp-admin-redesigned .surface-card,.lgp-admin-redesigned .admin-analytics-panel,.lgp-admin-redesigned .metric-card,.lgp-admin-redesigned .module-card,.lgp-admin-redesigned .business-plan-section{background:#fff;border-color:#dfe7f4;color:#18335f;box-shadow:0 4px 17px rgba(20,51,120,.045)}
+.lgp-admin-redesigned .metric-grid{gap:10px}
+.lgp-admin-redesigned .metric-card strong,.lgp-admin-redesigned .admin-analytics-panel h2,.lgp-admin-redesigned .admin-analytics-panel h3,.lgp-admin-redesigned .module-card h3,.lgp-admin-redesigned .business-plan-section h2,.lgp-admin-redesigned .business-plan-section h3{color:#102d67}
+.lgp-admin-redesigned .metric-card small,.lgp-admin-redesigned .metric-label,.lgp-admin-redesigned .module-card p,.lgp-admin-redesigned .muted{color:#657590}
+.lgp-admin-redesigned .metric-icon,.lgp-admin-redesigned .module-symbol{background:#eaf1ff;color:#1857d1}
+.lgp-admin-redesigned .analytics-metric-grid article,.lgp-admin-redesigned .analytics-chart-wrap,.lgp-admin-redesigned .analytics-lower-grid>div,.lgp-admin-redesigned .business-summary-card,.lgp-admin-redesigned .business-formula>div,.lgp-admin-redesigned .fee-block{background:#f7f9fe;border-color:#e0e8f5}
+.lgp-admin-redesigned .analytics-metric-grid span,.lgp-admin-redesigned .analytics-legend span,.lgp-admin-redesigned .chart-axis-label,.lgp-admin-redesigned .analytics-lower-grid h3,.lgp-admin-redesigned .business-summary-label,.lgp-admin-redesigned .business-summary-card small,.lgp-admin-redesigned .business-formula p,.lgp-admin-redesigned .business-disclaimer{color:#657590}
+.lgp-admin-redesigned .analytics-metric-grid strong,.lgp-admin-redesigned .business-summary-card strong,.lgp-admin-redesigned .fee-table td,.lgp-admin-redesigned .fee-table td strong{color:#17325e}
+.lgp-admin-redesigned .fee-table{background:#fff}.lgp-admin-redesigned .fee-table th{background:#edf3ff;color:#174db7}.lgp-admin-redesigned .fee-table td{border-color:#e5ebf5}
+.lgp-admin-redesigned .lgp-admin-main input,.lgp-admin-redesigned .lgp-admin-main select,.lgp-admin-redesigned .lgp-admin-main textarea{background:#fff;color:#17325e;border-color:#d5e0f1}
+.lgp-admin-redesigned .lgp-admin-main label{color:#344c72}.lgp-admin-redesigned .lgp-admin-main .button-primary{background:linear-gradient(110deg,#1047c4,#1c63e7);color:#fff}
+.lgp-admin-redesigned .lgp-admin-main .button-quiet{background:#edf2fb;color:#23416f;border-color:#dce5f2}
+.lgp-admin-redesigned .lgp-admin-main .notice{color:#425b7f}.lgp-admin-redesigned .lgp-admin-main .notice.error{color:#a52634}.lgp-admin-redesigned .lgp-admin-main .notice.success{color:#146b44}
+.lgp-admin-redesigned .admin-footer{color:#697b99}
+@media(max-width:900px){.lgp-admin-redesigned .lgp-admin-shell{grid-template-columns:190px minmax(0,1fr)}.lgp-admin-redesigned .lgp-admin-sidebar{padding:18px 10px}}
+@media(max-width:700px){
+ .lgp-client-redesigned .app-layout{width:min(100% - 18px,760px);padding:14px 0 105px}
+ .lgp-client-welcome{align-items:flex-start;padding:13px;min-height:80px}.lgp-client-welcome:before{flex-basis:40px;width:40px;height:40px}
+ .lgp-client-workspace .wallet-grid{grid-template-columns:1fr 1fr}.lgp-client-workspace .wallet-card:first-child{grid-column:1/-1}
+ .lgp-home-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .lgp-workspace-nav{gap:2px;padding:5px}
+ .lgp-client-nav{position:fixed;z-index:60;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));justify-content:space-around;padding:5px;border:1px solid #dce5f7;border-radius:17px;background:rgba(255,255,255,.97);box-shadow:0 8px 30px rgba(10,38,110,.18);backdrop-filter:blur(12px)}
+ .lgp-client-nav .lgp-nav-item{flex-direction:column;gap:3px;min-height:54px;padding:5px 2px;font-size:9px}.lgp-client-nav .lgp-nav-icon{font-size:17px}
+ .lgp-merchant-workspace{padding:11px}.lgp-merchant-workspace .merchant-workspace-heading{align-items:flex-start;flex-direction:column;padding:15px}.lgp-merchant-workspace .merchant-workspace-heading .button{width:100%}
+ .lgp-merchant-nav{position:fixed;z-index:60;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));padding:5px;border:1px solid #dce5f7;border-radius:17px;background:rgba(255,255,255,.97);box-shadow:0 8px 30px rgba(10,38,110,.18);backdrop-filter:blur(12px)}
+ .lgp-merchant-nav .lgp-nav-item{flex-direction:column;gap:3px;min-height:54px;padding:5px 2px;font-size:10px}.lgp-merchant-workspace{padding-bottom:88px}
+ .lgp-admin-redesigned .lgp-admin-shell{grid-template-columns:1fr}.lgp-admin-redesigned .lgp-admin-sidebar{position:relative;top:auto;height:auto;padding:10px 11px;overflow:visible}
+ .lgp-admin-redesigned .lgp-admin-side-brand{padding:0 5px 9px}.lgp-admin-redesigned .lgp-admin-side-caption{display:none}
+ .lgp-admin-redesigned .admin-quick-nav.lgp-admin-nav{display:flex;gap:6px;overflow-x:auto;padding:3px 0 4px}
+ .lgp-admin-redesigned .lgp-admin-nav a{flex:0 0 auto;min-height:38px;padding:8px 10px}
+ .lgp-admin-redesigned .lgp-admin-main{padding:13px 10px 25px}
+}
+@media(max-width:430px){
+ .lgp-client-redesigned .brand{font-size:17px;gap:7px}.lgp-client-redesigned .brand-mark{width:32px;height:32px}
+ .lgp-client-redesigned .secure-pill{display:none}.lgp-client-welcome h1{font-size:20px}
+ .lgp-client-workspace .surface-card,.lgp-client-workspace .section-block{padding:14px}
+ .lgp-action-tile{min-height:60px;font-size:12px}
+ .lgp-admin-redesigned .lgp-admin-main .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .lgp-admin-redesigned .topbar .secure-label{display:none}
+}
+@media(prefers-reduced-motion:reduce){.lgp-client-redesigned *,.lgp-admin-redesigned *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
