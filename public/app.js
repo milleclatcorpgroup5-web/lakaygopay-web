@@ -246,7 +246,8 @@ async function loadDashboard(session) {
     // Connect is intentionally closed with HTTP 503 until its isolated Sandbox is deployed.
     // Do not poll the closed endpoint on every dashboard load.
     Promise.resolve({ payouts: [] }),
-    api("/api/agents/status")
+    api("/api/agents/status"),
+    api("/api/agent-cash-withdrawals")
   ]);
   if (results[0].status === "rejected") throw results[0].reason;
   if (results[1].status === "rejected") throw results[1].reason;
@@ -261,6 +262,7 @@ async function loadDashboard(session) {
     : { schema_ready: false, tiers: FALLBACK_CARD_TIERS, application: null };
   currentConnectPayouts = results[8].status === "fulfilled" ? (results[8].value.payouts || []) : [];
   currentAgentStatus = results[9].status === "fulfilled" ? results[9].value : { unavailable: true };
+  currentAgentCash = results[10].status === "fulfilled" ? results[10].value : { sent: [], incoming: [] };
   const ownedMerchantIds = new Set(currentMerchants.map(function (merchant) { return merchant.id; }));
   currentMerchantPayments = paymentRecords.filter(function (payment) {
     return ownedMerchantIds.has(payment.merchant_id);
@@ -274,6 +276,7 @@ async function loadDashboard(session) {
   renderCardProgram();
   renderConnectPayouts();
   renderAgentStatus(currentAgentStatus);
+  renderAgentCashRequests(currentAgentCash);
   renderMerchants(session);
   renderWithdrawals(currentWithdrawals);
   renderMerchantPayments(currentMerchantPayments);
@@ -484,6 +487,7 @@ function renderWallets() {
   populateWalletSelect("#qrPayerWallet", "HTG");
   populatePersonalWalletSelect("#personalReceiveWallet");
   populateWalletSelect("#withdrawWallet");
+  populateWalletSelect("#cashAgentWallet");
 }
 function populateWalletSelect(selector, currency) {
   const node = $(selector);
@@ -687,6 +691,73 @@ function renderWithdrawals(rows) {
     row.append(label, detail);
     list.append(row);
   });
+}
+
+let currentAgentCash = { sent: [], incoming: [] };
+async function refreshAgentCashRequests() {
+  currentAgentCash = await api("/api/agent-cash-withdrawals");
+  renderAgentCashRequests(currentAgentCash);
+}
+function renderAgentCashRequests(data) {
+  const sentList = $("#agentCashCustomerList");
+  const incomingList = $("#agentCashIncomingList");
+  const workspace = $("#agentCashWorkspace");
+  if (sentList) {
+    sentList.replaceChildren();
+    const sent = data?.sent || [];
+    if (!sent.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "Ou poko voye demann retrè bay yon ajan.";
+      sentList.append(empty);
+    } else sent.slice(0,10).forEach((item) => {
+      const row = document.createElement("article");
+      row.className = "compact-row";
+      const title = document.createElement("strong");
+      title.textContent = formatMoney(item.amount,item.currency) + " " + item.currency;
+      const detail = document.createElement("span");
+      detail.textContent = "Demann ajan · " + statusText(item.status) + " · " + new Date(item.created_at).toLocaleDateString("fr-HT");
+      row.append(title,detail); sentList.append(row);
+    });
+  }
+  const agent = data?.agent || currentAgentStatus?.agent;
+  if (workspace) workspace.hidden = !(agent && currentAgentStatus?.agent?.status === "active");
+  if (agent && $("#agentCashPublicId")) $("#agentCashPublicId").textContent = "ID ajan: " + (agent.public_agent_id || "ID pa disponib");
+  if (incomingList) {
+    incomingList.replaceChildren();
+    const incoming = data?.incoming || [];
+    if (!incoming.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "Pa gen demann retrè k ap tann.";
+      incomingList.append(empty);
+    } else incoming.forEach((item) => {
+      const card = document.createElement("article");
+      card.className = "compact-row";
+      card.dataset.agentCashCard = "true";
+      const title = document.createElement("strong");
+      title.textContent = formatMoney(item.amount,item.currency) + " " + item.currency;
+      const detail = document.createElement("span");
+      detail.textContent = (item.customer_name || "Kliyan") + " · " + statusText(item.status) + " · " + new Date(item.created_at).toLocaleString("fr-HT");
+      card.append(title,detail);
+      if (item.status === "pending") {
+        const pin = document.createElement("input");
+        pin.type = "password"; pin.inputMode = "numeric"; pin.maxLength = 4;
+        pin.pattern = "[0-9]{4}"; pin.placeholder = "PIN ajan 4 chif";
+        pin.autocomplete = "one-time-code"; pin.dataset.agentCashPin = "true";
+        const confirm = document.createElement("button");
+        confirm.type = "button"; confirm.className = "button button-primary";
+        confirm.textContent = "Konfime"; confirm.dataset.agentCashDecision = "confirmed";
+        confirm.dataset.requestId = item.id;
+        const reject = document.createElement("button");
+        reject.type = "button"; reject.className = "button button-secondary";
+        reject.textContent = "Refize"; reject.dataset.agentCashDecision = "rejected";
+        reject.dataset.requestId = item.id;
+        card.append(pin,confirm,reject);
+      }
+      incomingList.append(card);
+    });
+  }
 }
 function renderMerchantPayments(rows) {
   const list = $("#merchantPaymentsList");
@@ -1060,9 +1131,9 @@ function renderPinState(result) {
   $("#currentPin").required = pinConfigured;
   $("#pinSubmitButton").textContent = pinConfigured ? "Chanje PIN sekirite" : "Kreye PIN sekirite";
   $("#personalReceivePayForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
-  $("#withdrawalForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
+  $("#agentCashForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   $("#qrPayForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
-  $("#withdrawalForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
+  $("#agentCashForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   $("#qrPayForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   if (cannotVerify) {
     node.textContent = "Nou pa kapab verifye estati PIN lan kounye a. Transfè yo rete bloke; rafrechi paj la.";
@@ -1639,35 +1710,93 @@ function wireForms() {
     }
   });
 
-  $("#withdrawalForm").addEventListener("submit", async function (event) {
+  let verifiedCashAgent = null;
+  $("#cashAgentLookup").addEventListener("click", async function () {
+    const agentId = $("#cashAgentId").value.trim();
+    const identity = $("#cashAgentIdentity");
+    $("#cashAgentDetails").hidden = true;
+    verifiedCashAgent = null;
+    if (!/^[0-9]{8}$/.test(agentId)) {
+      message("#cashAgentIdentity", "ID ajan an dwe gen egzakteman 8 chif.", "error");
+      identity.hidden = false;
+      return;
+    }
+    this.disabled = true;
+    try {
+      const data = await api("/api/agents/lookup", { method: "POST", body: { agent_id: agentId } });
+      verifiedCashAgent = data.agent;
+      message("#cashAgentIdentity", "Ajan verifye: " + data.agent.name + " · ID " + data.agent.public_agent_id, "success");
+      identity.hidden = false;
+      $("#cashAgentDetails").hidden = false;
+    } catch (error) {
+      message("#cashAgentIdentity", translateError(error.code || error.message), "error");
+      identity.hidden = false;
+    } finally {
+      this.disabled = false;
+    }
+  });
+
+  $("#agentCashForm").addEventListener("submit", async function (event) {
     event.preventDefault();
-    const pin = $("#withdrawPin").value;
+    if (!verifiedCashAgent || verifiedCashAgent.public_agent_id !== $("#cashAgentId").value.trim()) {
+      message("#agentCashNotice", "Verifye ID ajan an anvan ou kontinye.", "error");
+      return;
+    }
+    const pin = $("#cashCustomerPin").value;
     if (!/^[0-9]{4}$/.test(pin)) {
-      message("#withdrawalNotice", "Antre PIN tranzaksyon 4 chif ou a.", "error");
+      message("#agentCashNotice", "Antre PIN kliyan an ki gen 4 chif.", "error");
       return;
     }
     const button = event.submitter;
     button.disabled = true;
     try {
-      const body = {
-        wallet_id: $("#withdrawWallet").value,
-        amount: $("#withdrawAmount").value,
-        destination_type: $("#withdrawType").value,
-        pin
-      };
-      const reference = $("#withdrawReference").value.trim();
-      if (reference) body.destination_reference = reference;
-      await api("/api/withdrawals", { method: "POST", body, idempotency: true });
-      $("#withdrawAmount").value = "";
-      $("#withdrawReference").value = "";
-      $("#withdrawPin").value = "";
-      message("#withdrawalNotice", "Demann retrè tès la anrejistre. Pa gen lajan ki voye deyò.", "success");
-      await loadDashboard(await sessionNow());
+      await api("/api/agent-cash-withdrawals", {
+        method: "POST",
+        body: {
+          agent_id: verifiedCashAgent.public_agent_id,
+          wallet_id: $("#cashAgentWallet").value,
+          amount: $("#cashAgentAmount").value,
+          pin
+        },
+        idempotency: true
+      });
+      $("#cashAgentAmount").value = "";
+      $("#cashCustomerPin").value = "";
+      message("#agentCashNotice", "Demann tès la voye bay " + verifiedCashAgent.name + ". Bous ou pa debite.", "success");
+      await refreshAgentCashRequests();
     } catch (error) {
-      message("#withdrawalNotice", translateError(error.code || error.message), "error");
+      message("#agentCashNotice", translateError(error.code || error.message), "error");
     } finally {
-      $("#withdrawPin").value = "";
+      $("#cashCustomerPin").value = "";
       button.disabled = !pinConfigured;
+    }
+  });
+
+  $("#agentCashIncomingList").addEventListener("click", async function (event) {
+    const button = event.target.closest("[data-agent-cash-decision]");
+    if (!button) return;
+    const card = button.closest("[data-agent-cash-card]");
+    const pinInput = card?.querySelector("[data-agent-cash-pin]");
+    const pin = pinInput?.value || "";
+    if (!/^[0-9]{4}$/.test(pin)) {
+      message("#agentCashAgentNotice", "Antre PIN ajan an ki gen 4 chif.", "error");
+      return;
+    }
+    button.disabled = true;
+    try {
+      await api("/api/agent-cash-withdrawals", {
+        method: "POST",
+        body: { action: "decision", request_id: button.dataset.requestId, decision: button.dataset.agentCashDecision, pin }
+      });
+      message("#agentCashAgentNotice", button.dataset.agentCashDecision === "confirmed"
+        ? "Demann lan konfime. Pa gen lajan ki deplase."
+        : "Demann lan refize. Pa gen lajan ki deplase.", "success");
+      await refreshAgentCashRequests();
+    } catch (error) {
+      message("#agentCashAgentNotice", translateError(error.code || error.message), "error");
+      button.disabled = false;
+    } finally {
+      if (pinInput) pinInput.value = "";
     }
   });
 
