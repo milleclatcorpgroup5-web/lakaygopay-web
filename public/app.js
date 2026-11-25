@@ -487,8 +487,7 @@ function renderWallets() {
   }
   populateWalletSelect("#qrPayerWallet", "HTG");
   populatePersonalWalletSelect("#personalReceiveWallet");
-  populateWalletSelect("#cashAgentWallet");
-  populateWalletSelect("#cashAgentWallet");
+  populatePersonalWalletSelect("#cashAgentWallet");
 }
 function populateWalletSelect(selector, currency) {
   const node = $(selector);
@@ -1134,8 +1133,6 @@ function renderPinState(result) {
   $("#currentPin").required = pinConfigured;
   $("#pinSubmitButton").textContent = pinConfigured ? "Chanje PIN sekirite" : "Kreye PIN sekirite";
   $("#personalReceivePayForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
-  $("#agentCashForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
-  $("#qrPayForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   $("#agentCashForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   $("#qrPayForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   if (cannotVerify) {
