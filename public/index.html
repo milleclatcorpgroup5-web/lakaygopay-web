@@ -222,46 +222,36 @@
     <section id="transferSection" class="surface-card transfer-card">
       <div class="transfer-card-heading">
         <div>
-          <p class="eyebrow">TRANSFÈ ANT BÒUS LAKAYGOPAY</p>
+          <p class="eyebrow">TRANSFÈ PÈSONÈL · P2P</p>
           <h2>Voye lajan</h2>
-          <p class="transfer-intro">Voye lajan bay yon lòt moun ki gen bous LakayGoPay. Swiv 3 etap senp yo.</p>
+          <p class="transfer-intro">Yon sèl fason pou voye lajan: eskane QR moun nan oswa antre ID/lyen resepsyon li. Verifye kiyès k ap resevwa a anvan ou konfime.</p>
         </div>
         <span class="transfer-icon" aria-hidden="true">↗</span>
       </div>
-      <div class="transfer-steps" aria-label="Etap transfè a">
-        <span><b>1</b> Chwazi bous</span><span><b>2</b> Antre destinatè ak montan</span><span><b>3</b> Konfime ak PIN</span>
+      <div id="personalReceiveLookupSection" class="transfer-receive-flow">
+        <form id="personalReceiveLookupForm" class="form-stack">
+          <label>ID oswa lyen resepsyon
+            <input id="personalReceiveToken" type="text" autocomplete="off" placeholder="Kole ID resepsyon an oswa lyen an" required>
+          </label>
+          <button class="button button-secondary full" type="submit">Verifye moun k ap resevwa a</button>
+        </form>
+        <div id="personalReceiveDetails" class="qr-details" hidden></div>
+        <form id="personalReceivePayForm" class="form-stack" hidden>
+          <label>Bous pèsonèl ou pou voye
+            <select id="personalReceiveSenderWallet" required></select>
+          </label>
+          <label>Montan pou voye
+            <input id="personalReceivePayAmount" type="number" inputmode="decimal" min="0.01" step="0.01" required>
+          </label>
+          <label>PIN tranzaksyon 4 chif
+            <input id="personalReceivePayPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required>
+          </label>
+          <button class="button button-primary full" type="submit">Konfime transfè a</button>
+          <p class="field-hint">Ou pral wè non ak telefòn maske destinatè a anvan ou konfime. PIN ou verifye sou sèvè a.</p>
+        </form>
+        <div id="personalReceiveLookupNotice" class="notice" role="status" aria-live="polite"></div>
       </div>
-      <form id="transferForm" class="transfer-form">
-        <label class="transfer-field">
-          <span class="transfer-field-title">1. Ki bous ou vle itilize?</span>
-          <select id="senderWallet" required></select>
-          <small>Chwazi lajan ou vle voye a. Bous destinatè a dwe nan menm lajan an.</small>
-        </label>
-        <label class="transfer-field">
-          <span class="transfer-field-title">2. ID bous moun k ap resevwa a</span>
-          <input id="recipientWallet" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Kole ID bous moun nan isit la" required>
-          <small>Moun nan jwenn ID sa a sou kat bous li a, anba “Kopye ID”. Verifye ID a avèk li anvan ou voye.</small>
-        </label>
-        <label class="transfer-field transfer-amount-field">
-          <span class="transfer-field-title">Konbyen ou vle voye?</span>
-          <input id="transferAmount" type="number" inputmode="decimal" min="0.01" max="9999999999999999" step="0.01" placeholder="0.00" required>
-        </label>
-        <details class="transfer-optional">
-          <summary>Ajoute yon nòt (opsyonèl)</summary>
-          <label for="transferNote">Nòt pou destinatè a</label>
-          <input id="transferNote" maxlength="140" placeholder="Egzanp: Lajan pou manje">
-        </details>
-        <label class="transfer-field transfer-pin-field">
-          <span class="transfer-field-title">3. PIN sekirite ou (4 chif)</span>
-          <input id="transferPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" placeholder="••••" required>
-          <small>Pa pataje PIN ou ak pèsonn. N ap verifye li anvan transfè a.</small>
-        </label>
-        <button class="button button-primary full transfer-submit" type="submit">Verifye epi voye lajan</button>
-        <p class="transfer-safety-note">Anvan ou konfime, verifye ID destinatè a, montan an ak lajan an. Transfè yo fèt sèlman ant bous LakayGoPay ki nan menm lajan.</p>
-      </form>
     </section>
-
-
 
     <section id="personalReceiveSection" class="surface-card action-card">
       <div class="section-heading">
@@ -295,40 +285,12 @@
       <div id="personalReceiveNotice" class="notice" role="status" aria-live="polite"></div>
     </section>
 
-    <section id="personalReceiveLookupSection" class="surface-card action-card">
-      <div class="section-heading">
-        <div><p class="eyebrow">TRANSFÈ P2P</p><h2>Voye lajan ak ID resepsyon</h2></div>
-        <span class="icon-badge">↗</span>
-      </div>
-      <p class="field-hint">Eskane QR resepsyon an oswa antre ID moun k ap resevwa a. Verifye non li ak telefòn maske a anvan ou konfime.</p>
-      <form id="personalReceiveLookupForm" class="form-stack">
-        <label>ID oswa lyen resepsyon
-          <input id="personalReceiveToken" type="text" autocomplete="off" placeholder="Kole ID resepsyon an" required>
-        </label>
-        <button class="button button-secondary full" type="submit">Verifye moun k ap resevwa a</button>
-      </form>
-      <div id="personalReceiveDetails" class="qr-details" hidden></div>
-      <form id="personalReceivePayForm" class="form-stack" hidden>
-        <label>Bous pèsonèl ou pou voye
-          <select id="personalReceiveSenderWallet" required></select>
-        </label>
-        <label>Montan pou voye
-          <input id="personalReceivePayAmount" type="number" inputmode="decimal" min="0.01" step="0.01" required>
-        </label>
-        <label>PIN tranzaksyon 4 chif
-          <input id="personalReceivePayPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required>
-        </label>
-        <button class="button button-primary full" type="submit">Konfime transfè a</button>
-      </form>
-      <div id="personalReceiveLookupNotice" class="notice" role="status" aria-live="polite"></div>
-    </section>
-
     <section id="qrPaymentSection" class="surface-card action-card">
       <div class="section-heading">
         <div><p class="eyebrow">PEMAN ANNDAN LAKAYGOPAY</p><h2>Peye ak QR</h2></div>
         <span class="icon-badge">▦</span>
       </div>
-      <p class="field-hint">Eskane QR machann lan oswa kole kòd/lyen demann lan. Verifye non machann, montan ak lajan an anvan ou peye.</p>
+      <p class="field-hint">Kole kòd oswa lyen demann peman machann lan. Verifye non machann, montan ak lajan an anvan ou peye. Verifye non machann, montan ak lajan an anvan ou peye.</p>
       <div class="qr-tools-row">
         <button id="qrScanButton" class="button button-secondary" type="button">Eskane QR ak kamera</button>
         <button id="qrStopScanButton" class="button button-quiet" type="button" hidden>Fèmen kamera</button>
