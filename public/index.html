@@ -10,7 +10,7 @@
   <title>LakayGoPay — Peman senp, lavi senp</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="stylesheet" href="/styles.css?v=20261125-p2p-unified-02">
+  <link rel="stylesheet" href="/styles.css?v=20261125-agent-cash-01">
 </head>
 <body>
   <header class="topbar">
@@ -321,36 +321,41 @@
 
     <section id="withdrawalSection" class="surface-card action-card">
       <div class="section-heading">
-        <div><p class="eyebrow">DEMAND SÈVIS</p><h2>Demann retrè</h2></div>
-        <span class="subtle-tag">TÈS · PA GEN PEMAN DEYÒ</span>
+        <div><p class="eyebrow">SÈVIS AJAN</p><h2>Retire lajan</h2></div>
+        <span class="subtle-tag">TÈS · SAN DEBIT BOUS</span>
       </div>
-      <p class="field-hint">Ou kapab anrejistre yon demann pou tès ak verifikasyon. Apwobasyon pa egzekite yon retrè MonCash, NatCash oswa bank.</p>
-      <form id="withdrawalForm" class="form-stack">
-        <label>Bous
-          <select id="withdrawWallet" required></select>
+      <p class="field-hint">Antre ID ajan an ki gen 8 chif. Apre ajan an konfime, demann lan ap make kòm konfime. Pa gen lajan ki soti nan bous ou ni peman deyò.</p>
+      <form id="agentCashForm" class="form-stack">
+        <label>ID ajan (8 chif)
+          <input id="cashAgentId" type="text" inputmode="numeric" pattern="[0-9]{8}" minlength="8" maxlength="8" autocomplete="off" placeholder="Egzanp: 12345678" required>
         </label>
-        <label>Montan
-          <input id="withdrawAmount" type="number" inputmode="decimal" min="0.01" step="0.01" required>
-        </label>
-        <label>Destinasyon
-          <select id="withdrawType" required>
-            <option value="moncash">MonCash</option>
-            <option value="natcash">NatCash</option>
-            <option value="bank">Bank</option>
-            <option value="cash_agent">Ajan lajan kach</option>
-            <option value="other">Lòt</option>
-          </select>
-        </label>
-        <label>Referans destinasyon (opsyonèl)
-          <input id="withdrawReference" type="text" maxlength="120" autocomplete="off" placeholder="Nimewo oswa referans">
-        </label>
-        <label>PIN tranzaksyon 4 chif
-          <input id="withdrawPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required>
-        </label>
-        <button class="button button-secondary full" type="submit">Soumèt demann retrè tès</button>
+        <button id="cashAgentLookup" class="button button-secondary full" type="button">Verifye ajan an</button>
+        <div id="cashAgentIdentity" class="notice" role="status" aria-live="polite" hidden></div>
+        <div id="cashAgentDetails" class="form-stack" hidden>
+          <label>Bous
+            <select id="cashAgentWallet" required></select>
+          </label>
+          <label>Montan
+            <input id="cashAgentAmount" type="number" inputmode="decimal" min="0.01" step="0.01" required>
+          </label>
+          <label>PIN kliyan an (4 chif)
+            <input id="cashCustomerPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required>
+          </label>
+          <button class="button button-primary full" type="submit">Soumèt demann retrè</button>
+        </div>
       </form>
-      <div id="withdrawalsList" class="compact-list"><div class="empty-state">Pa gen demann retrè pou kounye a.</div></div>
-      <div id="withdrawalNotice" class="notice" role="status" aria-live="polite"></div>
+      <div id="agentCashCustomerList" class="compact-list"></div>
+      <div id="agentCashNotice" class="notice" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="agentCashWorkspace" class="surface-card action-card" hidden>
+      <div class="section-heading">
+        <div><p class="eyebrow">ESPAS AJAN</p><h2>Demann retrè kliyan yo</h2></div>
+        <span id="agentCashPublicId" class="subtle-tag"></span>
+      </div>
+      <p class="field-hint">Verifye montan ak non kliyan an. Konfimasyon sa a se yon etap tès sèlman; li pa deplase lajan.</p>
+      <div id="agentCashIncomingList" class="compact-list"><div class="empty-state">Ap chaje demann yo…</div></div>
+      <div id="agentCashAgentNotice" class="notice" role="status" aria-live="polite"></div>
     </section>
 
     <section id="settingsPanel" class="surface-card settings-panel" hidden>
