@@ -993,6 +993,7 @@ async function startQrScanner() {
               $("#transferSection").scrollIntoView({ behavior: "smooth", block: "start" });
               await lookupPersonalReceiveRequest(raw);
             } else {
+              $("#qrPaymentSection").scrollIntoView({ behavior: "smooth", block: "start" });
               $("#qrTokenInput").value = raw;
               await lookupPaymentRequest(raw);
             }
