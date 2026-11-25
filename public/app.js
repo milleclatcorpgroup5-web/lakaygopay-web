@@ -1900,7 +1900,7 @@ async function init() {
   const session = await sessionNow();
   await syncSession(session);
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js?v=20261125-role-workspaces-02").catch(function () {});
+    navigator.serviceWorker.register("/service-worker.js?v=20261125-p2p-unified-02").catch(function () {});
   }
 }
 init().catch(function (error) {
