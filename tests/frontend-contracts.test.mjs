@@ -69,3 +69,14 @@ test("admin navigation groups existing modules without removing their permission
   }
   assert.ok(script.includes('nav.addEventListener("click"'));
 });
+
+test("money transfer form uses a simplified three-step customer flow", () => {
+  const html = read("../public/index.html");
+  assert.match(html, /id="transferSection" class="surface-card transfer-card"/);
+  assert.match(html, /class="transfer-steps"/);
+  assert.match(html, /Kole ID bous moun nan isit la/);
+  assert.match(html, /Konbyen ou vle voye\?/);
+  assert.match(html, /id="transferPin"/);
+  assert.match(html, /id="transferNote"/);
+  assert.match(html, /Verifye epi voye lajan/);
+});
