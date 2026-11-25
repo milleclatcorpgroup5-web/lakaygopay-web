@@ -923,3 +923,22 @@ body:before{
 .admin-layout .section-head{margin-top:19px}
 .admin-layout .surface-card{padding:19px}
 @media(max-width:520px){.admin-quick-nav{margin:0 0 14px;padding:8px 0}.admin-quick-nav a{padding:8px 10px}.admin-layout{padding-top:17px}.admin-layout .surface-card{padding:15px}}
+
+
+/* Admin workspace groups: compact categories with accessible disclosures. */
+.admin-workspace-group{margin:0 0 15px;padding:0 16px 15px;border:1px solid rgba(145,181,201,.2);border-radius:16px;background:rgba(9,30,45,.58);scroll-margin-top:72px}
+.admin-workspace-group>summary{position:relative;display:flex;align-items:center;gap:12px;min-height:54px;cursor:pointer;list-style:none;color:#e5f2f7;font-size:14px;font-weight:850}
+.admin-workspace-group>summary::-webkit-details-marker{display:none}
+.admin-workspace-group>summary:after{content:"+";margin-left:auto;width:27px;height:27px;display:grid;place-items:center;border:1px solid rgba(145,181,201,.25);border-radius:50%;color:#74d6c8;font-size:18px}
+.admin-workspace-group[open]>summary:after{content:"−"}
+.admin-workspace-group[open]>summary{margin-bottom:10px;border-bottom:1px solid rgba(145,181,201,.16)}
+.admin-workspace-group>.surface-card,.admin-workspace-group>.metric-grid,.admin-workspace-group>.section-head{margin-top:12px}
+.admin-workspace-group>.surface-card{box-shadow:none}
+.admin-quick-nav a{padding:9px 14px;font-size:11px}
+.admin-workspace-group>summary:focus-visible{outline:2px solid #55d4c0;outline-offset:3px;border-radius:8px}
+@media(max-width:600px){
+ .admin-workspace-group{padding:0 11px 12px;margin-bottom:11px}
+ .admin-workspace-group>summary{min-height:49px;font-size:12px}
+ .admin-quick-nav{gap:6px}
+ .admin-quick-nav a{font-size:10px;padding:8px 11px}
+}

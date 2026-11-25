@@ -229,3 +229,24 @@ input[readonly]{background:#f3f7f8;color:#718593}
 .wallet-card,.surface-card{box-shadow:0 3px 12px rgba(6,38,55,.035)}
 .welcome-row{padding:4px 0}
 @media(max-width:560px){.app-quick-nav{margin:0 -2px;padding:8px 0}.app-quick-nav a{padding:8px 11px;font-size:10px}.app-layout{gap:13px;padding-top:16px}}
+
+
+/* Distinct customer and merchant workspaces; preserve existing form and API hooks. */
+.role-workspace{display:grid;gap:20px;min-width:0}
+.client-workspace{gap:18px}
+.merchant-workspace{padding:clamp(16px,3vw,24px);border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#fff,#f3f8fa);box-shadow:var(--shadow);scroll-margin-top:18px}
+.merchant-workspace-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:4px 2px 14px;border-bottom:1px solid var(--line)}
+.merchant-workspace-heading h2{margin:0;color:var(--navy);font-size:clamp(22px,3vw,29px);letter-spacing:-.7px}
+.merchant-workspace-heading .muted{margin:6px 0 0;color:var(--muted);font-size:13px}
+.merchant-workspace>#merchantSection{box-shadow:none;border:0;padding:8px 0 0;background:transparent}
+.app-quick-nav{position:sticky;top:0;z-index:20;display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;padding:10px 0;background:rgba(243,247,249,.94);backdrop-filter:blur(12px);scrollbar-width:thin}
+.app-quick-nav a{flex:0 0 auto;padding:10px 13px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--navy);text-decoration:none;font-size:12px;font-weight:800;white-space:nowrap}
+.app-quick-nav a:hover,.app-quick-nav a:focus-visible{border-color:var(--teal);background:var(--mint);outline:none}
+#clientWorkspace[hidden],#merchantWorkspace[hidden]{display:none!important}
+@media(max-width:600px){
+ .merchant-workspace{padding:14px;border-radius:15px}
+ .merchant-workspace-heading{align-items:flex-start;flex-direction:column}
+ .merchant-workspace-heading .button{width:100%}
+ .app-quick-nav{margin:0 -2px;padding:8px 2px}
+ .app-quick-nav a{padding:9px 11px;font-size:11px}
+}

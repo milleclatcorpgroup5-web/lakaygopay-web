@@ -522,13 +522,74 @@ function populateWalletSelect(selector, currency) {
     node.append(option);
   }
 }
+function showClientWorkspace() {
+  const client = $("#clientWorkspace");
+  const merchant = $("#merchantWorkspace");
+  if (client) client.hidden = false;
+  if (merchant) merchant.hidden = true;
+}
+function showMerchantWorkspace() {
+  const client = $("#clientWorkspace");
+  const merchant = $("#merchantWorkspace");
+  if (client) client.hidden = true;
+  if (merchant) merchant.hidden = false;
+}
+function buildRoleWorkspaces() {
+  const appView = $("#appView");
+  const merchantSection = $("#merchantSection");
+  if (!appView || !merchantSection || $("#clientWorkspace")) return;
+
+  const clientWorkspace = document.createElement("div");
+  clientWorkspace.id = "clientWorkspace";
+  clientWorkspace.className = "role-workspace client-workspace";
+
+  const merchantWorkspace = document.createElement("section");
+  merchantWorkspace.id = "merchantWorkspace";
+  merchantWorkspace.className = "role-workspace merchant-workspace";
+  merchantWorkspace.hidden = true;
+
+  const intro = document.createElement("div");
+  intro.className = "merchant-workspace-heading";
+  intro.innerHTML = '<div><p class="eyebrow">ESPAS KOMÈSYAL</p><h2>Jesyon biznis ou</h2><p class="muted">Jere demann QR ak peman kliyan yo nan yon espas apa.</p></div>';
+  const backButton = document.createElement("button");
+  backButton.id = "clientQuickLink";
+  backButton.className = "button button-secondary";
+  backButton.type = "button";
+  backButton.textContent = "Retounen Espas Kliyan";
+  intro.append(backButton);
+  merchantWorkspace.append(intro, merchantSection);
+  merchantSection.hidden = false;
+
+  const excluded = new Set([merchantSection]);
+  Array.from(appView.children).forEach((node) => {
+    if (node.classList.contains("welcome-row") || node.id === "appNotice" || excluded.has(node)) return;
+    clientWorkspace.append(node);
+  });
+
+  const priority = new Map([
+    ["app-quick-nav", 0], ["walletSection", 1], ["transferSection", 2],
+    ["personalReceiveSection", 3], ["personalReceiveLookupSection", 4],
+    ["qrPaymentSection", 5], ["exchangeQuoteSection", 6], ["activitySection", 7]
+  ]);
+  const ordered = Array.from(clientWorkspace.children).sort((a, b) =>
+    (priority.get(a.id || "") ?? 50) - (priority.get(b.id || "") ?? 50)
+  );
+  ordered.forEach((node) => clientWorkspace.append(node));
+
+  appView.append(clientWorkspace, merchantWorkspace);
+}
 function renderMerchants(session) {
   const isMerchant = session.user.user_metadata?.account_type === "merchant" || currentMerchants.length > 0;
   const section = $("#merchantSection");
+  const workspace = $("#merchantWorkspace");
   const quickLink = $("#merchantQuickLink");
-  if (section) section.hidden = !isMerchant;
+  if (section) section.hidden = false;
+  if (workspace) workspace.hidden = !isMerchant;
   if (quickLink) quickLink.hidden = !isMerchant;
-  if (!isMerchant) return;
+  if (!isMerchant) {
+    showClientWorkspace();
+    return;
+  }
 
   // Do not let an older pending/suspended profile hide a different active
   // merchant profile owned by the same account.
@@ -1719,10 +1780,15 @@ function wireForms() {
 }
 function wireActions() {
   $("#merchantQuickLink").addEventListener("click", function () {
-    const section = $("#merchantSection");
-    if (!section || section.hidden) return;
-    section.scrollIntoView({ behavior: "smooth", block: "start" });
+    const workspace = $("#merchantWorkspace");
+    if (!workspace || workspace.hidden) return;
+    showMerchantWorkspace();
+    workspace.scrollIntoView({ behavior: "smooth", block: "start" });
     $("#merchantQrForm").querySelector("select")?.focus({ preventScroll: true });
+  });
+  $("#clientQuickLink")?.addEventListener("click", function () {
+    showClientWorkspace();
+    $("#clientWorkspace")?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
   $("#walletGrid").addEventListener("click", async function (event) {
@@ -1874,6 +1940,7 @@ function wireInstallButton() {
 }
 
 async function init() {
+  buildRoleWorkspaces();
   wireInstallButton();
   wireForms();
   wireActions();
@@ -1901,7 +1968,7 @@ async function init() {
   const session = await sessionNow();
   await syncSession(session);
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js?v=20261123-wallet-status-01").catch(function () {});
+    navigator.serviceWorker.register("/service-worker.js?v=20261125-role-workspaces-02").catch(function () {});
   }
 }
 init().catch(function (error) {

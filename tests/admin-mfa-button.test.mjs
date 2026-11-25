@@ -16,7 +16,7 @@ test("initial MFA state errors are visible to the Admin user", () => {
 });
 
 test("Admin page loads the new MFA control logic without stale cache", () => {
-  assert.ok(adminHtml.includes("admin/admin.js?v=20261120-admin-mfa-monthly-01"));
+  assert.ok(adminHtml.includes("admin/admin.js?v=20261125-role-workspaces-02"));
 });
 
 test("the MFA verify control remains usable when factor discovery temporarily fails", () => {
