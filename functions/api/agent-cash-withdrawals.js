@@ -1,6 +1,6 @@
-import { json, requireUser, config, callRpc, readJson, validUuid, validAmount, idempotencyKey } from "../../_shared/superbase.js";
-import { assertTransactionPin } from "../../_shared/pin.js";
-import { financialFail } from "../../_shared/financial-errors.js";
+import { json, requireUser, config, callRpc, readJson, validUuid, validAmount, idempotencyKey } from "../_shared/superbase.js";
+import { assertTransactionPin } from "../_shared/pin.js";
+import { financialFail } from "../_shared/financial-errors.js";
 
 async function rows(env, query) {
   const { url, secretKey } = config(env);
