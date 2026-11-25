@@ -62,6 +62,7 @@ function statusText(value) {
     closed: "Fèmen",
     submitted: "Soumèt",
     approved: "Apwouve",
+    confirmed: "Konfime",
     cancelled: "Anile"
   };
   return map[value] || value || "Pa disponib";
@@ -486,7 +487,7 @@ function renderWallets() {
   }
   populateWalletSelect("#qrPayerWallet", "HTG");
   populatePersonalWalletSelect("#personalReceiveWallet");
-  populateWalletSelect("#withdrawWallet");
+  populateWalletSelect("#cashAgentWallet");
   populateWalletSelect("#cashAgentWallet");
 }
 function populateWalletSelect(selector, currency) {
@@ -549,7 +550,8 @@ function buildRoleWorkspaces() {
   merchantWorkspace.append(intro, merchantSection);
   merchantSection.hidden = false;
 
-  const excluded = new Set([merchantSection]);
+  const agentCashWorkspace = $("#agentCashWorkspace");
+  const excluded = new Set([merchantSection, agentCashWorkspace].filter(Boolean));
   Array.from(appView.children).forEach((node) => {
     if (node.classList.contains("welcome-row") || node.id === "appNotice" || excluded.has(node)) return;
     clientWorkspace.append(node);
@@ -566,6 +568,7 @@ function buildRoleWorkspaces() {
   ordered.forEach((node) => clientWorkspace.append(node));
 
   appView.append(clientWorkspace, merchantWorkspace);
+  if (agentCashWorkspace) appView.append(agentCashWorkspace);
 }
 function renderMerchants(session) {
   const isMerchant = session.user.user_metadata?.account_type === "merchant" || currentMerchants.length > 0;
@@ -615,7 +618,7 @@ function renderAgentStatus(data) {
   if (agent) {
     form.hidden = true;
     const state = statusText(agent.status);
-    const code = agent.agent_code ? " · Kòd ajan: " + agent.agent_code : "";
+    const code = agent.public_agent_id ? " · ID ajan 8 chif: " + agent.public_agent_id : (agent.agent_code ? " · Kòd ajan: " + agent.agent_code : "");
     message("#agentStatusBanner",
       "Kont ajan ou: " + state + code +
       (agent.approved_at ? " · Aktive depi " + new Date(agent.approved_at).toLocaleDateString("fr-HT") : "") +
@@ -2029,7 +2032,7 @@ async function init() {
   const session = await sessionNow();
   await syncSession(session);
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js?v=20261125-p2p-unified-02").catch(function () {});
+    navigator.serviceWorker.register("/service-worker.js?v=20261125-agent-cash-01").catch(function () {});
   }
 }
 init().catch(function (error) {
