@@ -228,6 +228,11 @@
         </div>
         <span class="transfer-icon" aria-hidden="true">↗</span>
       </div>
+      <div class="qr-tools-row">
+        <button id="qrScanButton" class="button button-secondary" type="button">Eskane QR ak kamera</button>
+        <button id="qrStopScanButton" class="button button-quiet" type="button" hidden>Fèmen kamera</button>
+      </div>
+      <video id="qrScannerVideo" class="qr-scanner-video" playsinline muted hidden></video>
       <div id="personalReceiveLookupSection" class="transfer-receive-flow">
         <form id="personalReceiveLookupForm" class="form-stack">
           <label>ID oswa lyen resepsyon
@@ -291,11 +296,6 @@
         <span class="icon-badge">▦</span>
       </div>
       <p class="field-hint">Kole kòd oswa lyen demann peman machann lan. Verifye non machann, montan ak lajan an anvan ou peye. Verifye non machann, montan ak lajan an anvan ou peye.</p>
-      <div class="qr-tools-row">
-        <button id="qrScanButton" class="button button-secondary" type="button">Eskane QR ak kamera</button>
-        <button id="qrStopScanButton" class="button button-quiet" type="button" hidden>Fèmen kamera</button>
-      </div>
-      <video id="qrScannerVideo" class="qr-scanner-video" playsinline muted hidden></video>
       <form id="qrLookupForm" class="form-stack">
         <label>Kòd QR oswa lyen demann lan
           <input id="qrTokenInput" type="text" inputmode="text" autocomplete="off" placeholder="Eskane oswa kole kòd QR la" required>
