@@ -2200,7 +2200,47 @@ async function saveRecoveredPassword(event) {
   }
 }
 
+function buildAdminNavigationGroups() {
+  const adminView = $("#adminView");
+  const nav = $(".admin-quick-nav");
+  if (!adminView || !nav || nav.dataset.grouped === "true") return;
+
+  const groups = [
+    { id: "adminGroupOverview", title: "Apèsi ak analiz", open: true, nodes: ["adminOverviewHeading", "adminDashboardMetrics", "adminAnalyticsPanel"] },
+    { id: "adminGroupOperations", title: "Operasyon ak revizyon", open: false, nodes: ["adminRecordsPanel", "adminActionsPanel", "adminCardProgramPanel", "adminConnectPanel"] },
+    { id: "adminGroupFinance", title: "Finans ak rapò", open: false, nodes: ["dailyFlowPanel", "adminFinancePanel"] },
+    { id: "adminGroupSecurity", title: "Sekirite ak siveyans", open: false, nodes: ["systemHealthPanel", "liveLogsPanel", "adminControlRulesPanel"] },
+    { id: "adminGroupTeam", title: "Ekip ak sekretarya", open: false, nodes: ["adminTeamPanel", "adminSecretariatPanel"] }
+  ];
+
+  for (const group of groups) {
+    const nodes = group.nodes.map((id) => document.getElementById(id))
+      .filter((node) => node && node.parentElement === adminView);
+    if (!nodes.length) continue;
+    const details = document.createElement("details");
+    details.id = group.id;
+    details.className = "admin-workspace-group";
+    details.open = group.open;
+    const summary = document.createElement("summary");
+    summary.textContent = group.title;
+    details.append(summary);
+    const first = nodes.reduce((earliest, node) =>
+      earliest.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING ? earliest : node
+    );
+    adminView.insertBefore(details, first);
+    nodes.forEach((node) => details.append(node));
+  }
+
+  nav.dataset.grouped = "true";
+  nav.addEventListener("click", (event) => {
+    const link = event.target.closest("a[href^='#adminGroup']");
+    if (!link) return;
+    const target = document.querySelector(link.getAttribute("href"));
+    if (target && target.tagName === "DETAILS") target.open = true;
+  });
+}
 async function boot() {
+  buildAdminNavigationGroups();
   const configResponse = await fetch("/api/config", { headers: { accept: "application/json" }, cache: "no-store" });
   const config = await configResponse.json().catch(() => ({}));
   if (!configResponse.ok || !config.configured || !config.supabaseUrl || !config.publishableKey) {
