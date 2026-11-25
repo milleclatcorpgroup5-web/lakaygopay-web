@@ -10,7 +10,7 @@ function assertFrontendContracts(name, htmlPath, scriptPath) {
   const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]));
   const selectors = [...new Set([...script.matchAll(/\$\(["']#([^"']+)["']\)/g)]
     .map((match) => match[1]))];
-  const dynamicIds = new Set([...script.matchAll(/\\.id\\s*=\\s*["']([^"']+)["']/g)]
+  const dynamicIds = new Set([...script.matchAll(/\.id\s*=\s*["']([^"']+)["']/g)]
     .map((match) => match[1]));
   const missing = selectors.filter((id) => !ids.has(id) && !dynamicIds.has(id));
   assert.deepEqual(missing, [], name + " JavaScript selectors must exist in HTML or be created by the script");
