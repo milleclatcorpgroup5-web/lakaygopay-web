@@ -70,13 +70,20 @@ test("admin navigation groups existing modules without removing their permission
   assert.ok(script.includes('nav.addEventListener("click"'));
 });
 
-test("money transfer form uses a simplified three-step customer flow", () => {
+test("customer P2P sending is consolidated into one receive-ID and QR flow", () => {
   const html = read("../public/index.html");
+  const script = read("../public/app.js");
   assert.match(html, /id="transferSection" class="surface-card transfer-card"/);
-  assert.match(html, /class="transfer-steps"/);
-  assert.match(html, /Kole ID bous moun nan isit la/);
-  assert.match(html, /Konbyen ou vle voye\?/);
-  assert.match(html, /id="transferPin"/);
-  assert.match(html, /id="transferNote"/);
-  assert.match(html, /Verifye epi voye lajan/);
+  assert.match(html, /id="personalReceiveLookupForm"/);
+  assert.match(html, /id="personalReceivePayForm"/);
+  assert.match(html, /id="personalReceiveToken"/);
+  assert.match(html, /id="qrScanButton"/);
+  assert.match(html, /Verifye moun k ap resevwa a/);
+  assert.match(html, /Konfime transfè a/);
+  assert.doesNotMatch(html, /id="transferForm"/);
+  assert.doesNotMatch(html, /id="recipientWallet"/);
+  assert.doesNotMatch(script, /#transferForm/);
+  assert.match(script, /api\("\/api\/receive-requests\/pay"/);
+  assert.match(script, /recipient_phone_masked/);
+  assert.match(script, /idempotencyKey:\s*receivePayKey/);
 });
