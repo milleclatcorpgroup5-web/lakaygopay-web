@@ -908,7 +908,7 @@ async function maybeLookupIncomingQr(session) {
   if (incomingReceiveToken && incomingReceiveLoadedForUser !== session.user.id) {
     incomingReceiveLoadedForUser = session.user.id;
     $("#personalReceiveToken").value = incomingReceiveToken;
-    $("#personalReceiveLookupSection").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("#transferSection").scrollIntoView({ behavior: "smooth", block: "start" });
     await lookupPersonalReceiveRequest(incomingReceiveToken);
     return;
   }
@@ -1005,7 +1005,7 @@ async function startQrScanner() {
             await stopQrScanner();
             if (String(raw).includes("lgp_receive") || String(raw).includes("lakaygopay://receive/") || String(raw).includes("/receive/")) {
               $("#personalReceiveToken").value = receiveTokenFromInput(raw);
-              $("#personalReceiveLookupSection").scrollIntoView({ behavior: "smooth", block: "start" });
+              $("#transferSection").scrollIntoView({ behavior: "smooth", block: "start" });
               await lookupPersonalReceiveRequest(raw);
             } else {
               $("#qrTokenInput").value = raw;
@@ -1073,7 +1073,7 @@ function renderPinState(result) {
   $("#currentPinField").hidden = !pinConfigured;
   $("#currentPin").required = pinConfigured;
   $("#pinSubmitButton").textContent = pinConfigured ? "Chanje PIN sekirite" : "Kreye PIN sekirite";
-  $("#transferForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
+  $("#personalReceivePayForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   $("#withdrawalForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   $("#qrPayForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
   $("#withdrawalForm button[type=\"submit\"]").disabled = !pinConfigured || cannotVerify;
@@ -1384,60 +1384,6 @@ function wireForms() {
       button.disabled = false;
     }
   });
-
-  $("#transferForm").addEventListener("submit", async function (event) {
-    event.preventDefault();
-    const sender = $("#senderWallet").value;
-    const recipient = $("#recipientWallet").value.trim();
-    const amount = $("#transferAmount").value;
-    const pin = $("#transferPin").value;
-    if (!sender || !recipient) {
-      message("#appNotice", "Chwazi bous k ap voye a epi antre ID bous destinatè a.", "error");
-      return;
-    }
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(recipient)) {
-      message("#appNotice", "ID bous destinatè a pa sanble ak yon UUID valab.", "error");
-      return;
-    }
-    if (!/^[0-9]{4}$/.test(pin)) {
-      message("#appNotice", "Antre PIN tranzaksyon 4 chif ou a.", "error");
-      return;
-    }
-    const chosenWallet = currentWallets.find(function (wallet) { return wallet.wallet_id === sender; });
-    if (!chosenWallet) {
-      message("#appNotice", "Bous moun k ap voye a pa disponib.", "error");
-      return;
-    }
-    const formattedAmount = formatMoney(amount, chosenWallet.currency) + " " + chosenWallet.currency;
-    if (!window.confirm("Ou pral voye " + formattedAmount + ". Verifye ID destinatè a ak lajan an anvan ou konfime.")) return;
-
-    const button = event.submitter;
-    button.disabled = true;
-    try {
-      const result = await api("/api/transfers", {
-        method: "POST",
-        body: {
-          sender_wallet_id: sender,
-          recipient_wallet_id: recipient,
-          amount: amount,
-          note: $("#transferNote").value.trim(),
-          pin: pin
-        },
-        idempotency: true
-      });
-      $("#transferAmount").value = "";
-      $("#transferNote").value = "";
-      $("#recipientWallet").value = "";
-      message("#appNotice", "Transfè anrejistre avèk siksè. Referans: " + (result.transfer?.reference || result.transfer?.transfer_id || "OK"), "success");
-      await loadDashboard(await sessionNow());
-    } catch (error) {
-      message("#appNotice", translateError(error.code || error.message), "error");
-    } finally {
-      $("#transferPin").value = "";
-      button.disabled = false;
-    }
-  });
-
 
   $("#exchangeQuoteForm").addEventListener("submit", async function (event) {
     event.preventDefault();
