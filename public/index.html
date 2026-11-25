@@ -219,33 +219,47 @@
       <div id="exchangeQuoteNotice" class="notice" role="status" aria-live="polite"></div>
     </section>
 
-    <div id="transferSection" class="main-grid transfer-layout">
-      <section class="surface-card">
-        <div class="section-heading">
-          <div><p class="eyebrow">Voye anndan LakayGoPay</p><h2>Fè yon transfè</h2></div>
-          <span class="icon-badge">↗</span>
+    <section id="transferSection" class="surface-card transfer-card">
+      <div class="transfer-card-heading">
+        <div>
+          <p class="eyebrow">TRANSFÈ ANT BÒUS LAKAYGOPAY</p>
+          <h2>Voye lajan</h2>
+          <p class="transfer-intro">Voye lajan bay yon lòt moun ki gen bous LakayGoPay. Swiv 3 etap senp yo.</p>
         </div>
-        <form id="transferForm" class="form-stack">
-          <label>Bous moun k ap voye a
-            <select id="senderWallet" required></select>
-          </label>
-          <label>ID bous moun k ap resevwa a
-            <input id="recipientWallet" type="text" inputmode="text" autocomplete="off" placeholder="UUID bous destinatè a" required>
-          </label>
-          <p class="field-hint">Mande moun k ap resevwa a pataje ID bous li ki nan kat bous li a. Toude bous yo dwe nan menm lajan.</p>
-          <label>Montan
-            <input id="transferAmount" type="number" inputmode="decimal" min="0.01" max="9999999999999999" step="0.01" placeholder="0.00" required>
-          </label>
-          <label>Nòt (opsyonèl)<input id="transferNote" maxlength="140" placeholder="Pou kisa transfè a ye?"></label>
-          <label>PIN tranzaksyon 4 chif
-            <input id="transferPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" placeholder="••••" required>
-          </label>
-          <button class="button button-primary full" type="submit">Verifye epi voye</button>
-          <p class="field-hint">PIN lan verifye sou sèvè anvan chak transfè. Pa pataje PIN ou ak pèsonn.</p>
-        </form>
-      </section>
-
-    </div>
+        <span class="transfer-icon" aria-hidden="true">↗</span>
+      </div>
+      <div class="transfer-steps" aria-label="Etap transfè a">
+        <span><b>1</b> Chwazi bous</span><span><b>2</b> Antre destinatè ak montan</span><span><b>3</b> Konfime ak PIN</span>
+      </div>
+      <form id="transferForm" class="transfer-form">
+        <label class="transfer-field">
+          <span class="transfer-field-title">1. Ki bous ou vle itilize?</span>
+          <select id="senderWallet" required></select>
+          <small>Chwazi lajan ou vle voye a. Bous destinatè a dwe nan menm lajan an.</small>
+        </label>
+        <label class="transfer-field">
+          <span class="transfer-field-title">2. ID bous moun k ap resevwa a</span>
+          <input id="recipientWallet" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Kole ID bous moun nan isit la" required>
+          <small>Moun nan jwenn ID sa a sou kat bous li a, anba “Kopye ID”. Verifye ID a avèk li anvan ou voye.</small>
+        </label>
+        <label class="transfer-field transfer-amount-field">
+          <span class="transfer-field-title">Konbyen ou vle voye?</span>
+          <input id="transferAmount" type="number" inputmode="decimal" min="0.01" max="9999999999999999" step="0.01" placeholder="0.00" required>
+        </label>
+        <details class="transfer-optional">
+          <summary>Ajoute yon nòt (opsyonèl)</summary>
+          <label for="transferNote">Nòt pou destinatè a</label>
+          <input id="transferNote" maxlength="140" placeholder="Egzanp: Lajan pou manje">
+        </details>
+        <label class="transfer-field transfer-pin-field">
+          <span class="transfer-field-title">3. PIN sekirite ou (4 chif)</span>
+          <input id="transferPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" placeholder="••••" required>
+          <small>Pa pataje PIN ou ak pèsonn. N ap verifye li anvan transfè a.</small>
+        </label>
+        <button class="button button-primary full transfer-submit" type="submit">Verifye epi voye lajan</button>
+        <p class="transfer-safety-note">Anvan ou konfime, verifye ID destinatè a, montan an ak lajan an. Transfè yo fèt sèlman ant bous LakayGoPay ki nan menm lajan.</p>
+      </form>
+    </section>
 
 
 
