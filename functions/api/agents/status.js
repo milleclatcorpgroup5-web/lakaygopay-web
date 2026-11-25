@@ -16,7 +16,7 @@ export async function onRequestGet({ request, env }) {
     const userId = encodeURIComponent(auth.user.id);
     const [applications, agents] = await Promise.all([
       readRows(env, `agent_applications?applicant_user_id=eq.${userId}&select=id,department,commune,status,admin_note,created_at,reviewed_at&order=created_at.desc&limit=10`),
-      readRows(env, `agent_accounts?user_id=eq.${userId}&select=agent_code,status,approved_at&limit=1`),
+      readRows(env, `agent_accounts?user_id=eq.${userId}&select=agent_code,public_agent_id,status,approved_at&limit=1`),
     ]);
     return json({ ok: true, applications, agent: agents?.[0] || null });
   } catch {
