@@ -250,3 +250,36 @@ input[readonly]{background:#f3f7f8;color:#718593}
  .app-quick-nav{margin:0 -2px;padding:8px 2px}
  .app-quick-nav a{padding:9px 11px;font-size:11px}
 }
+
+
+/* Simplified P2P transfer flow — presentation only; existing API contract unchanged. */
+.transfer-card{display:grid;gap:18px;padding:clamp(17px,3vw,27px);border:1px solid #dce8ec;border-radius:20px;background:linear-gradient(145deg,#fff,#f7fbfc);box-shadow:0 8px 28px rgba(6,38,55,.055);scroll-margin-top:70px}
+.transfer-card-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:15px}
+.transfer-card-heading h2{margin:3px 0 0;color:var(--navy);font-size:clamp(23px,3vw,30px);letter-spacing:-.7px}
+.transfer-intro{margin:7px 0 0;color:var(--muted);font-size:13px;line-height:1.55}
+.transfer-icon{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;border-radius:14px;background:#e8f5f3;color:#087f78;font-size:23px;font-weight:850}
+.transfer-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.transfer-steps span{display:flex;align-items:center;gap:7px;min-width:0;padding:10px;border:1px solid #e2ebef;border-radius:11px;background:#fff;color:#547080;font-size:10px;font-weight:750;line-height:1.35}
+.transfer-steps b{display:grid;place-items:center;flex:0 0 22px;width:22px;height:22px;border-radius:50%;background:#e5f4f1;color:#087d75;font-size:11px}
+.transfer-form{display:grid;gap:15px;max-width:650px}
+.transfer-field{display:grid;gap:7px;color:#284c60;font-size:12px;font-weight:750}
+.transfer-field-title{font-size:13px;color:var(--navy);font-weight:850}
+.transfer-field input,.transfer-field select,.transfer-optional input{width:100%;min-width:0;min-height:47px;padding:12px 14px;border:1px solid #d3e1e7;border-radius:11px;background:#fff;color:#173b50;font:inherit;font-size:14px}
+.transfer-field input:focus,.transfer-field select:focus,.transfer-optional input:focus{outline:2px solid rgba(36,153,168,.2);border-color:#2499a8}
+.transfer-field small{color:#718692;font-size:11px;font-weight:450;line-height:1.55}
+.transfer-amount-field input{min-height:58px;font-size:23px;font-weight:850;letter-spacing:.2px}
+.transfer-optional{padding:12px 14px;border:1px solid #e2ebef;border-radius:11px;background:#fff}
+.transfer-optional summary{color:#31586b;font-size:12px;font-weight:750;cursor:pointer}
+.transfer-optional label{display:block;margin:12px 0 6px;color:#526c7a;font-size:11px;font-weight:700}
+.transfer-pin-field input{max-width:220px;letter-spacing:7px;font-size:20px;text-align:center}
+.transfer-submit{min-height:49px;font-size:14px}
+.transfer-safety-note{margin:0;color:#718692;font-size:10px;line-height:1.6}
+@media(max-width:560px){
+ .transfer-card{gap:15px;padding:16px;border-radius:16px}
+ .transfer-steps{grid-template-columns:1fr;gap:6px}
+ .transfer-steps span{padding:8px 10px;font-size:11px}
+ .transfer-form{gap:13px}
+ .transfer-field input,.transfer-field select{min-height:48px}
+ .transfer-amount-field input{min-height:56px;font-size:22px}
+ .transfer-pin-field input{max-width:100%}
+}
