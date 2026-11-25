@@ -481,21 +481,6 @@ function renderWallets() {
       grid.append(card);
     });
   }
-  const select = $("#senderWallet");
-  select.replaceChildren();
-  currentWallets.forEach(function (wallet) {
-    const option = document.createElement("option");
-    option.value = wallet.wallet_id;
-    option.textContent = wallet.currency + " · " + (wallet.merchant_id ? "Machann" : "Pèsonèl") +
-      " · " + formatMoney(wallet.balance, wallet.currency);
-    select.append(option);
-  });
-  if (!currentWallets.length) {
-    const option = document.createElement("option");
-    option.value = "";
-    option.textContent = "Pa gen bous disponib";
-    select.append(option);
-  }
   populateWalletSelect("#qrPayerWallet", "HTG");
   populatePersonalWalletSelect("#personalReceiveWallet");
   populateWalletSelect("#withdrawWallet");
