@@ -106,3 +106,384 @@
  .lgp-admin-redesigned .topbar .secure-label{display:none}
 }
 @media(prefers-reduced-motion:reduce){.lgp-client-redesigned *,.lgp-admin-redesigned *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+
+/* 2026-11-26 visual refinement: preserve the reference layout and make every Admin module readable. */
+.lgp-admin-redesigned .lgp-admin-main {
+  color: #193454;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.lgp-admin-redesigned .lgp-admin-main h1,
+.lgp-admin-redesigned .lgp-admin-main h2,
+.lgp-admin-redesigned .lgp-admin-main h3,
+.lgp-admin-redesigned .lgp-admin-main h4 {
+  color: #102d67;
+  line-height: 1.35;
+}
+.lgp-admin-redesigned .lgp-admin-main p:not(.eyebrow) {
+  color: #536783;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.lgp-admin-redesigned .lgp-admin-main .muted,
+.lgp-admin-redesigned .lgp-admin-main .small,
+.lgp-admin-redesigned .lgp-admin-main .field-hint,
+.lgp-admin-redesigned .lgp-admin-main .fee-footnote,
+.lgp-admin-redesigned .lgp-admin-main .business-disclaimer,
+.lgp-admin-redesigned .lgp-admin-main .fee-explainer,
+.lgp-admin-redesigned .lgp-admin-main .business-intro {
+  color: #536783;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.lgp-admin-redesigned .lgp-admin-main .eyebrow {
+  color: #28726f;
+  font-size: 10px;
+  letter-spacing: 1.45px;
+}
+.lgp-admin-redesigned .lgp-admin-main label {
+  color: #334d70;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+.lgp-admin-redesigned .lgp-admin-main input,
+.lgp-admin-redesigned .lgp-admin-main select,
+.lgp-admin-redesigned .lgp-admin-main textarea {
+  min-height: 44px;
+  border: 1px solid #cbd8eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #17325e;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.lgp-admin-redesigned .lgp-admin-main textarea { min-height: 100px; }
+.lgp-admin-redesigned .lgp-admin-main input::placeholder,
+.lgp-admin-redesigned .lgp-admin-main textarea::placeholder {
+  color: #74849b;
+  opacity: 1;
+}
+.lgp-admin-redesigned .lgp-admin-main input:focus,
+.lgp-admin-redesigned .lgp-admin-main select:focus,
+.lgp-admin-redesigned .lgp-admin-main textarea:focus {
+  outline: 3px solid rgba(37, 99, 235, .16);
+  border-color: #4778d8;
+}
+.lgp-admin-redesigned .lgp-admin-main .button {
+  min-height: 42px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.lgp-admin-redesigned .lgp-admin-main .button-primary {
+  background: linear-gradient(110deg, #1047c4, #1c63e7);
+  color: #fff;
+}
+.lgp-admin-redesigned .lgp-admin-main .button-quiet,
+.lgp-admin-redesigned .lgp-admin-main .button-secondary {
+  border: 1px solid #d7e2f1;
+  background: #edf3ff;
+  color: #204677;
+}
+.lgp-admin-redesigned .lgp-admin-main .notice {
+  color: #425b7f;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.lgp-admin-redesigned .lgp-admin-main .notice.error {
+  border-color: #f2caca;
+  background: #fff1f1;
+  color: #9e2432;
+}
+.lgp-admin-redesigned .lgp-admin-main .notice.success {
+  border-color: #c9e9d6;
+  background: #ecf8f0;
+  color: #17633f;
+}
+
+/* KPI tiles retain the dark slate treatment in the approved Admin reference, with stronger contrast. */
+.lgp-admin-redesigned .lgp-admin-main .metric-card {
+  border-color: #526b7a;
+  background: linear-gradient(145deg, #48616c, #354c58);
+  color: #fff;
+}
+.lgp-admin-redesigned .lgp-admin-main .metric-card .metric-label,
+.lgp-admin-redesigned .lgp-admin-main .metric-card small {
+  color: #edf5fa;
+  font-size: 11px;
+}
+.lgp-admin-redesigned .lgp-admin-main .metric-card strong {
+  color: #a9eee2;
+  font-size: 27px;
+  line-height: 1.25;
+}
+.lgp-admin-redesigned .lgp-admin-main .metric-icon {
+  background: rgba(255,255,255,.16);
+  color: #fff;
+}
+
+/* Business plan, operational tables and control panels use light surfaces and dark readable copy. */
+.lgp-admin-redesigned .lgp-admin-main .business-plan-section,
+.lgp-admin-redesigned .lgp-admin-main .admin-mfa-panel,
+.lgp-admin-redesigned .lgp-admin-main .admin-records-panel,
+.lgp-admin-redesigned .lgp-admin-main .admin-actions-panel,
+.lgp-admin-redesigned .lgp-admin-main .system-health-panel,
+.lgp-admin-redesigned .lgp-admin-main .daily-flow-panel,
+.lgp-admin-redesigned .lgp-admin-main .control-rules-panel,
+.lgp-admin-redesigned .lgp-admin-main .finance-control-panel,
+.lgp-admin-redesigned .lgp-admin-main .team-control-panel,
+.lgp-admin-redesigned .lgp-admin-main .secretariat-panel {
+  border-color: #dce5f3;
+  background: #fff;
+  color: #17325e;
+}
+.lgp-admin-redesigned .lgp-admin-main .fee-block,
+.lgp-admin-redesigned .lgp-admin-main .business-formula > div,
+.lgp-admin-redesigned .lgp-admin-main .business-summary-card,
+.lgp-admin-redesigned .lgp-admin-main .free-service-grid article,
+.lgp-admin-redesigned .lgp-admin-main .analytics-metric-grid article,
+.lgp-admin-redesigned .lgp-admin-main .analytics-chart-wrap,
+.lgp-admin-redesigned .lgp-admin-main .analytics-lower-grid > div,
+.lgp-admin-redesigned .lgp-admin-main .health-row,
+.lgp-admin-redesigned .lgp-admin-main .admin-action-card {
+  border-color: #e0e8f4;
+  background: #f7f9fe;
+  color: #233e63;
+}
+.lgp-admin-redesigned .lgp-admin-main .business-summary-label,
+.lgp-admin-redesigned .lgp-admin-main .business-summary-card small,
+.lgp-admin-redesigned .lgp-admin-main .business-formula p,
+.lgp-admin-redesigned .lgp-admin-main .free-service-grid strong,
+.lgp-admin-redesigned .lgp-admin-main .analytics-metric-grid span,
+.lgp-admin-redesigned .lgp-admin-main .analytics-legend span,
+.lgp-admin-redesigned .lgp-admin-main .chart-axis-label,
+.lgp-admin-redesigned .lgp-admin-main .analytics-lower-grid h3,
+.lgp-admin-redesigned .lgp-admin-main .health-row-main small {
+  color: #536783;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.lgp-admin-redesigned .lgp-admin-main .business-summary-card strong,
+.lgp-admin-redesigned .lgp-admin-main .analytics-metric-grid strong {
+  color: #102d67;
+  font-size: 19px;
+}
+.lgp-admin-redesigned .lgp-admin-main .fee-unit,
+.lgp-admin-redesigned .lgp-admin-main .read-only-tag {
+  background: #eaf1ff;
+  color: #1b4da9;
+  font-size: 11px;
+}
+.lgp-admin-redesigned .lgp-admin-main .source-verification {
+  border-color: #cce8dc;
+  background: #eff9f4;
+}
+.lgp-admin-redesigned .lgp-admin-main .source-verification strong,
+.lgp-admin-redesigned .lgp-admin-main .formula-note strong {
+  color: #165e50;
+  font-size: 13px;
+}
+.lgp-admin-redesigned .lgp-admin-main .source-verification p,
+.lgp-admin-redesigned .lgp-admin-main .source-verification a {
+  color: #365f58;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.lgp-admin-redesigned .lgp-admin-main .fee-table,
+.lgp-admin-redesigned .lgp-admin-main .admin-record-table {
+  min-width: 720px;
+  background: #fff;
+}
+.lgp-admin-redesigned .lgp-admin-main .fee-table th,
+.lgp-admin-redesigned .lgp-admin-main .admin-record-table th {
+  padding: 13px 14px;
+  border-bottom: 1px solid #d9e4f3;
+  background: #edf3ff;
+  color: #174b9f;
+  font-size: 11px;
+  line-height: 1.45;
+  letter-spacing: .35px;
+  white-space: normal;
+}
+.lgp-admin-redesigned .lgp-admin-main .fee-table td,
+.lgp-admin-redesigned .lgp-admin-main .admin-record-table td {
+  padding: 12px 14px;
+  border-top: 1px solid #e5ebf5;
+  color: #263f62;
+  font-size: 12px;
+  line-height: 1.55;
+  vertical-align: top;
+}
+.lgp-admin-redesigned .lgp-admin-main .fee-table td strong,
+.lgp-admin-redesigned .lgp-admin-main .admin-record-table td strong {
+  color: #17325e;
+  font-size: 12px;
+}
+.lgp-admin-redesigned .lgp-admin-main .fee-table td.fee-range { color: #17325e; }
+.lgp-admin-redesigned .lgp-admin-main .fee-table td.fee-amount { color: #12675c; }
+.lgp-admin-redesigned .lgp-admin-main .fee-table tbody tr:nth-child(even),
+.lgp-admin-redesigned .lgp-admin-main .admin-record-table tbody tr:nth-child(even) {
+  background: #f8faff;
+}
+.lgp-admin-redesigned .lgp-admin-main .fee-table-wrap,
+.lgp-admin-redesigned .lgp-admin-main .admin-record-table-wrap {
+  border-color: #dce5f2;
+  background: #fff;
+}
+.lgp-admin-redesigned .lgp-admin-main .fee-footnote,
+.lgp-admin-redesigned .lgp-admin-main .business-disclaimer {
+  color: #536783;
+}
+.lgp-admin-redesigned .lgp-admin-main .fx-fee-banner {
+  border-color: #d3e7e5;
+  background: #eff8f7;
+}
+.lgp-admin-redesigned .lgp-admin-main .fx-fee-banner strong,
+.lgp-admin-redesigned .lgp-admin-main .fx-fee-chip {
+  color: #145f57;
+}
+.lgp-admin-redesigned .lgp-admin-main .fx-fee-banner p {
+  color: #496a6a;
+}
+.lgp-admin-redesigned .lgp-admin-main .fx-fee-chip {
+  background: #dff1ed;
+}
+.lgp-admin-redesigned .lgp-admin-main .fx-compliance-note {
+  border-color: #efdfbd;
+  background: #fff8e9;
+}
+.lgp-admin-redesigned .lgp-admin-main .fx-compliance-note strong,
+.lgp-admin-redesigned .lgp-admin-main .fx-compliance-note a {
+  color: #805516;
+}
+.lgp-admin-redesigned .lgp-admin-main .fx-compliance-note p {
+  color: #65563b;
+}
+.lgp-admin-redesigned .lgp-admin-main .admin-record-tabs button {
+  border-color: #d7e2f1;
+  background: #edf3ff;
+  color: #24466f;
+  font-size: 12px;
+}
+.lgp-admin-redesigned .lgp-admin-main .admin-record-tabs button.active {
+  background: #124bd0;
+  color: #fff;
+}
+.lgp-admin-redesigned .lgp-admin-main .admin-action-card h3,
+.lgp-admin-redesigned .lgp-admin-main .health-row-main strong {
+  color: #17325e;
+}
+.lgp-admin-redesigned .lgp-admin-main .admin-audit-result {
+  border-color: #dce5f2;
+  background: #f7f9fe;
+  color: #263f62;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.lgp-admin-redesigned .lgp-admin-main .system-grid .surface-card {
+  background: #fff;
+}
+.lgp-admin-redesigned .lgp-admin-main .system-row {
+  border-color: #e3eaf4;
+  color: #425a78;
+  font-size: 12px;
+}
+.lgp-admin-redesigned .lgp-admin-main .session-value { color: #17325e; }
+.lgp-admin-redesigned .lgp-admin-main .state-on { color: #13764e; }
+.lgp-admin-redesigned .lgp-admin-main .state-off { color: #b42332; }
+.lgp-admin-redesigned .lgp-admin-main .state-warn { color: #946313; }
+.lgp-admin-redesigned .lgp-admin-main .admin-footer {
+  color: #667994;
+  font-size: 11px;
+}
+.lgp-admin-redesigned .lgp-admin-main .admin-workspace-group {
+  border-color: #dce5f3;
+  background: #fff;
+}
+.lgp-admin-redesigned .lgp-admin-main .admin-workspace-group > summary {
+  color: #102d67;
+  font-size: 14px;
+}
+.lgp-admin-redesigned .lgp-admin-main .admin-workspace-group[open] > summary {
+  border-color: #e0e8f4;
+}
+.lgp-admin-redesigned .lgp-admin-main .admin-workspace-group > summary:after {
+  border-color: #d7e2f1;
+  color: #1755bd;
+}
+.lgp-admin-redesigned .lgp-admin-main .analytics-metric-grid strong,
+.lgp-admin-redesigned .lgp-admin-main .business-summary-card strong {
+  overflow-wrap: anywhere;
+}
+.lgp-admin-redesigned .lgp-admin-sidebar .lgp-admin-side-caption {
+  color: #bdcff6;
+  font-size: 10px;
+}
+.lgp-admin-redesigned .lgp-admin-sidebar .lgp-admin-nav a {
+  min-height: 46px;
+  font-size: 13px;
+}
+@media (max-width: 700px) {
+  .lgp-admin-redesigned .lgp-admin-main { padding: 14px 10px 28px; }
+  .lgp-admin-redesigned .lgp-admin-main p:not(.eyebrow) { font-size: 12px; }
+  .lgp-admin-redesigned .lgp-admin-main .fee-table th,
+  .lgp-admin-redesigned .lgp-admin-main .admin-record-table th,
+  .lgp-admin-redesigned .lgp-admin-main .fee-table td,
+  .lgp-admin-redesigned .lgp-admin-main .admin-record-table td {
+    padding: 11px 12px;
+  }
+}
+
+
+/* Customer reference alignment: place the safety note directly under the welcome card. */
+.lgp-client-disclaimer {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 1px 3px 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #687a94;
+  box-shadow: none;
+}
+.lgp-client-disclaimer p {
+  margin: 0;
+  color: #687a94;
+  font-size: 11px;
+  line-height: 1.65;
+}
+.lgp-client-disclaimer p:first-child strong { color: #314b70; }
+.lgp-client-disclaimer p:last-child { color: #78889e; }
+.lgp-account-fab {
+  position: fixed;
+  z-index: 75;
+  right: 16px;
+  bottom: 16px;
+  min-height: 46px;
+  padding: 12px 18px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 999px;
+  background: #073f58;
+  color: #fff;
+  box-shadow: 0 8px 26px rgba(5,40,70,.22);
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.lgp-account-fab:hover,
+.lgp-account-fab:focus-visible {
+  background: #07516f;
+  outline: 3px solid rgba(21,91,220,.2);
+  outline-offset: 2px;
+}
+@media(max-width:700px) {
+  .lgp-account-fab {
+    right: 12px;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    min-height: 42px;
+    padding: 10px 14px;
+    font-size: 11px;
+  }
+}

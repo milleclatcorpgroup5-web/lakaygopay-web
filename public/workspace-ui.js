@@ -2,9 +2,9 @@
   "use strict";
   const LANG_KEY = "lakaygopay_language";
   const translations = {
-    ht: { language:"Lang", clientKicker:"ESPAS FINANSYE OU", home:"Akèy", send:"Voye", receive:"Resevwa", scan:"Eskane QR", history:"Aktivite", profile:"Pwofil", walletTitle:"Bous mwen yo", sendTitle:"Voye lajan", receiveTitle:"Resevwa lajan", scanTitle:"Peye ak QR", historyTitle:"Istwa tranzaksyon", profileTitle:"Pwofil ak sèvis", sendAction:"Voye lajan", receiveAction:"Resevwa lajan", scanAction:"Eskane QR", historyAction:"Dènye tranzaksyon yo", viewAll:"Wè tout aktivite", merchantGreeting:"Bonjou, Machann!", merchantIntro:"Kwaze biznis ou, grandi pi lwen.", merchantHome:"Akèy", merchantAccept:"Aksepte peman", merchantHistory:"Tranzaksyon", merchantBack:"Retounen Espas Kliyan", adminTitle:"Administration", adminOverview:"Apèsi", adminOperations:"Operasyon", adminFinance:"Finans", adminSecurity:"Sekirite", adminTeam:"Ekip" },
-    fr: { language:"Langue", clientKicker:"VOTRE ESPACE FINANCIER", home:"Accueil", send:"Envoyer", receive:"Recevoir", scan:"Scanner QR", history:"Activité", profile:"Profil", walletTitle:"Mes portefeuilles", sendTitle:"Envoyer de l'argent", receiveTitle:"Recevoir de l'argent", scanTitle:"Payer par QR", historyTitle:"Historique des transactions", profileTitle:"Profil et services", sendAction:"Envoyer de l'argent", receiveAction:"Recevoir de l'argent", scanAction:"Scanner un QR", historyAction:"Dernières transactions", viewAll:"Voir toute l'activité", merchantGreeting:"Bonjour, commerçant !", merchantIntro:"Développez votre activité en toute simplicité.", merchantHome:"Accueil", merchantAccept:"Accepter un paiement", merchantHistory:"Transactions", merchantBack:"Retour à l'espace client", adminTitle:"Administration", adminOverview:"Vue d'ensemble", adminOperations:"Opérations", adminFinance:"Finances", adminSecurity:"Sécurité", adminTeam:"Équipe" },
-    en: { language:"Language", clientKicker:"YOUR FINANCIAL SPACE", home:"Home", send:"Send", receive:"Receive", scan:"Scan QR", history:"Activity", profile:"Profile", walletTitle:"My wallets", sendTitle:"Send money", receiveTitle:"Receive money", scanTitle:"Pay with QR", historyTitle:"Transaction history", profileTitle:"Profile and services", sendAction:"Send money", receiveAction:"Receive money", scanAction:"Scan QR", historyAction:"Recent transactions", viewAll:"View all activity", merchantGreeting:"Hello, Merchant!", merchantIntro:"Grow your business with simpler payments.", merchantHome:"Home", merchantAccept:"Accept payment", merchantHistory:"Transactions", merchantBack:"Back to Customer Space", adminTitle:"Administration", adminOverview:"Overview", adminOperations:"Operations", adminFinance:"Finance", adminSecurity:"Security", adminTeam:"Team" }
+    ht: { language:"Lang", clientKicker:"ESPAS FINANSYE OU", home:"Akèy", send:"Voye", receive:"Resevwa", scan:"Eskane QR", history:"Aktivite", profile:"Pwofil", walletTitle:"Bous mwen yo", sendTitle:"Voye lajan", receiveTitle:"Resevwa lajan", scanTitle:"Peye ak QR", historyTitle:"Istwa tranzaksyon", profileTitle:"Pwofil ak sèvis", sendAction:"Voye lajan", receiveAction:"Rezève lajan", scanAction:"Eskane QR", historyAction:"Dènye tranzaksyon yo", viewAll:"Wè tout aktivite", merchantGreeting:"Bonjou, Machann!", merchantIntro:"Kwaze biznis ou, grandi pi lwen.", merchantHome:"Akèy", merchantAccept:"Aksepte peman", merchantHistory:"Tranzaksyon", merchantBack:"Retounen Espas Kliyan", adminTitle:"Administration", adminOverview:"Apèsi", adminOperations:"Operasyon", adminFinance:"Finans", adminSecurity:"Sekirite", adminTeam:"Ekip" },
+    fr: { language:"Langue", clientKicker:"VOTRE ESPACE FINANCIER", home:"Accueil", send:"Envoyer", receive:"Recevoir", scan:"Scanner QR", history:"Activité", profile:"Profil", walletTitle:"Mes portefeuilles", sendTitle:"Envoyer de l'argent", receiveTitle:"Recevoir de l'argent", scanTitle:"Payer par QR", historyTitle:"Historique des transactions", profileTitle:"Profil et services", sendAction:"Envoyer de l'argent", receiveAction:"Réserver des fonds", scanAction:"Scanner un QR", historyAction:"Dernières transactions", viewAll:"Voir toute l'activité", merchantGreeting:"Bonjour, commerçant !", merchantIntro:"Développez votre activité en toute simplicité.", merchantHome:"Accueil", merchantAccept:"Accepter un paiement", merchantHistory:"Transactions", merchantBack:"Retour à l'espace client", adminTitle:"Administration", adminOverview:"Vue d'ensemble", adminOperations:"Opérations", adminFinance:"Finances", adminSecurity:"Sécurité", adminTeam:"Équipe" },
+    en: { language:"Language", clientKicker:"YOUR FINANCIAL SPACE", home:"Home", send:"Send", receive:"Receive", scan:"Scan QR", history:"Activity", profile:"Profile", walletTitle:"My wallets", sendTitle:"Send money", receiveTitle:"Receive money", scanTitle:"Pay with QR", historyTitle:"Transaction history", profileTitle:"Profile and services", sendAction:"Send money", receiveAction:"Reserve funds", scanAction:"Scan QR", historyAction:"Recent transactions", viewAll:"View all activity", merchantGreeting:"Hello, Merchant!", merchantIntro:"Grow your business with simpler payments.", merchantHome:"Home", merchantAccept:"Accept payment", merchantHistory:"Transactions", merchantBack:"Back to Customer Space", adminTitle:"Administration", adminOverview:"Overview", adminOperations:"Operations", adminFinance:"Finance", adminSecurity:"Security", adminTeam:"Team" }
   };
   let lang = "ht";
   try { const saved = localStorage.getItem(LANG_KEY); if (translations[saved]) lang = saved; } catch {}
@@ -87,6 +87,12 @@
       workspace.prepend(welcome);
     }
     const oldNav = $(".app-quick-nav", workspace);
+    const disclaimer = $(".app-footer", workspace);
+    if (disclaimer) {
+      disclaimer.classList.add("lgp-client-disclaimer");
+      if (oldNav) oldNav.before(disclaimer);
+      else if (welcome) welcome.after(disclaimer);
+    }
     if (oldNav) oldNav.hidden = true;
     const definitions = [["home","walletTitle"],["send","sendTitle"],["receive","receiveTitle"],["scan","scanTitle"],["history","historyTitle"],["profile","profileTitle"]];
     const screens = new Map(definitions.map(([id,key]) => [id,makeScreen(id,key)]));
@@ -137,7 +143,24 @@
     const screenHost = document.createElement("div");
     screenHost.className = "lgp-screen-host";
     definitions.forEach(([id]) => screenHost.append(screens.get(id)));
-    workspace.append(nav,screenHost);
+    if (oldNav) {
+      oldNav.before(nav);
+      nav.after(screenHost);
+    } else {
+      const anchor = disclaimer || welcome;
+      if (anchor) {
+        anchor.after(nav,screenHost);
+      } else {
+        workspace.append(nav,screenHost);
+      }
+    }
+    const accountShortcut = document.createElement("button");
+    accountShortcut.type = "button";
+    accountShortcut.className = "lgp-account-fab";
+    accountShortcut.dataset.lgpGoScreen = "profile";
+    accountShortcut.setAttribute("aria-label","Louvri pwofil ak kont LakayGoPay");
+    accountShortcut.textContent = "Konekte / Kont LakayGoPay";
+    workspace.append(accountShortcut);
     workspace.addEventListener("click",event => {
       const action = event.target.closest("[data-lgp-go-screen]");
       const tab = event.target.closest("[data-lgp-screen]");
