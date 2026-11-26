@@ -85,9 +85,14 @@
  .lgp-client-welcome{align-items:flex-start;padding:13px;min-height:80px}.lgp-client-welcome:before{flex-basis:40px;width:40px;height:40px}
  .lgp-client-workspace .wallet-grid{grid-template-columns:1fr 1fr}.lgp-client-workspace .wallet-card:first-child{grid-column:1/-1}
  .lgp-home-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
- .lgp-workspace-nav{gap:2px;padding:5px}
- .lgp-client-nav{position:fixed;z-index:60;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));justify-content:space-around;padding:5px;border:1px solid #dce5f7;border-radius:17px;background:rgba(255,255,255,.97);box-shadow:0 8px 30px rgba(10,38,110,.18);backdrop-filter:blur(12px)}
- .lgp-client-nav .lgp-nav-item{flex-direction:column;gap:3px;min-height:54px;padding:5px 2px;font-size:9px}.lgp-client-nav .lgp-nav-icon{font-size:17px}
+ .lgp-workspace-nav{gap:3px;padding:6px}
+ /* Keep the six customer tabs in the content flow, immediately below the safety note. */
+ .lgp-client-nav{position:relative;z-index:2;left:auto;right:auto;bottom:auto;display:flex;justify-content:flex-start;gap:4px;overflow-x:auto;overscroll-behavior-x:contain;padding:6px;border:1px solid #dce5f7;border-radius:15px;background:#fff;box-shadow:0 4px 15px rgba(20,52,130,.05);backdrop-filter:none;scrollbar-width:thin}
+ .lgp-client-nav .lgp-nav-item{flex:1 0 auto;flex-direction:row;gap:5px;min-width:max-content;min-height:44px;padding:7px 10px;font-size:11px;white-space:nowrap}.lgp-client-nav .lgp-nav-icon{font-size:15px}
+ .lgp-client-workspace{padding-bottom:24px}
+ .lgp-client-workspace .wallet-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .lgp-client-workspace .wallet-card:first-child{grid-column:1/-1}
+ .lgp-home-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
  .lgp-merchant-workspace{padding:11px}.lgp-merchant-workspace .merchant-workspace-heading{align-items:flex-start;flex-direction:column;padding:15px}.lgp-merchant-workspace .merchant-workspace-heading .button{width:100%}
  .lgp-merchant-nav{position:fixed;z-index:60;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));padding:5px;border:1px solid #dce5f7;border-radius:17px;background:rgba(255,255,255,.97);box-shadow:0 8px 30px rgba(10,38,110,.18);backdrop-filter:blur(12px)}
  .lgp-merchant-nav .lgp-nav-item{flex-direction:column;gap:3px;min-height:54px;padding:5px 2px;font-size:10px}.lgp-merchant-workspace{padding-bottom:88px}
@@ -486,4 +491,41 @@
     padding: 10px 14px;
     font-size: 11px;
   }
+}
+
+
+/* Customer dashboard: keep the reference hierarchy stable on tablet and desktop. */
+.lgp-client-workspace { gap: 15px; }
+.lgp-client-welcome { order: 0; }
+.lgp-client-disclaimer { order: 1; }
+.lgp-client-nav { order: 2; }
+.lgp-screen-host { order: 3; }
+.lgp-client-workspace .lgp-screen[data-lgp-screen-panel="home"] { gap: 14px; }
+.lgp-client-workspace .lgp-screen[data-lgp-screen-panel="home"] > #walletSection { order: 0; }
+.lgp-client-workspace .lgp-screen[data-lgp-screen-panel="home"] > .lgp-home-actions { order: 1; }
+.lgp-client-workspace .lgp-screen[data-lgp-screen-panel="home"] > .lgp-recent-link { order: 2; }
+.lgp-client-workspace .wallet-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.lgp-client-workspace .wallet-card { min-width: 0; }
+.lgp-client-workspace .wallet-id { overflow-wrap: anywhere; }
+.lgp-client-workspace .lgp-home-actions { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.lgp-client-workspace .lgp-recent-link { justify-self: end; margin-top: 2px; }
+.lgp-client-workspace .section-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.lgp-client-workspace .section-heading h2 { margin:0; }
+@media (min-width:701px) and (max-width:1050px) {
+  .lgp-client-redesigned .app-layout { width:calc(100% - 30px); }
+  .lgp-client-workspace .wallet-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .lgp-client-workspace .wallet-card { padding:14px; }
+  .lgp-client-workspace .wallet-balance { font-size:clamp(21px,2.7vw,29px); }
+}
+@media (max-width:700px) {
+  .lgp-client-welcome { align-items:center; }
+  .lgp-client-welcome .welcome-actions { margin-left:auto; }
+  .lgp-client-workspace .wallet-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .lgp-client-workspace .wallet-card:first-child { grid-column:1/-1; }
+  .lgp-client-workspace .lgp-home-actions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .lgp-account-fab { bottom:calc(12px + env(safe-area-inset-bottom)); }
+}
+@media (max-width:430px) {
+  .lgp-client-nav .lgp-nav-item { padding:7px 9px; font-size:10px; }
+  .lgp-client-welcome .welcome-actions { flex-wrap:wrap; }
 }
