@@ -434,3 +434,56 @@
     padding: 11px 12px;
   }
 }
+
+
+/* Customer reference alignment: place the safety note directly under the welcome card. */
+.lgp-client-disclaimer {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 1px 3px 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #687a94;
+  box-shadow: none;
+}
+.lgp-client-disclaimer p {
+  margin: 0;
+  color: #687a94;
+  font-size: 11px;
+  line-height: 1.65;
+}
+.lgp-client-disclaimer p:first-child strong { color: #314b70; }
+.lgp-client-disclaimer p:last-child { color: #78889e; }
+.lgp-account-fab {
+  position: fixed;
+  z-index: 75;
+  right: 16px;
+  bottom: 16px;
+  min-height: 46px;
+  padding: 12px 18px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 999px;
+  background: #073f58;
+  color: #fff;
+  box-shadow: 0 8px 26px rgba(5,40,70,.22);
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.lgp-account-fab:hover,
+.lgp-account-fab:focus-visible {
+  background: #07516f;
+  outline: 3px solid rgba(21,91,220,.2);
+  outline-offset: 2px;
+}
+@media(max-width:700px) {
+  .lgp-account-fab {
+    right: 12px;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    min-height: 42px;
+    padding: 10px 14px;
+    font-size: 11px;
+  }
+}
